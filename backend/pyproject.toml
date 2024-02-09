@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "yama"
+requires-python = ">=3.11"
 dynamic = ["version"]
 
 [tool.hatch.version]
