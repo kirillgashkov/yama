@@ -5,9 +5,7 @@
 ### Development
 
 ```
-$ python -m venv .venv
-$ source .venv/bin/activate
-$ pip install -U pip
+$ source /path/to/venv/bin/activate
 $ pip install pip-tools
 $ make pip-sync
 ```
