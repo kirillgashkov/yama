@@ -1,3 +1,19 @@
+.PHONY: fmt
+fmt:
+	ruff check --fix .
+	ruff format .
+	mypy .
+
+.PHONY: lint
+lint:
+	ruff check .
+	ruff format --check .
+	mypy .
+
+.PHONY: test
+test:
+	pytest .
+
 .PHONY: pip-compile
 pip-compile:
 	pip-compile --quiet --allow-unsafe --strip-extras --generate-hashes --output-file requirements.txt pyproject.toml
