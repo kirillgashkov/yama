@@ -13,6 +13,14 @@ def _quoted_identifier(identifier: str, *, dialect: Dialect) -> str:
     return dialect.identifier_preparer.quote(identifier)
 
 
+async def database_exists(conn: AsyncConnection, *, database_name: str) -> bool:
+    result = await conn.execute(
+        text("SELECT 1 FROM pg_database WHERE datname = :database_name"),
+        {"database_name": database_name},
+    )
+    return (await result.first()) is not None
+
+
 async def create_database(
     autocommit_conn: AsyncConnection, *, database_name: str
 ) -> None:
