@@ -1,18 +1,34 @@
 import asyncio
 from pathlib import Path
-from typing import Any
+
+from sqlalchemy import text, Dialect
+from sqlalchemy.ext.asyncio import AsyncConnection
 
 
 class DatabaseProvisionError(Exception):
     ...
 
 
-async def create_database(maintenance_conn: Any, *, database_name: str) -> None:
-    ...
+def _quoted_identifier(identifier: str, *, dialect: Dialect) -> str:
+    return dialect.identifier_preparer.quote(identifier)
 
 
-async def drop_database(maintenance_conn: Any, *, database_name: str) -> None:
-    ...
+async def create_database(
+    autocommit_conn: AsyncConnection, *, database_name: str
+) -> None:
+    quoted_database_name = _quoted_identifier(
+        database_name, dialect=autocommit_conn.engine.dialect
+    )
+    await autocommit_conn.execute(text(f"CREATE DATABASE {quoted_database_name}"))
+
+
+async def drop_database(
+    autocommit_conn: AsyncConnection, *, database_name: str
+) -> None:
+    quoted_database_name = _quoted_identifier(
+        database_name, dialect=autocommit_conn.engine.dialect
+    )
+    await autocommit_conn.execute(text(f"DROP DATABASE {quoted_database_name}"))
 
 
 async def upgrade_database(
