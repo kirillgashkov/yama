@@ -33,13 +33,13 @@ async def drop_database(
 
 async def upgrade_database(
     migrate_executable: Path,
-    migrate_connection_uri: str,
+    migrate_connection_url: str,
     migrate_migrations_dir: Path,
 ) -> None:
     process = await asyncio.create_subprocess_exec(
         str(migrate_executable),
         "-database",
-        migrate_connection_uri,
+        migrate_connection_url,
         "-path",
         str(migrate_migrations_dir),
         "up",
