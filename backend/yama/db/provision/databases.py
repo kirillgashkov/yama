@@ -84,3 +84,25 @@ async def upgrade_database(
 
     if process.returncode != 0:
         raise DatabaseProvisionError("Database migration failed")
+
+
+async def setup_database(
+    conn: AsyncConnection,
+    *,
+    database_name: str,
+    migrate_executable: Path,
+    migrate_migrations_dir: Path,
+) -> None:
+    if not await database_exists(conn, database_name=database_name):
+        await create_database(conn, database_name=database_name)
+
+    await upgrade_database(
+        conn,
+        migrate_executable=migrate_executable,
+        migrate_migrations_dir=migrate_migrations_dir,
+    )
+
+
+async def teardown_database(conn: AsyncConnection, *, database_name: str) -> None:
+    if await database_exists(conn, database_name=database_name):
+        await drop_database(conn, database_name=database_name)
