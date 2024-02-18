@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class ProvisionSettings(BaseSettings):
@@ -12,6 +12,8 @@ class ProvisionSettings(BaseSettings):
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_nested_delimiter="__")
+
     host: str
     port: int
     username: str
