@@ -1,6 +1,5 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from urllib.parse import urlencode, urlunsplit
 
 from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
@@ -42,14 +41,3 @@ async def sqlalchemy_async_connection(
     ) as engine:
         async with engine.connect() as conn:
             yield conn
-
-
-def migrate_connection_url(
-    *, host: str, port: int, username: str, password: str, database: str
-) -> str:
-    query = {
-        "user": username,
-        "password": password,
-        "dbname": database,
-    }
-    return urlunsplit(("postgresql", f"{host}:{port}", "/", urlencode(query), ""))
