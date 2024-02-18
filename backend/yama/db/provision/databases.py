@@ -67,7 +67,12 @@ def _migrate_connection_url(database: str, sqlalchemy_connection_url: URL) -> st
     if port is None:
         raise ValueError("Port is required")
 
-    query = {"user": username, "password": password, "dbname": database}
+    query = {
+        "user": username,
+        "password": password,
+        "dbname": database,
+        "sslmode": "disable",  # FIXME: Make SSL configurable
+    }
 
     return urlunsplit(("postgresql", f"{host}:{port}", "/", urlencode(query), ""))
 
