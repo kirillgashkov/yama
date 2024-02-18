@@ -30,7 +30,6 @@ def up() -> None:
                 autocommit_conn,
                 database=settings.database,
                 migrate_executable=settings.provision.migrate_executable,
-                migrate_migrations_dir=settings.provision.migrate_migrations_dir,
             )
 
     asyncio.run(f())

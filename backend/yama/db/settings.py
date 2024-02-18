@@ -8,7 +8,6 @@ class ProvisionSettings(BaseSettings):
     password: str
     database: str
     migrate_executable: Path
-    migrate_migrations_dir: Path
 
 
 class Settings(BaseSettings):

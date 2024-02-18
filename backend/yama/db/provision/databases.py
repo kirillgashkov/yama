@@ -1,9 +1,14 @@
 import asyncio
+from collections.abc import Iterator
+from contextlib import contextmanager
+from importlib.resources import as_file, files
 from pathlib import Path
 from urllib.parse import urlencode, urlunsplit
 
 from sqlalchemy import URL, Dialect, text
 from sqlalchemy.ext.asyncio import AsyncConnection
+
+from yama.db import provision
 
 
 class DatabaseProvisionError(Exception):
@@ -77,23 +82,26 @@ def _migrate_connection_url(database: str, sqlalchemy_connection_url: URL) -> st
     return urlunsplit(("postgresql", f"{host}:{port}", "/", urlencode(query), ""))
 
 
+@contextmanager
+def _migrate_migrations_dir() -> Iterator[Path]:
+    with as_file(files(provision) / "migrations") as migrations_dir:
+        yield migrations_dir
+
+
 async def setup_database(
-    conn: AsyncConnection,
-    *,
-    database: str,
-    migrate_executable: Path,
-    migrate_migrations_dir: Path,
+    conn: AsyncConnection, *, database: str, migrate_executable: Path
 ) -> None:
     if not await database_exists(conn, database=database):
         await create_database(conn, database=database)
 
     migrate_connection_url = _migrate_connection_url(database, conn.engine.url)
 
-    await upgrade_database(
-        migrate_executable=migrate_executable,
-        migrate_connection_url=migrate_connection_url,
-        migrate_migrations_dir=migrate_migrations_dir,
-    )
+    with _migrate_migrations_dir() as migrate_migrations_dir:
+        await upgrade_database(
+            migrate_executable=migrate_executable,
+            migrate_connection_url=migrate_connection_url,
+            migrate_migrations_dir=migrate_migrations_dir,
+        )
 
 
 async def teardown_database(conn: AsyncConnection, *, database: str) -> None:
