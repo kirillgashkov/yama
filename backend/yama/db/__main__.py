@@ -24,8 +24,10 @@ def up() -> None:
             password=settings.provision.password,
             database=settings.provision.database,
         ) as conn:
+            autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+
             await setup_database(
-                conn,
+                autocommit_conn,
                 database=settings.database,
                 migrate_executable=settings.provision.migrate_executable,
                 migrate_migrations_dir=settings.provision.migrate_migrations_dir,
@@ -49,7 +51,9 @@ def down() -> None:
             password=settings.provision.password,
             database=settings.provision.database,
         ) as conn:
-            await teardown_database(conn, database=settings.database)
+            autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+
+            await teardown_database(autocommit_conn, database=settings.database)
 
     asyncio.run(f())
 
