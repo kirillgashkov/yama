@@ -7,6 +7,10 @@ name = "yama"
 requires-python = ">=3.11"
 dependencies = [
     "typer>=0.9.0",
+    "sqlalchemy>=2.0.26",
+    "asyncpg>=0.29.0",
+    "pydantic>=2.6.1",
+    "pydantic-settings>=2.2.0",
 ]
 optional-dependencies.dev = [
     "ruff>=0.2.1",
@@ -22,4 +26,5 @@ path = "yama/__init__.py"
 select = ["E4", "E7", "E9", "F", "I", "RUF100"]
 
 [tool.mypy]
+plugins = ["pydantic.mypy"]
 strict = true
