@@ -12,7 +12,7 @@
 
     "skipLibCheck": true,
     "strict": true,
-    "types": [],
+    "types": ["vite/client"],
 
     "composite": true
   },
