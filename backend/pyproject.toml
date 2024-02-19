@@ -11,6 +11,8 @@ dependencies = [
     "asyncpg>=0.29.0",
     "pydantic>=2.6.1",
     "pydantic-settings>=2.2.0",
+    "fastapi>=0.109.2",
+    "uvicorn[standard]>=0.27.1",
 ]
 optional-dependencies.dev = [
     "ruff>=0.2.1",
