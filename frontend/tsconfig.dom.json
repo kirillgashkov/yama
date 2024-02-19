@@ -12,7 +12,8 @@
 
     "skipLibCheck": true,
     "strict": true,
-    "types": []
+    "types": [],
+
+    "composite": true
   },
   "include": ["src/**/*.ts", "src/**/*.vue"]
-}
