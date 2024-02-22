@@ -8,7 +8,7 @@ from urllib.parse import urlencode, urlunsplit
 from sqlalchemy import URL, Dialect, text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.db import provision
+from yama.database import provision
 
 
 class DatabaseProvisionError(Exception):

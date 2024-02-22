@@ -1,5 +1,5 @@
 services:
-  db:
+  database:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: postgres
@@ -8,6 +8,6 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - database-data:/var/lib/postgresql/data
 volumes:
-  db-data:
+  database-data:

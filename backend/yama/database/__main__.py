@@ -2,9 +2,9 @@ import asyncio
 
 from typer import Typer
 
-from yama.db.connections import sqlalchemy_async_connection
-from yama.db.provision.databases import setup_database, teardown_database
-from yama.db.settings import Settings
+from yama.database.connections import sqlalchemy_async_connection
+from yama.database.provision.databases import setup_database, teardown_database
+from yama.database.settings import Settings
 
 app = Typer()
 
