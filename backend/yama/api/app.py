@@ -1,9 +1,31 @@
-from typing import Literal
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Any, Literal
 
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-app = FastAPI()
+from yama.database.connections import sqlalchemy_async_engine
+from yama.database.settings import Settings as DatabaseSettings
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
+    settings = DatabaseSettings()
+
+    async with sqlalchemy_async_engine(
+        host=settings.host,
+        port=settings.port,
+        username=settings.username,
+        password=settings.password,
+        database=settings.database,
+    ) as engine:
+        # `engine` must not be accessed directly, it must
+        # be accessed through a lifetime dependency
+        yield {"engine": engine}
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 class Health(BaseModel):
