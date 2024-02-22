@@ -1,20 +1,34 @@
 import asyncio
 
+import uvicorn
 from typer import Typer
 
+from yama.api.settings import Settings as APISettings
 from yama.database.connections import sqlalchemy_async_connection
 from yama.database.provision.databases import setup_database, teardown_database
-from yama.database.settings import Settings
+from yama.database.settings import Settings as DatabaseSettings
 
 app = Typer()
 database_app = Typer()
 app.add_typer(database_app, name="database")
 
 
+@app.command()
+def api() -> None:
+    settings = APISettings()
+
+    uvicorn.run(
+        "yama.api.app:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.reload,
+    )
+
+
 @database_app.command()
 def up() -> None:
     async def f() -> None:
-        settings = Settings()
+        settings = DatabaseSettings()
 
         if settings.provision is None:
             raise ValueError("Provision settings are required")
@@ -40,7 +54,7 @@ def up() -> None:
 @database_app.command()
 def down() -> None:
     async def f() -> None:
-        settings = Settings()
+        settings = DatabaseSettings()
 
         if settings.provision is None:
             raise ValueError("Provision settings are required")
