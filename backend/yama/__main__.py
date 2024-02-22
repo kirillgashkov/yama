@@ -7,9 +7,11 @@ from yama.database.provision.databases import setup_database, teardown_database
 from yama.database.settings import Settings
 
 app = Typer()
+database_app = Typer()
+app.add_typer(database_app, name="database")
 
 
-@app.command()
+@database_app.command()
 def up() -> None:
     async def f() -> None:
         settings = Settings()
@@ -35,7 +37,7 @@ def up() -> None:
     asyncio.run(f())
 
 
-@app.command()
+@database_app.command()
 def down() -> None:
     async def f() -> None:
         settings = Settings()
