@@ -509,7 +509,6 @@ uvicorn==0.27.1 \
     --hash=sha256:5c89da2f3895767472a35556e539fd59f7edbe9b1e9c0e1c99eebeadc61838e4
     # via
     #   -c requirements.txt
-    #   uvicorn
     #   yama (pyproject.toml)
 uvloop==0.19.0 \
     --hash=sha256:0246f4fd1bf2bf702e06b0d45ee91677ee5c31242f39aab4ea6fe0c51aedd0fd \

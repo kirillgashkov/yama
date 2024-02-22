@@ -6,18 +6,18 @@ build-backend = "hatchling.build"
 name = "yama"
 requires-python = ">=3.11"
 dependencies = [
-    "typer>=0.9.0",
-    "sqlalchemy>=2.0.26",
-    "asyncpg>=0.29.0",
-    "pydantic>=2.6.1",
-    "pydantic-settings>=2.2.0",
-    "fastapi>=0.109.2",
-    "uvicorn[standard]>=0.27.1",
+    "typer",
+    "sqlalchemy",
+    "asyncpg",
+    "pydantic",
+    "pydantic-settings",
+    "fastapi",
+    "uvicorn[standard]",
 ]
 optional-dependencies.dev = [
-    "ruff>=0.2.1",
-    "mypy>=1.8.0",
-    "pytest>=8.0.0",
+    "ruff",
+    "mypy",
+    "pytest",
 ]
 dynamic = ["version"]
 
