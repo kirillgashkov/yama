@@ -18,7 +18,7 @@ def api() -> None:
     settings = APISettings()
 
     uvicorn.run(
-        "yama.api.app:app",
+        "yama.api.routes:app",
         host=settings.host,
         port=settings.port,
         reload=settings.reload,
