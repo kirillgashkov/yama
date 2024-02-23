@@ -19,7 +19,7 @@ class User(TableBase):
 
 class UserIn(ModelBase):
     username: str
-    password_hash: str
+    password: str
 
 
 class UserOut(ModelBase):
