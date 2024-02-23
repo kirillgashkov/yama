@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from yama.database.tables import TableBase
+from yama.database.models import TableBase
 from yama.model.models import ModelBase
 
 
