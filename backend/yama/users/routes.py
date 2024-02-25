@@ -37,4 +37,6 @@ async def create_user(
         .returning(User.id, User.username)
     )
     row = (await connection.execute(statement)).mappings().one()
+    await connection.commit()
+
     return UserOut(**row)
