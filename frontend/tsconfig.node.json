@@ -18,5 +18,5 @@
     "composite": true,
     "noEmit": true
   },
-  "files": ["vite.config.ts"]
+  "files": ["eslint.config.js", "vite.config.ts"]
 }
