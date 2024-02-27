@@ -8,5 +8,4 @@ async def user_exists(username: str, connection: AsyncConnection) -> bool:
     statement = select(
         exists().where(func.lower(User.username) == func.lower(username))
     )
-    row = await connection.execute(statement)
-    return row.scalar_one()
+    return (await connection.execute(statement)).scalar_one()
