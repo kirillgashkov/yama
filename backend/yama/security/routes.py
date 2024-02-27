@@ -28,7 +28,7 @@ async def create_token(
     ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Invalid username or password",
         )
 
     access_token = create_access_token(row["id"])
