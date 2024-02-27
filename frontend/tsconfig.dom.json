@@ -7,7 +7,7 @@
 
     "esModuleInterop": true,
     "isolatedModules": true,
-    "paths": { "@/*": ["src/*"] },
+    "paths": { "@/*": ["./src/*"] },
     "verbatimModuleSyntax": true,
 
     "skipLibCheck": true,
