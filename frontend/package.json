@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "vue-tsc --build --force"
   },
   "devDependencies": {
     "@types/node": "^20.11.20",
