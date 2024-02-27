@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings",
     "fastapi",
     "uvicorn[standard]",
+    "python-multipart",
 ]
 optional-dependencies.dev = [
     "ruff",
