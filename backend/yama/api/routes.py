@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from yama.database.connections import sqlalchemy_async_engine
 from yama.database.settings import Settings as DatabaseSettings
+from yama.security.routes import router as security_router
 from yama.users.routes import router as users_router
 
 
@@ -27,6 +28,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(security_router)
 app.include_router(users_router)
 
 
