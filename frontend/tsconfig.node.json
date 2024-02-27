@@ -13,6 +13,8 @@
     "strict": true,
     "types": ["node"],
 
+    "allowJs": true,
+    "checkJs": true,
     "composite": true,
     "noEmit": true
   },
