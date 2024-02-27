@@ -1,15 +1,27 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
+from yama.security.dependencies import get_current_user_id
 from yama.security.utils import hash_password
 from yama.users.models import User, UserIn, UserOut
 from yama.users.utils import user_exists
 
 router = APIRouter()
+
+
+@router.get("/users/current")
+async def get_current_user(
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
+    connection: Annotated[AsyncConnection, Depends(get_connection)],
+) -> UserOut:
+    statement = select(User.id, User.username).where(User.id == current_user_id)
+    row = (await connection.execute(statement)).mappings().one()
+    return UserOut(**row)
 
 
 @router.get("/users")
