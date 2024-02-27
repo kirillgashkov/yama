@@ -19,3 +19,8 @@ def create_access_token(user_id: UUID) -> str:
 # FIXME: Use JWT
 def is_access_token_valid(access_token: str) -> bool:
     return access_token.startswith("access_token(") and access_token.endswith(")")
+
+
+# FIXME: Use JWT
+def get_user_id_from_access_token(access_token: str) -> UUID:
+    return UUID(access_token.removeprefix("access_token(").removesuffix(")"))
