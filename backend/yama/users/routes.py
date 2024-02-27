@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -27,7 +27,10 @@ async def create_user(
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> UserOut:
     if await user_exists(user_in.username, connection):
-        raise ValueError("User already exists")  # FIXME: Throw an HTTP exception
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="User already exists",
+        )
 
     password_hash = hash_password(user_in.password)
 
