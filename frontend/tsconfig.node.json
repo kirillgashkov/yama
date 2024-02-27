@@ -13,7 +13,8 @@
     "strict": true,
     "types": ["node"],
 
-    "composite": true
+    "composite": true,
+    "noEmit": true
   },
   "files": ["vite.config.ts"]
 }
