@@ -18,10 +18,8 @@ INSERT INTO file_types (type) VALUES ('regular file'), ('directory');
 CREATE TABLE IF NOT EXISTS files (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
     type varchar NOT NULL,
-    owned_by uuid NOT NULL,
     PRIMARY KEY (id),
-    FOREIGN KEY (type) REFERENCES file_types (type),
-    FOREIGN KEY (owned_by) REFERENCES users (id)
+    FOREIGN KEY (type) REFERENCES file_types (type)
 );
 
 CREATE TABLE IF NOT EXISTS file_ancestors_file_descendants (
