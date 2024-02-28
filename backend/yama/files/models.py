@@ -1,9 +1,11 @@
+from typing import Literal
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
+from yama.model.models import ModelBase
 
 
 class FileType(TableBase):
@@ -30,3 +32,8 @@ class FileAncestorFileDescendant(TableBase):
     )
     descendant_path: Mapped[str]
     depth: Mapped[int]
+
+
+class FileOut(ModelBase):
+    id: UUID
+    type: Literal["regular", "directory"]
