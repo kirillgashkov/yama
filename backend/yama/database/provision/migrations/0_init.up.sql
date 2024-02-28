@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS file_types (
     type varchar NOT NULL,
     PRIMARY KEY (type)
 );
-INSERT INTO file_types (type) VALUES ('regular file'), ('directory');
+INSERT INTO file_types (type) VALUES ('regular'), ('directory');
 
 CREATE TABLE IF NOT EXISTS files (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
