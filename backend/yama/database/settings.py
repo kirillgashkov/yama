@@ -11,7 +11,9 @@ class ProvisionSettings(BaseSettings):
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="yama_db_", env_nested_delimiter="__")
+    model_config = SettingsConfigDict(
+        env_prefix="yama_database_", env_nested_delimiter="__"
+    )
 
     host: str
     port: int
