@@ -505,6 +505,10 @@ typer==0.9.0 \
     # via
     #   -c requirements.txt
     #   yama (pyproject.toml)
+types-aiofiles==23.2.0.20240106 \
+    --hash=sha256:7324f9a9f7200c1f4986a9e40a42b548290f707b967709f30b280e99fdacbd99 \
+    --hash=sha256:ef4fa3072441c58beaadbd0d07ba18e89beff49c71648dd223e2ca861f3dac53
+    # via yama (pyproject.toml)
 typing-extensions==4.9.0 \
     --hash=sha256:23478f88c37f27d76ac8aee6c905017a143b0b1b886c3c9f66bc2fd94f9f5783 \
     --hash=sha256:af72aea155e91adfc61c3ae9e0e342dbc0cba726d6cba4b6c72c1f34e47291cd
