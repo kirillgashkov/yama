@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check": "vue-tsc --build --force && eslint . && prettier --check .",
+    "format": "eslint --fix . && prettier --write ."
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.2",
