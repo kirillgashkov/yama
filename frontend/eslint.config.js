@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import js from "@eslint/js";
+import prettierConfig from "eslint-config-prettier";
 import ts from "typescript-eslint";
 import vueParser from "vue-eslint-parser";
 import { FlatCompat } from "@eslint/eslintrc";
@@ -14,6 +15,7 @@ export default ts.config(
   js.configs.recommended,
   ...ts.configs.recommendedTypeChecked,
   ...eslintrc.extends("plugin:vue/vue3-recommended"), // Depends on `eslint-plugin-vue`
+  prettierConfig,
   {
     languageOptions: {
       parser: vueParser,
