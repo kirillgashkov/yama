@@ -1,21 +1,11 @@
 {
   "compilerOptions": {
-    "lib": ["esnext"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "target": "esnext",
-
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-
-    "skipLibCheck": true,
-    "strict": true,
-
     "allowJs": true,
     "checkJs": true,
     "composite": true,
+    "lib": ["esnext"],
     "noEmit": true
   },
+  "extends": "./tsconfig.base.json",
   "include": ["eslint.config.js", "vite.config.ts"]
 }

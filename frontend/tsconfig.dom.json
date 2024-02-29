@@ -1,20 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "target": "esnext",
-
-    "esModuleInterop": true,
-    "isolatedModules": true,
-    "paths": { "@/*": ["./src/*"] },
-    "verbatimModuleSyntax": true,
-
-    "skipLibCheck": true,
-    "strict": true,
-
     "composite": true,
-    "noEmit": true
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "noEmit": true,
+    "paths": { "@/*": ["./src/*"] }
   },
+  "extends": "./tsconfig.base.json",
   "include": ["src/**/*.ts", "src/**/*.vue"]
 }
