@@ -12,7 +12,6 @@
 
     "skipLibCheck": true,
     "strict": true,
-    "types": [], // XXX: Should be populated with the types used in the project in order for `tsc` to pick them up but it seems that `tsc` picks up on everything in `node_modules/@types` anyway (see https://github.com/microsoft/TypeScript/issues/37708)
 
     "composite": true,
     "noEmit": true
