@@ -1,9 +1,9 @@
-import eslint from "@eslint/js";
-import typescriptEslint from "typescript-eslint";
+import js from "@eslint/js";
+import ts from "typescript-eslint";
 
-export default typescriptEslint.config(
-  eslint.configs.recommended,
-  ...typescriptEslint.configs.recommendedTypeChecked,
+export default ts.config(
+  js.configs.recommended,
+  ...ts.configs.recommendedTypeChecked,
   {
     languageOptions: {
       parserOptions: {
