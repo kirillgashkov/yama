@@ -7,5 +7,10 @@
     "noEmit": true
   },
   "extends": "./tsconfig.base.json",
-  "include": ["eslint.config.js", "vite.config.ts"]
+  "include": [
+    "eslint.config.js",
+    "postcss.config.js",
+    "tailwind.config.ts",
+    "vite.config.ts"
+  ]
 }
