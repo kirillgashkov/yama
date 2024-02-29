@@ -18,5 +18,5 @@
     "composite": true,
     "noEmit": true
   },
-  "files": ["eslint.config.js", "vite.config.ts"]
+  "include": ["eslint.config.js", "types/**/*.d.ts", "vite.config.ts"] // XXX: Probably should include only the types used in the project but we are being consistent with the `compilerOptions.types` field
 }

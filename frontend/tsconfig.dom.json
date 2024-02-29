@@ -17,5 +17,5 @@
     "composite": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.vue", "types/**/*.d.ts"] // XXX: Probably should include only the types used in the project but we are being consistent with the `compilerOptions.types` field
 }
