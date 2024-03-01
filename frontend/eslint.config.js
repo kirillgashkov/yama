@@ -24,5 +24,8 @@ export default ts.config(
         EXPERIMENTAL_useProjectService: true,
       },
     },
+    linterOptions: {
+      reportUnusedDisableDirectives: "error",
+    },
   },
 );
