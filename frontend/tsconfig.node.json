@@ -10,6 +10,7 @@
   "include": [
     "eslint.config.js",
     "postcss.config.js",
+    "prettier.config.js",
     "tailwind.config.ts",
     "vite.config.ts"
   ]
