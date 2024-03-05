@@ -1,7 +1,7 @@
 from typing import Literal
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, func
+from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
@@ -11,7 +11,9 @@ from yama.model.models import ModelBase
 class FileType(TableBase):
     __tablename__ = "file_types"
 
-    type: Mapped[str] = mapped_column(primary_key=True)
+    type: Mapped[Literal["regular", "directory"]] = mapped_column(
+        String, primary_key=True
+    )
 
 
 class File(TableBase):
