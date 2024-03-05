@@ -9,5 +9,5 @@ class Settings(BaseSettings):
 
     files_dir: Path
     root_file_id: UUID
-    max_chunk_size: int = 1024 * 1024 * 10  # 10 MiB
-    max_file_size: int = 1024 * 1024 * 512  # 512 MiB
+    upload_chunk_size: int = 1024 * 1024 * 10  # 10 MiB
+    upload_max_file_size: int = 1024 * 1024 * 512  # 512 MiB
