@@ -1,4 +1,4 @@
-from typing import Literal
+from enum import Enum
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, func
@@ -8,12 +8,15 @@ from yama.database.models import TableBase
 from yama.model.models import ModelBase
 
 
+class FileTypeEnum(str, Enum):
+    REGULAR = "regular"
+    DIRECTORY = "directory"
+
+
 class FileType(TableBase):
     __tablename__ = "file_types"
 
-    type: Mapped[Literal["regular", "directory"]] = mapped_column(
-        String, primary_key=True
-    )
+    type: Mapped[FileTypeEnum] = mapped_column(String, primary_key=True)
 
 
 class File(TableBase):
@@ -38,4 +41,4 @@ class FileAncestorFileDescendant(TableBase):
 
 class FileOut(ModelBase):
     id: UUID
-    type: Literal["regular", "directory"]
+    type: FileTypeEnum
