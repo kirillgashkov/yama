@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
 from yama.files.models import FileTypeEnum
-from yama.security.dependencies import get_current_user_id
+from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
 
 router = APIRouter()
 
@@ -26,7 +26,13 @@ async def create_file(
 
 
 @router.get("/files/{path:path}")
-async def read_file() -> None:
+async def read_file(
+    path: str,
+    /,
+    *,
+    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    current_user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
+) -> ...:
     ...
 
 
