@@ -39,6 +39,13 @@ class FileAncestorFileDescendant(TableBase):
     depth: Mapped[int]
 
 
+class FileIn(ModelBase):
+    parent_path: str
+    name: str
+    type: FileTypeEnum
+
+
 class FileOut(ModelBase):
+    path: str
     id: UUID
     type: FileTypeEnum
