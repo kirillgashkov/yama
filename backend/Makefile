@@ -1,14 +1,13 @@
-.PHONY: fmt
-fmt:
+.PHONY: format
+format:
 	ruff check --fix .
 	ruff format .
-	mypy .
 
-.PHONY: lint
-lint:
+.PHONY: check
+check:
+	mypy .
 	ruff check .
 	ruff format --check .
-	mypy .
 
 .PHONY: test
 test:
