@@ -37,7 +37,15 @@ async def read_file(
 
 
 @router.get("/files/{path:path}")
-async def update_file() -> None:
+async def update_file(
+    path: str,
+    /,
+    name: Annotated[str, Form()],
+    content: Annotated[UploadFile | None, File()] = None,
+    *,
+    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
+) -> ...:
     ...
 
 
