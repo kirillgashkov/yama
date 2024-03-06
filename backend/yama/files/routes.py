@@ -11,7 +11,7 @@ from yama.security.dependencies import get_current_user_id, get_current_user_id_
 router = APIRouter()
 
 
-@router.get("/files/{parent_path:path}")
+@router.post("/files/{parent_path:path}")
 async def create_file(
     parent_path: str,
     /,
@@ -36,7 +36,7 @@ async def read_file(
     ...
 
 
-@router.get("/files/{path:path}")
+@router.put("/files/{path:path}")
 async def update_file(
     path: str,
     /,
@@ -49,6 +49,6 @@ async def update_file(
     ...
 
 
-@router.get("/files/{path:path}")
+@router.delete("/files/{path:path}")
 async def delete_file() -> None:
     ...
