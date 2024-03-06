@@ -50,5 +50,11 @@ async def update_file(
 
 
 @router.delete("/files/{path:path}")
-async def delete_file() -> None:
+async def delete_file(
+    path: str,
+    /,
+    *,
+    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    current_user_id: Annotated[UUID, Depends(get_current_user_id)],
+) -> ...:
     ...
