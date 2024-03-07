@@ -74,9 +74,7 @@ class File(TableBase):
     id: Mapped[UUID] = mapped_column(
         server_default=func.uuid_generate_v4(), primary_key=True
     )
-    type: Mapped[str] = mapped_column(
-        ForeignKey("file_types.type")
-    )  # FIXME: Mapped[FileTypeEnum]
+    type: Mapped[FileTypeEnum] = mapped_column(ForeignKey("file_types.type"))
 
 
 class FileAncestorFileDescendant(TableBase):
