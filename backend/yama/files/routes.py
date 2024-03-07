@@ -14,11 +14,10 @@ router = APIRouter()
 @router.post("/files/{parent_path:path}")
 async def create_file(
     parent_path: FilePath,
-    /,
+    *,
     name: Annotated[FileName, Form()],
     type: Annotated[FileTypeEnum, Form()],
     content: Annotated[UploadFile | None, File()] = None,
-    *,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
 ) -> None:  # FIXME: Return type
@@ -28,7 +27,6 @@ async def create_file(
 @router.get("/files/{path:path}")
 async def read_file(
     path: FilePath,
-    /,
     *,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     current_user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
@@ -39,10 +37,9 @@ async def read_file(
 @router.put("/files/{path:path}")
 async def update_file(
     path: FilePath,
-    /,
+    *,
     name: Annotated[FileName, Form()],
     content: Annotated[UploadFile | None, File()] = None,
-    *,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
 ) -> None:  # FIXME: Return type
@@ -52,7 +49,6 @@ async def update_file(
 @router.delete("/files/{path:path}")
 async def delete_file(
     path: FilePath,
-    /,
     *,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
