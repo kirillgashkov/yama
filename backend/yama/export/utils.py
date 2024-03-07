@@ -5,6 +5,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
+# FIXME: Add security
 def export_pdf(
     file: Path,
     /,
@@ -29,7 +30,6 @@ def export_pdf(
 
     logger.info("Converting %s to %s", file, tex_file)
     with open(pandoc_out, "w") as out, open(pandoc_err, "w") as err:
-        # FIXME: Harden security
         subprocess.run(
             [
                 str(pandoc_executable),
@@ -55,7 +55,6 @@ def export_pdf(
 
     logger.info("Compiling %s to %s", tex_file, pdf_file)
     with open(latexmk_out, "w") as out, open(latexmk_err, "w") as err:
-        # FIXME: Harden security
         subprocess.run(
             [
                 str(latexmk_executable),
