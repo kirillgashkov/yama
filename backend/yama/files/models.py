@@ -8,7 +8,7 @@ from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
-from yama.files.constants import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 from yama.model.models import ModelBase
 
 

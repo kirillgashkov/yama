@@ -3,6 +3,9 @@ from uuid import UUID
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+MAX_FILE_NAME_LENGTH = 255
+MAX_FILE_PATH_LENGTH = 4095
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="yama_files_")
