@@ -41,8 +41,21 @@ def check_file_path(
     return path
 
 
+def normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
+    # POSIX allows treating a path beginning with two slashes in an
+    # implementation-defined manner which is respected by Python's pathlib by not
+    # collapsing the two slashes into one. We treat such paths as absolute paths.
+    if path.parts and path.parts[0] == "//":
+        return PurePosixPath("/", *path.parts[1:])
+    return path
+
+
 FileName: TypeAlias = Annotated[str, AfterValidator(check_file_name)]
-FilePath: TypeAlias = Annotated[PurePosixPath, WrapValidator(check_file_path)]
+FilePath: TypeAlias = Annotated[
+    PurePosixPath,
+    AfterValidator(normalize_file_path_root),
+    WrapValidator(check_file_path),
+]
 
 
 class FileTypeEnum(str, Enum):
