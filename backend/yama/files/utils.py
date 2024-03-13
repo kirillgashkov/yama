@@ -108,6 +108,11 @@ async def create_file(
         (await connection.execute(parent_ancestors_query)).mappings().all()
     )
 
+    insert_dot_query = insert(FileAncestorFileDescendant).values(
+        ancestor_id=id, descendant_id=id, descendant_path=".", depth=0
+    )
+    await connection.execute(insert_dot_query)
+
     for parent_ancestor in parent_ancestors:  # Includes the parent itself
         parent_ancestor_id = parent_ancestor["ancestor_id"]
         parent_descendant_path = parent_ancestor["descendant_path"]
@@ -116,7 +121,11 @@ async def create_file(
         insert_ancestor_query = insert(FileAncestorFileDescendant).values(
             ancestor_id=parent_ancestor_id,
             descendant_id=id,
-            descendant_path=parent_descendant_path + "/" + name,
+            descendant_path=(
+                name
+                if parent_descendant_path == "."
+                else parent_descendant_path + "/" + name
+            ),
             depth=parent_descendant_depth + 1,
         )
         await connection.execute(insert_ancestor_query)
