@@ -50,6 +50,7 @@ def normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
     return path
 
 
+# TODO: Handle `..` in file path
 FileName: TypeAlias = Annotated[str, AfterValidator(check_file_name)]
 FilePath: TypeAlias = Annotated[
     PurePosixPath,
@@ -98,4 +99,4 @@ class FileAncestorFileDescendant(TableBase):
         ForeignKey("files.id"), primary_key=True
     )
     descendant_path: Mapped[str]
-    depth: Mapped[int]
+    depth: Mapped[int]  # TODO: Rename to `descendant_depth`
