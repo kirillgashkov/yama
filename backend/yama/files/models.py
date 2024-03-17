@@ -1,15 +1,15 @@
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Annotated, Any, TypeAlias
+from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
+from fastapi import UploadFile
 from pydantic import AfterValidator, ValidatorFunctionWrapHandler, WrapValidator
 from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
 from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
-from yama.model.models import ModelBase
 
 
 def check_file_name(name: str) -> str:
@@ -64,16 +64,16 @@ class FileTypeEnum(str, Enum):
     DIRECTORY = "directory"
 
 
-class FileIn(ModelBase):
-    parent_path: FilePath
-    name: FileName
-    type: FileTypeEnum
+class RegularFileCreateTuple(NamedTuple):
+    type: Literal[FileTypeEnum.REGULAR]
+    content: UploadFile
 
 
-class FileOut(ModelBase):
-    path: FilePath
-    id: UUID
-    type: FileTypeEnum
+class DirectoryCreateTuple(NamedTuple):
+    type: Literal[FileTypeEnum.DIRECTORY]
+
+
+FileCreateTuple: TypeAlias = RegularFileCreateTuple | DirectoryCreateTuple
 
 
 class FileType(TableBase):

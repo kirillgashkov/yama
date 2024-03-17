@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import assert_never
 from uuid import UUID
 
 import aiofiles
@@ -7,11 +8,14 @@ from sqlalchemy import insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
+    DirectoryCreateTuple,
     File,
     FileAncestorFileDescendant,
+    FileCreateTuple,
     FileName,
     FilePath,
     FileTypeEnum,
+    RegularFileCreateTuple,
 )
 
 
@@ -49,15 +53,13 @@ class FilesNotADirectoryError(FilesFileError):
 
 # FIXME: Add security
 # FIXME: Ensure atomicity
-# TODO: Refactor `type` and `content` into "directory" and "regular, content" variants
 # TODO: Refactor queries into one query
 async def create_file(
     parent_path: FilePath,
     name: FileName,
     /,
     *,
-    type: FileTypeEnum,
-    content: UploadFile | None = None,
+    file_in: FileCreateTuple,
     user_id: UUID,
     working_dir_id: UUID,
     files_dir: Path,
@@ -86,7 +88,7 @@ async def create_file(
     ):
         raise FilesFileExistsError(path)
 
-    insert_file_query = insert(File).values(type=type).returning(File.id)
+    insert_file_query = insert(File).values(type=file_in.type).returning(File.id)
     id = (await connection.execute(insert_file_query)).scalar_one()
 
     ancestor_id, parent_descendant_path = _path_to_ancestor_id_and_descendant_path(
@@ -124,16 +126,18 @@ async def create_file(
         )
         await connection.execute(insert_ancestor_query)
 
-    if type == FileTypeEnum.REGULAR:
-        if content is None:
-            raise ValueError("Content must be provided for regular files")
-
-        await _write_file(
-            content,
-            _id_to_physical_path(id, files_dir=files_dir),
-            chunk_size=upload_chunk_size,
-            max_file_size=upload_max_file_size,
-        )
+    match file_in:
+        case RegularFileCreateTuple(content=content):
+            await _write_file(
+                content,
+                _id_to_physical_path(id, files_dir=files_dir),
+                chunk_size=upload_chunk_size,
+                max_file_size=upload_max_file_size,
+            )
+        case DirectoryCreateTuple():
+            ...
+        case _:
+            assert_never(file_in)
 
     await connection.commit()
 
