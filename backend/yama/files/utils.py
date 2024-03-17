@@ -99,13 +99,11 @@ async def create_file(
     )
     parent_id = (await connection.execute(parent_id_query)).scalar_one()
 
-    parent_ancestors_query = select(
-        FileAncestorFileDescendant.ancestor_id,
-        FileAncestorFileDescendant.descendant_path,
-        FileAncestorFileDescendant.depth,
-    ).where(FileAncestorFileDescendant.descendant_id == parent_id)
+    parent_ancestors_query = select(FileAncestorFileDescendant).where(
+        FileAncestorFileDescendant.descendant_id == parent_id
+    )
     parent_ancestors = (
-        (await connection.execute(parent_ancestors_query)).mappings().all()
+        (await connection.execute(parent_ancestors_query)).scalars().all()
     )
 
     insert_dot_query = insert(FileAncestorFileDescendant).values(
@@ -114,19 +112,15 @@ async def create_file(
     await connection.execute(insert_dot_query)
 
     for parent_ancestor in parent_ancestors:  # Includes the parent itself
-        parent_ancestor_id = parent_ancestor["ancestor_id"]
-        parent_descendant_path = parent_ancestor["descendant_path"]
-        parent_descendant_depth = parent_ancestor["depth"]
-
         insert_ancestor_query = insert(FileAncestorFileDescendant).values(
-            ancestor_id=parent_ancestor_id,
+            ancestor_id=parent_ancestor.ancestor_id,
             descendant_id=id,
             descendant_path=(
                 name
-                if parent_descendant_path == "."
-                else parent_descendant_path + "/" + name
+                if parent_ancestor.descendant_path == "."
+                else parent_ancestor.descendant_path + "/" + name
             ),
-            depth=parent_descendant_depth + 1,
+            depth=parent_ancestor.depth + 1,
         )
         await connection.execute(insert_ancestor_query)
 
