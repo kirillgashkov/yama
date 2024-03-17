@@ -72,7 +72,7 @@ async def create_file(
 
     if not await file_exists(
         parent_path,
-        type=FileTypeEnum.DIRECTORY,
+        type_=FileTypeEnum.DIRECTORY,
         user_id=user_id,
         working_dir_id=working_dir_id,
         root_dir_id=root_dir_id,
@@ -166,7 +166,7 @@ async def file_exists(
     path: FilePath,
     /,
     *,
-    type: FileTypeEnum | None = None,
+    type_: FileTypeEnum | None = None,
     user_id: UUID,
     working_dir_id: UUID,
     root_dir_id: UUID,
@@ -182,10 +182,10 @@ async def file_exists(
         .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
         .where(FileAncestorFileDescendant.descendant_path == descendant_path)
     )
-    if type is not None:
+    if type_ is not None:
         file_exists_subquery_base = file_exists_subquery_base.join(
             File, FileAncestorFileDescendant.descendant_id == File.id
-        ).where(File.type == type)
+        ).where(File.type == type_)
     file_exists_subquery = file_exists_subquery_base.exists()
 
     query = select(file_exists_subquery)
