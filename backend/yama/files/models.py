@@ -1,10 +1,15 @@
 from enum import Enum
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
 from fastapi import UploadFile
-from pydantic import AfterValidator, ValidatorFunctionWrapHandler, WrapValidator
+from pydantic import (
+    AfterValidator,
+    TypeAdapter,
+    ValidatorFunctionWrapHandler,
+    WrapValidator,
+)
 from sqlalchemy import ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -50,13 +55,16 @@ def normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
     return path
 
 
-# TODO: Handle `..` in file path
 FileName: TypeAlias = Annotated[str, AfterValidator(check_file_name)]
+FileNameAdapter: TypeAdapter[FileName] = TypeAdapter(FileName)  # pyright: ignore [reportCallIssue, reportAssignmentType]
+
+# TODO: Handle `..` in file path
 FilePath: TypeAlias = Annotated[
     PurePosixPath,
     AfterValidator(normalize_file_path_root),
     WrapValidator(check_file_path),
 ]
+FilePathAdapter: TypeAdapter[FilePath] = TypeAdapter(FilePath)  # pyright: ignore [reportCallIssue, reportAssignmentType]
 
 
 class FileTypeEnum(str, Enum):
@@ -74,6 +82,27 @@ class DirectoryCreateTuple(NamedTuple):
 
 
 FileCreateTuple: TypeAlias = RegularFileCreateTuple | DirectoryCreateTuple
+
+
+class RegularFileReadTuple(NamedTuple):
+    id: UUID
+    type: Literal[FileTypeEnum.REGULAR]
+    content_physical_path: Path
+
+
+class DirectoryFileReadTuple(NamedTuple):
+    id: UUID
+    type: FileTypeEnum
+    name: FileName
+
+
+class DirectoryReadTuple(NamedTuple):
+    id: UUID
+    type: Literal[FileTypeEnum.DIRECTORY]
+    content: list[DirectoryFileReadTuple]
+
+
+FileReadTuple: TypeAlias = RegularFileReadTuple | DirectoryReadTuple
 
 
 class FileType(TableBase):

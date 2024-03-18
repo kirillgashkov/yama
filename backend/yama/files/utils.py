@@ -9,13 +9,19 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
     DirectoryCreateTuple,
+    DirectoryFileReadTuple,
+    DirectoryReadTuple,
     File,
     FileAncestorFileDescendant,
     FileCreateTuple,
     FileName,
+    FileNameAdapter,
     FilePath,
+    FilePathAdapter,
+    FileReadTuple,
     FileTypeEnum,
     RegularFileCreateTuple,
+    RegularFileReadTuple,
 )
 
 
@@ -144,6 +150,82 @@ async def create_file(
     return id
 
 
+# FIXME: Add security
+# FIXME: Ensure atomicity
+# TODO: Refactor queries into one query
+async def get_file(
+    path: FilePath,
+    /,
+    *,
+    type_: FileTypeEnum | None = None,
+    user_id: UUID,
+    working_dir_id: UUID,
+    files_dir: Path,
+    root_dir_id: UUID,
+    connection: AsyncConnection,
+) -> FileReadTuple:
+    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
+        path, working_dir_id=working_dir_id, root_dir_id=root_dir_id
+    )
+
+    file_query = (
+        select(File)
+        .select_from(FileAncestorFileDescendant)
+        .join(File, FileAncestorFileDescendant.descendant_id == File.id)
+        .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
+        .where(FileAncestorFileDescendant.descendant_path == descendant_path)
+    )
+    file = (await connection.execute(file_query)).scalar_one_or_none()
+    if file is None:
+        raise FilesFileNotFoundError(path)
+
+    match type_:
+        case None:
+            ...
+        case FileTypeEnum.DIRECTORY:
+            if file.type != FileTypeEnum.DIRECTORY:
+                raise FilesNotADirectoryError(path)
+        case FileTypeEnum.REGULAR:
+            if file.type != FileTypeEnum.REGULAR:
+                raise FilesIsADirectoryError(path)
+        case _:
+            assert_never(type_)
+
+    match file.type:
+        case FileTypeEnum.DIRECTORY:
+            directory_files_query = (
+                select(File, FileAncestorFileDescendant.descendant_path)
+                .select_from(FileAncestorFileDescendant)
+                .join(File, FileAncestorFileDescendant.descendant_id == File.id)
+                .where(FileAncestorFileDescendant.ancestor_id == file.id)
+                .where(FileAncestorFileDescendant.depth == 1)
+            )
+            directory_files_rows = (
+                await connection.execute(directory_files_query)
+            ).tuples()
+            directory_files = [
+                DirectoryFileReadTuple(
+                    id=entry_file.id,
+                    type=entry_file.type,
+                    name=_path_to_file_name(entry_path),
+                )
+                for entry_file, entry_path in directory_files_rows
+            ]
+            return DirectoryReadTuple(
+                id=file.id, type=file.type, content=directory_files
+            )
+        case FileTypeEnum.REGULAR:
+            return RegularFileReadTuple(
+                id=file.id,
+                type=file.type,
+                content_physical_path=_id_to_physical_path(
+                    file.id, files_dir=files_dir
+                ),
+            )
+        case _:
+            assert_never(file.type)
+
+
 def _path_to_ancestor_id_and_descendant_path(
     path: FilePath,
     /,
@@ -216,3 +298,9 @@ async def _write_file(
 
 def _id_to_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
     return files_dir / id.hex
+
+
+def _path_to_file_name(path: str) -> FileName:
+    file_path = FilePathAdapter.validate_python(path)
+    file_name = FileNameAdapter.validate_python(file_path.name)
+    return file_name
