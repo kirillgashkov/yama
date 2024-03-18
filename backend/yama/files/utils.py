@@ -61,8 +61,7 @@ class FilesNotADirectoryError(FilesFileError):
 # FIXME: Ensure atomicity
 # TODO: Refactor queries into one query
 async def create_file(
-    parent_path: FilePath,
-    name: FileName,
+    path: FilePath,
     /,
     *,
     file_in: FileCreateTuple,
@@ -74,17 +73,15 @@ async def create_file(
     upload_max_file_size: int,
     connection: AsyncConnection,
 ) -> UUID:
-    path = parent_path / name
-
     if not await file_exists(
-        parent_path,
+        path.parent,
         type_=FileTypeEnum.DIRECTORY,
         user_id=user_id,
         working_dir_id=working_dir_id,
         root_dir_id=root_dir_id,
         connection=connection,
     ):
-        raise FilesFileNotFoundError(parent_path)
+        raise FilesFileNotFoundError(path.parent)
     if await file_exists(
         path,
         user_id=user_id,
@@ -98,7 +95,7 @@ async def create_file(
     id = (await connection.execute(insert_file_query)).scalar_one()
 
     ancestor_id, parent_descendant_path = _path_to_ancestor_id_and_descendant_path(
-        parent_path, working_dir_id=working_dir_id, root_dir_id=root_dir_id
+        path.parent, working_dir_id=working_dir_id, root_dir_id=root_dir_id
     )
     parent_id_query = (
         select(FileAncestorFileDescendant.descendant_id)
@@ -124,9 +121,9 @@ async def create_file(
             ancestor_id=parent_ancestor.ancestor_id,
             descendant_id=id,
             descendant_path=(
-                name
+                path.name
                 if parent_ancestor.descendant_path == "."
-                else parent_ancestor.descendant_path + "/" + name
+                else parent_ancestor.descendant_path + "/" + path.name
             ),
             depth=parent_ancestor.depth + 1,
         )
