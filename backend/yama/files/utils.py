@@ -5,7 +5,7 @@ from uuid import UUID
 
 import aiofiles
 from fastapi import UploadFile
-from sqlalchemy import delete, insert, select
+from sqlalchemy import case, delete, insert, literal, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
@@ -59,8 +59,6 @@ class FilesNotADirectoryError(FilesFileError):
 
 
 # FIXME: Add security
-# FIXME: Ensure atomicity
-# TODO: Refactor queries into one query
 async def create_file(
     path: FilePath,
     /,
@@ -92,49 +90,54 @@ async def create_file(
     ):
         raise FilesFileExistsError(path)
 
-    insert_file_query = insert(File).values(type=file_in.type).returning(File.id)
-    id = (await connection.execute(insert_file_query)).scalar_one()
+    insert_file_query = insert(File).values(type=file_in.type).returning(File)
+    file_row = (await connection.execute(insert_file_query)).mappings().one()
+    file = File(**file_row)
 
-    ancestor_id, parent_descendant_path = _path_to_ancestor_id_and_descendant_path(
+    (
+        parent_ancestor_id,
+        parent_descendant_path,
+    ) = _path_to_ancestor_id_and_descendant_path(
         path.parent, working_dir_id=working_dir_id, root_dir_id=root_dir_id
     )
     parent_id_query = (
         select(FileAncestorFileDescendant.descendant_id)
-        .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
+        .where(FileAncestorFileDescendant.ancestor_id == parent_ancestor_id)
         .where(FileAncestorFileDescendant.descendant_path == parent_descendant_path)
     )
     parent_id = (await connection.execute(parent_id_query)).scalar_one()
 
-    parent_ancestors_query = select(FileAncestorFileDescendant).where(
-        FileAncestorFileDescendant.descendant_id == parent_id
-    )
-    parent_ancestors = (
-        (await connection.execute(parent_ancestors_query)).scalars().all()
-    )
-
     insert_dot_query = insert(FileAncestorFileDescendant).values(
-        ancestor_id=id, descendant_id=id, descendant_path=".", descendant_depth=0
+        ancestor_id=file.id,
+        descendant_id=file.id,
+        descendant_path=".",
+        descendant_depth=0,
     )
     await connection.execute(insert_dot_query)
 
-    for parent_ancestor in parent_ancestors:  # Includes the parent itself
-        insert_ancestor_query = insert(FileAncestorFileDescendant).values(
-            ancestor_id=parent_ancestor.ancestor_id,
-            descendant_id=id,
-            descendant_path=(
-                path.name
-                if parent_ancestor.descendant_path == "."
-                else parent_ancestor.descendant_path + "/" + path.name
-            ),
-            descendant_depth=parent_ancestor.descendant_depth + 1,
-        )
-        await connection.execute(insert_ancestor_query)
+    insert_ancestors_query = insert(FileAncestorFileDescendant).from_select(
+        ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
+        select(
+            FileAncestorFileDescendant.ancestor_id,
+            literal(file.id).label("descendant_id"),
+            case(
+                (FileAncestorFileDescendant.descendant_path == ".", literal(path.name)),
+                else_=(
+                    FileAncestorFileDescendant.descendant_path
+                    + "/"
+                    + literal(path.name)
+                ),
+            ).label("descendant_path"),
+            (FileAncestorFileDescendant.descendant_depth + 1).label("descendant_depth"),
+        ).where(FileAncestorFileDescendant.descendant_id == parent_id),
+    )
+    await connection.execute(insert_ancestors_query)
 
     match file_in:
         case RegularFileCreateTuple(content=content):
             await _write_file(
                 content,
-                _id_to_physical_path(id, files_dir=files_dir),
+                _id_to_physical_path(file.id, files_dir=files_dir),
                 chunk_size=upload_chunk_size,
                 max_file_size=upload_max_file_size,
             )
@@ -145,7 +148,7 @@ async def create_file(
 
     await connection.commit()
 
-    return id
+    return file.id
 
 
 # FIXME: Add security
