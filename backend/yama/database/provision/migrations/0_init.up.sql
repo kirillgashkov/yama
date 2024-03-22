@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS file_ancestors_file_descendants (
     ancestor_id uuid NOT NULL,
     descendant_id uuid NOT NULL,
     descendant_path varchar NOT NULL,
-    depth integer NOT NULL,
+    descendant_depth integer NOT NULL,
     PRIMARY KEY (ancestor_id, descendant_id),
     FOREIGN KEY (ancestor_id) REFERENCES files (id),
     FOREIGN KEY (descendant_id) REFERENCES files (id)

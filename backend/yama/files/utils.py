@@ -113,7 +113,7 @@ async def create_file(
     )
 
     insert_dot_query = insert(FileAncestorFileDescendant).values(
-        ancestor_id=id, descendant_id=id, descendant_path=".", depth=0
+        ancestor_id=id, descendant_id=id, descendant_path=".", descendant_depth=0
     )
     await connection.execute(insert_dot_query)
 
@@ -126,7 +126,7 @@ async def create_file(
                 if parent_ancestor.descendant_path == "."
                 else parent_ancestor.descendant_path + "/" + path.name
             ),
-            depth=parent_ancestor.depth + 1,
+            descendant_depth=parent_ancestor.descendant_depth + 1,
         )
         await connection.execute(insert_ancestor_query)
 
@@ -196,7 +196,7 @@ async def get_file(
                 .select_from(FileAncestorFileDescendant)
                 .join(File, FileAncestorFileDescendant.descendant_id == File.id)
                 .where(FileAncestorFileDescendant.ancestor_id == file.id)
-                .where(FileAncestorFileDescendant.depth == 1)
+                .where(FileAncestorFileDescendant.descendant_depth == 1)
             )
             directory_files_rows = (
                 await connection.execute(directory_files_query)

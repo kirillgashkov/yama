@@ -128,4 +128,4 @@ class FileAncestorFileDescendant(TableBase):
         ForeignKey("files.id"), primary_key=True
     )
     descendant_path: Mapped[str]
-    depth: Mapped[int]  # TODO: Rename to `descendant_depth`
+    descendant_depth: Mapped[int]
