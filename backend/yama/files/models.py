@@ -73,12 +73,12 @@ class FileTypeEnum(str, Enum):
 
 
 class RegularFileCreateTuple(NamedTuple):
-    type: Literal[FileTypeEnum.REGULAR]
     content: UploadFile
+    type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
 
 
 class DirectoryCreateTuple(NamedTuple):
-    type: Literal[FileTypeEnum.DIRECTORY]
+    type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
 
 
 FileCreateTuple: TypeAlias = RegularFileCreateTuple | DirectoryCreateTuple
@@ -86,8 +86,8 @@ FileCreateTuple: TypeAlias = RegularFileCreateTuple | DirectoryCreateTuple
 
 class RegularFileReadTuple(NamedTuple):
     id: UUID
-    type: Literal[FileTypeEnum.REGULAR]
     content_physical_path: Path
+    type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
 
 
 class DirectoryFileReadTuple(NamedTuple):
@@ -98,8 +98,8 @@ class DirectoryFileReadTuple(NamedTuple):
 
 class DirectoryReadTuple(NamedTuple):
     id: UUID
-    type: Literal[FileTypeEnum.DIRECTORY]
     content: list[DirectoryFileReadTuple]
+    type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
 
 
 FileReadTuple: TypeAlias = RegularFileReadTuple | DirectoryReadTuple
