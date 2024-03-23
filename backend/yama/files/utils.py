@@ -5,7 +5,7 @@ from uuid import UUID
 
 import aiofiles
 from fastapi import UploadFile
-from sqlalchemy import case, delete, insert, literal, select
+from sqlalchemy import and_, case, delete, insert, literal, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
@@ -213,6 +213,7 @@ async def get_file(
             assert_never(file.type)
 
 
+# TODO: Require at least one modification (`new_path`, `file_in` with non-`None` values)
 # FIXME: Add security
 async def update_file(
     path: FilePath,
@@ -226,7 +227,99 @@ async def update_file(
     root_dir_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
-    ...
+    file = await _get_file_by_path(
+        path,
+        working_dir_id=working_dir_id,
+        root_dir_id=root_dir_id,
+        connection=connection,
+    )
+
+    if new_path is not None:
+        if not await file_exists(
+            new_path.parent,
+            type_=FileTypeEnum.DIRECTORY,
+            user_id=user_id,
+            working_dir_id=working_dir_id,
+            root_dir_id=root_dir_id,
+            connection=connection,
+        ):
+            raise FilesFileNotFoundError(new_path.parent)
+        if await file_exists(
+            new_path,
+            user_id=user_id,
+            working_dir_id=working_dir_id,
+            root_dir_id=root_dir_id,
+            connection=connection,
+        ):
+            raise FilesFileExistsError(new_path)
+
+        new_parent = await _get_file_by_path(
+            new_path.parent,
+            working_dir_id=working_dir_id,
+            root_dir_id=root_dir_id,
+            connection=connection,
+        )
+
+        # fmt: off
+        select_descendants_cte = (  # Includes the relationship of the file itself
+            select(
+                FileAncestorFileDescendant.descendant_id,
+                FileAncestorFileDescendant.descendant_path,
+                FileAncestorFileDescendant.descendant_depth,
+            )
+            .where(FileAncestorFileDescendant.ancestor_id == file.id)
+            .cte()
+        )
+        delete_old_ancestors_cte = (
+            delete(FileAncestorFileDescendant)
+            .where(FileAncestorFileDescendant.descendant_id == select_descendants_cte.c.descendant_id)
+            .where(FileAncestorFileDescendant.descendant_depth > select_descendants_cte.c.descendant_depth)
+            .cte()
+        )
+        insert_new_ancestors_query = (
+            insert(FileAncestorFileDescendant)
+            .from_select(
+                ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
+                (
+                    select(
+                        FileAncestorFileDescendant.ancestor_id,
+                        select_descendants_cte.c.descendant_id,
+                        (
+                            case(
+                                (
+                                    and_(FileAncestorFileDescendant.descendant_path == ".", select_descendants_cte.c.descendant_path == "."),
+                                    literal(new_path.name),
+                                ),
+                                (
+                                    and_(FileAncestorFileDescendant.descendant_path == ".", select_descendants_cte.c.descendant_path != "."),
+                                    literal(new_path.name) + "/" + select_descendants_cte.c.descendant_path,
+                                ),
+                                (
+                                    and_(FileAncestorFileDescendant.descendant_path != ".", select_descendants_cte.c.descendant_path == "."),
+                                    FileAncestorFileDescendant.descendant_path + "/" + literal(new_path.name),
+                                ),
+                                else_=(
+                                    FileAncestorFileDescendant.descendant_path + "/" + literal(new_path.name) + "/" + select_descendants_cte.c.descendant_path
+                                ),
+                            )
+                            .label("descendant_path")
+                        ),
+                        (FileAncestorFileDescendant.descendant_depth + select_descendants_cte.c.descendant_depth + 1).label("descendant_depth"),
+                    )
+                    .select_from(FileAncestorFileDescendant, select_descendants_cte)
+                    .where(FileAncestorFileDescendant.descendant_id == new_parent.id)
+                )
+            )
+            .add_cte(select_descendants_cte)
+            .add_cte(delete_old_ancestors_cte)
+        )
+        await connection.execute(insert_new_ancestors_query)
+        # fmt: on
+
+    if file_in is not None:
+        ...
+
+    return file.id
 
 
 # FIXME: Add security
@@ -265,7 +358,10 @@ async def delete_file(
     )
     delete_ancestor_relationships_cte = (  # Includes the relationships of the descendants
         delete(FileAncestorFileDescendant)
-        .where(FileAncestorFileDescendant.descendant_id == delete_descendant_relationships_cte.c.descendant_id)
+        .where(
+            FileAncestorFileDescendant.descendant_id
+            == delete_descendant_relationships_cte.c.descendant_id
+        )
         .cte()
     )
     delete_files_cte = (
