@@ -219,130 +219,14 @@ async def update_file(
     new_path: FilePath | None = None,
     /,
     *,
-    new_file_in: FileUpdateTuple | None = None,
+    file_in: FileUpdateTuple | None = None,
     user_id: UUID,
     working_dir_id: UUID,
     files_dir: Path,
     root_dir_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
-    file = await _get_file_by_path(
-        path,
-        working_dir_id=working_dir_id,
-        root_dir_id=root_dir_id,
-        connection=connection,
-    )
-
-    if new_path is not None:
-        if not await file_exists(
-            new_path.parent,
-            type_=FileTypeEnum.DIRECTORY,
-            user_id=user_id,
-            working_dir_id=working_dir_id,
-            root_dir_id=root_dir_id,
-            connection=connection,
-        ):
-            raise FilesFileNotFoundError(new_path.parent)
-        if await file_exists(
-            new_path,
-            user_id=user_id,
-            working_dir_id=working_dir_id,
-            root_dir_id=root_dir_id,
-            connection=connection,
-        ):
-            raise FilesFileExistsError(new_path)
-
-        descendants_cte = (  # Includes the file itself
-            select(
-                FileAncestorFileDescendant.descendant_id,
-                FileAncestorFileDescendant.descendant_path,
-                FileAncestorFileDescendant.descendant_depth,
-            )
-            .where(FileAncestorFileDescendant.ancestor_id == file.id)
-            .cte()
-        )
-        delete_ancestors = (
-            delete(FileAncestorFileDescendant)
-            .where(
-                FileAncestorFileDescendant.descendant_id
-                == descendants_cte.c.descendant_id
-            )
-            .where(
-                FileAncestorFileDescendant.descendant_depth
-                > descendants_cte.c.descendant_depth
-            )
-        )
-        ancestors_to_insert_cte = ...
-        insert_ancestors = ...
-
-    # ...
-
-    if new_file_in is not None:
-        match new_file_in.type:
-            case FileTypeEnum.DIRECTORY:
-                if file.type != FileTypeEnum.DIRECTORY:
-                    raise FilesNotADirectoryError(path)
-            case FileTypeEnum.REGULAR:
-                if file.type != FileTypeEnum.REGULAR:
-                    raise FilesIsADirectoryError(path)
-            case _:
-                assert_never(new_file_in.type)
-
-    # ...
-
-    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, working_dir_id=working_dir_id, root_dir_id=root_dir_id
-    )
-
-    file_query = (
-        select(File)
-        .select_from(FileAncestorFileDescendant)
-        .join(File, FileAncestorFileDescendant.descendant_id == File.id)
-        .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
-        .where(FileAncestorFileDescendant.descendant_path == descendant_path)
-    )
-    file = (await connection.execute(file_query)).scalar_one_or_none()
-    if file is None:
-        raise FilesFileNotFoundError(path)
-
-    match type_:
-        case None:
-            ...
-        case FileTypeEnum.DIRECTORY:
-            if file.type != FileTypeEnum.DIRECTORY:
-                raise FilesNotADirectoryError(path)
-        case FileTypeEnum.REGULAR:
-            if file.type != FileTypeEnum.REGULAR:
-                raise FilesIsADirectoryError(path)
-        case _:
-            assert_never(type_)
-
-    delete_descendants_cte = (  # Includes the file itself
-        delete(FileAncestorFileDescendant)
-        .where(FileAncestorFileDescendant.ancestor_id == file.id)
-        .returning(FileAncestorFileDescendant.descendant_id)
-        .cte()
-    )
-    delete_descendant_files_cte = (
-        delete(File)
-        .where(File.id == delete_descendants_cte.c.descendant_id)
-        .returning(File.id, File.type)
-        .cte()
-    )
-    select_regular_descendant_ids_query = select(
-        delete_descendant_files_cte.c.id
-    ).where(delete_descendant_files_cte.c.type == FileTypeEnum.REGULAR)
-    regular_descendant_ids: Sequence[UUID] = (  # HACK: Implicit type cast
-        (await connection.execute(select_regular_descendant_ids_query)).scalars().all()
-    )
-
-    await connection.commit()
-
-    for regular_descendant_id in regular_descendant_ids:
-        physical_path = _id_to_physical_path(regular_descendant_id, files_dir=files_dir)
-        physical_path.unlink(missing_ok=True)  # TODO: Log
-
-    return file.id
+    ...
 
 
 # FIXME: Add security
