@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
     DirectoryCreateTuple,
-    DirectoryFileReadTuple,
+    DirectoryEntryReadTuple,
     DirectoryReadTuple,
     File,
     FileAncestorFileDescendant,
@@ -152,8 +152,6 @@ async def create_file(
 
 
 # FIXME: Add security
-# FIXME: Ensure atomicity
-# TODO: Refactor queries into one query
 async def get_file(
     path: FilePath,
     /,
@@ -168,7 +166,6 @@ async def get_file(
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
         path, working_dir_id=working_dir_id, root_dir_id=root_dir_id
     )
-
     file_query = (
         select(File)
         .select_from(FileAncestorFileDescendant)
@@ -176,9 +173,10 @@ async def get_file(
         .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
         .where(FileAncestorFileDescendant.descendant_path == descendant_path)
     )
-    file = (await connection.execute(file_query)).scalar_one_or_none()
-    if file is None:
+    file_row = (await connection.execute(file_query)).mappings().one_or_none()
+    if file_row is None:
         raise FilesFileNotFoundError(path)
+    file = File(**file_row)
 
     match type_:
         case None:
@@ -194,26 +192,24 @@ async def get_file(
 
     match file.type:
         case FileTypeEnum.DIRECTORY:
-            directory_files_query = (
-                select(File, FileAncestorFileDescendant.descendant_path)
+            directory_entries_query = (
+                select(File.id, File.type, FileAncestorFileDescendant.descendant_path)
                 .select_from(FileAncestorFileDescendant)
                 .join(File, FileAncestorFileDescendant.descendant_id == File.id)
                 .where(FileAncestorFileDescendant.ancestor_id == file.id)
                 .where(FileAncestorFileDescendant.descendant_depth == 1)
             )
-            directory_files_rows = (
-                await connection.execute(directory_files_query)
-            ).tuples()
-            directory_files = [
-                DirectoryFileReadTuple(
-                    id=entry_file.id,
-                    type=entry_file.type,
-                    name=_path_to_file_name(entry_path),
+            directory_entries_rows = (
+                (await connection.execute(directory_entries_query)).mappings().all()
+            )
+            directory_entries = [
+                DirectoryEntryReadTuple(
+                    id=row["id"], type=row["type"], name=row["descendant_path"]
                 )
-                for entry_file, entry_path in directory_files_rows
+                for row in directory_entries_rows
             ]
             return DirectoryReadTuple(
-                id=file.id, type=file.type, content=directory_files
+                id=file.id, type=file.type, content=directory_entries
             )
         case FileTypeEnum.REGULAR:
             return RegularFileReadTuple(

@@ -90,7 +90,7 @@ class RegularFileReadTuple(NamedTuple):
     type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
 
 
-class DirectoryFileReadTuple(NamedTuple):
+class DirectoryEntryReadTuple(NamedTuple):
     id: UUID
     type: FileTypeEnum
     name: FileName
@@ -98,7 +98,7 @@ class DirectoryFileReadTuple(NamedTuple):
 
 class DirectoryReadTuple(NamedTuple):
     id: UUID
-    content: list[DirectoryFileReadTuple]
+    content: list[DirectoryEntryReadTuple]
     type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
 
 
