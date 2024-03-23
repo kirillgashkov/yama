@@ -105,6 +105,18 @@ class DirectoryReadTuple(NamedTuple):
 FileReadTuple: TypeAlias = RegularFileReadTuple | DirectoryReadTuple
 
 
+class RegularFileUpdateTuple(NamedTuple):
+    type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
+    content: UploadFile | None = None
+
+
+class DirectoryUpdateTuple(NamedTuple):
+    type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
+
+
+FileUpdateTuple: TypeAlias = RegularFileUpdateTuple | DirectoryUpdateTuple
+
+
 class FileType(TableBase):
     __tablename__ = "file_types"
 
