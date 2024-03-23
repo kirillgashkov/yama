@@ -171,17 +171,14 @@ async def get_file(
         connection=connection,
     )
 
-    match type_:
-        case None:
-            ...
-        case FileTypeEnum.DIRECTORY:
-            if file.type != FileTypeEnum.DIRECTORY:
+    if type_ is not None and type_ != file.type:
+        match type_:
+            case FileTypeEnum.DIRECTORY:
                 raise FilesNotADirectoryError(path)
-        case FileTypeEnum.REGULAR:
-            if file.type != FileTypeEnum.REGULAR:
+            case FileTypeEnum.REGULAR:
                 raise FilesIsADirectoryError(path)
-        case _:
-            assert_never(type_)
+            case _:
+                assert_never(type_)
 
     match file.type:
         case FileTypeEnum.DIRECTORY:
