@@ -5,7 +5,8 @@ from uuid import UUID
 
 import aiofiles
 from fastapi import UploadFile
-from sqlalchemy import and_, case, delete, insert, literal, select
+from sqlalchemy import and_, case, delete, literal, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
@@ -214,6 +215,8 @@ async def get_file(
 
 
 # TODO: Require at least one modification (`new_path`, `file_in` with non-`None` values)
+# TODO: Add `await connection.commit()`
+# TODO: Consider partially done updates
 # FIXME: Add security
 async def update_file(
     path: FilePath,
@@ -270,47 +273,82 @@ async def update_file(
             .where(FileAncestorFileDescendant.ancestor_id == file.id)
             .cte()
         )
-        delete_old_ancestors_cte = (
-            delete(FileAncestorFileDescendant)
+        select_old_ancestors_cte = (
+            select(
+                FileAncestorFileDescendant.ancestor_id,
+                FileAncestorFileDescendant.descendant_id,
+            )
+            .select_from(FileAncestorFileDescendant, select_descendants_cte)
             .where(FileAncestorFileDescendant.descendant_id == select_descendants_cte.c.descendant_id)
             .where(FileAncestorFileDescendant.descendant_depth > select_descendants_cte.c.descendant_depth)
+            .with_for_update(nowait=True)  # TODO: Handle exception
             .cte()
         )
-        insert_new_ancestors_query = (
+        select_new_ancestors_cte = (
+            select(
+                FileAncestorFileDescendant.ancestor_id,
+                select_descendants_cte.c.descendant_id,
+                (
+                    case(
+                        (
+                            and_(FileAncestorFileDescendant.descendant_path == ".", select_descendants_cte.c.descendant_path == "."),
+                            literal(new_path.name),
+                        ),
+                        (
+                            and_(FileAncestorFileDescendant.descendant_path == ".", select_descendants_cte.c.descendant_path != "."),
+                            literal(new_path.name) + "/" + select_descendants_cte.c.descendant_path,
+                        ),
+                        (
+                            and_(FileAncestorFileDescendant.descendant_path != ".", select_descendants_cte.c.descendant_path == "."),
+                            FileAncestorFileDescendant.descendant_path + "/" + literal(new_path.name),
+                        ),
+                        else_=(
+                            FileAncestorFileDescendant.descendant_path + "/" + literal(new_path.name) + "/" + select_descendants_cte.c.descendant_path
+                        ),
+                    )
+                    .label("descendant_path")
+                ),
+                (FileAncestorFileDescendant.descendant_depth + select_descendants_cte.c.descendant_depth + 1).label("descendant_depth"),
+            )
+            .select_from(FileAncestorFileDescendant, select_descendants_cte)
+            .where(FileAncestorFileDescendant.descendant_id == new_parent.id)
+            .cte()
+        )
+        delete_old_ancestors_cte = (
+            delete(FileAncestorFileDescendant)
+            .where(FileAncestorFileDescendant.ancestor_id == select_old_ancestors_cte.c.descendant_id)
+            .where(FileAncestorFileDescendant.descendant_id == select_old_ancestors_cte.c.descendant_id)
+            .where(FileAncestorFileDescendant.ancestor_id != select_new_ancestors_cte.c.descendant_id)
+            .where(FileAncestorFileDescendant.descendant_id != select_new_ancestors_cte.c.descendant_id)
+            .cte()
+        )
+        insert_new_ancestors_base = (
             insert(FileAncestorFileDescendant)
             .from_select(
                 ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
-                (
-                    select(
-                        FileAncestorFileDescendant.ancestor_id,
-                        select_descendants_cte.c.descendant_id,
-                        (
-                            case(
-                                (
-                                    and_(FileAncestorFileDescendant.descendant_path == ".", select_descendants_cte.c.descendant_path == "."),
-                                    literal(new_path.name),
-                                ),
-                                (
-                                    and_(FileAncestorFileDescendant.descendant_path == ".", select_descendants_cte.c.descendant_path != "."),
-                                    literal(new_path.name) + "/" + select_descendants_cte.c.descendant_path,
-                                ),
-                                (
-                                    and_(FileAncestorFileDescendant.descendant_path != ".", select_descendants_cte.c.descendant_path == "."),
-                                    FileAncestorFileDescendant.descendant_path + "/" + literal(new_path.name),
-                                ),
-                                else_=(
-                                    FileAncestorFileDescendant.descendant_path + "/" + literal(new_path.name) + "/" + select_descendants_cte.c.descendant_path
-                                ),
-                            )
-                            .label("descendant_path")
-                        ),
-                        (FileAncestorFileDescendant.descendant_depth + select_descendants_cte.c.descendant_depth + 1).label("descendant_depth"),
-                    )
-                    .select_from(FileAncestorFileDescendant, select_descendants_cte)
-                    .where(FileAncestorFileDescendant.descendant_id == new_parent.id)
-                )
+                select(
+                    select_new_ancestors_cte.c.ancestor_id,
+                    select_new_ancestors_cte.c.descendant_id,
+                    select_new_ancestors_cte.c.descendant_path,
+                    select_new_ancestors_cte.c.descendant_depth,
+                ),
+            )
+        )
+        insert_new_ancestors_query = (
+            insert_new_ancestors_base
+            .on_conflict_do_update(
+                index_elements=[
+                    select_new_ancestors_cte.c.ancestor_id,
+                    select_new_ancestors_cte.c.descendant_id,
+                ],
+                set_={
+                    "descendant_path": insert_new_ancestors_base.excluded.descendant_path,
+                    "descendant_depth": insert_new_ancestors_base.excluded.descendant_depth,
+                },
             )
             .add_cte(select_descendants_cte)
+            .add_cte(select_old_ancestors_cte)
+            .add_cte(select_new_ancestors_cte)
             .add_cte(delete_old_ancestors_cte)
         )
         await connection.execute(insert_new_ancestors_query)
