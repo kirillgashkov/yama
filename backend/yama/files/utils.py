@@ -141,8 +141,9 @@ async def create_file(
         case RegularFileCreateTuple(content=content):
             await _write_file(
                 content,
-                _id_to_physical_path(file.id, files_dir=files_dir),
+                file.id,
                 chunk_size=upload_chunk_size,
+                files_dir=files_dir,
                 max_file_size=upload_max_file_size,
             )
         case DirectoryCreateTuple():
@@ -375,8 +376,9 @@ async def update_file(
                 if content is not None:
                     await _write_file(
                         content,
-                        _id_to_physical_path(file.id, files_dir=files_dir),
+                        file.id,
                         chunk_size=upload_chunk_size,
+                        files_dir=files_dir,
                         max_file_size=upload_max_file_size,
                     )
             case DirectoryUpdateTuple():
@@ -532,28 +534,38 @@ async def file_exists(
 
 async def _write_file(
     upload_file: UploadFile,
-    physical_path: Path,
+    id: UUID,
     /,
     *,
     chunk_size: int,
+    files_dir: Path,
     max_file_size: int,
 ) -> int:
-    file_size = 0
+    incomplete_path = _id_to_physical_path(id, files_dir=files_dir)
+    complete_path = _id_to_incomplete_physical_path(id, files_dir=files_dir)
 
-    async with aiofiles.open(physical_path, "wb") as file_out:
+    file_size = 0
+    async with aiofiles.open(incomplete_path, "wb") as f:
         while chunk := await upload_file.read(chunk_size):
             file_size += len(chunk)
 
             if file_size > max_file_size:
+                incomplete_path.unlink(missing_ok=True)
                 raise UploadFileTooLargeError()
 
-            await file_out.write(chunk)
+            await f.write(chunk)
+
+    incomplete_path.rename(complete_path)
 
     return file_size
 
 
 def _id_to_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
     return files_dir / id.hex
+
+
+def _id_to_incomplete_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
+    return files_dir / (id.hex + ".incomplete")
 
 
 def _path_to_file_name(path: str) -> FileName:
