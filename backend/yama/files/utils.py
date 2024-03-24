@@ -17,10 +17,7 @@ from yama.files.models import (
     File,
     FileAncestorFileDescendant,
     FileCreateTuple,
-    FileName,
-    FileNameAdapter,
     FilePath,
-    FilePathAdapter,
     FileReadTuple,
     FileTypeEnum,
     FileUpdateTuple,
@@ -541,8 +538,8 @@ async def _write_file(
     files_dir: Path,
     max_file_size: int,
 ) -> int:
-    incomplete_path = _id_to_physical_path(id, files_dir=files_dir)
-    complete_path = _id_to_incomplete_physical_path(id, files_dir=files_dir)
+    incomplete_path = _id_to_incomplete_physical_path(id, files_dir=files_dir)
+    complete_path = _id_to_physical_path(id, files_dir=files_dir)
 
     file_size = 0
     async with aiofiles.open(incomplete_path, "wb") as f:
@@ -566,9 +563,3 @@ def _id_to_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
 
 def _id_to_incomplete_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
     return files_dir / (id.hex + ".incomplete")
-
-
-def _path_to_file_name(path: str) -> FileName:
-    file_path = FilePathAdapter.validate_python(path)
-    file_name = FileNameAdapter.validate_python(file_path.name)
-    return file_name
