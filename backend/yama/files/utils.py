@@ -214,9 +214,6 @@ async def get_file(
             assert_never(file.type)
 
 
-# TODO: Require at least one modification (`new_path`, `file_in` with non-`None` values)
-# TODO: Add `await connection.commit()`
-# TODO: Consider partially done updates
 # FIXME: Add security
 async def update_file(
     path: FilePath,
