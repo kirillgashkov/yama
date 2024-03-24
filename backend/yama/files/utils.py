@@ -13,6 +13,7 @@ from yama.files.models import (
     DirectoryCreateTuple,
     DirectoryEntryReadTuple,
     DirectoryReadTuple,
+    DirectoryUpdateTuple,
     File,
     FileAncestorFileDescendant,
     FileCreateTuple,
@@ -25,6 +26,7 @@ from yama.files.models import (
     FileUpdateTuple,
     RegularFileCreateTuple,
     RegularFileReadTuple,
+    RegularFileUpdateTuple,
 )
 
 
@@ -228,6 +230,8 @@ async def update_file(
     working_dir_id: UUID,
     files_dir: Path,
     root_dir_id: UUID,
+    upload_chunk_size: int,
+    upload_max_file_size: int,
     connection: AsyncConnection,
 ) -> UUID:
     file = await _get_file_by_path(
@@ -236,6 +240,15 @@ async def update_file(
         root_dir_id=root_dir_id,
         connection=connection,
     )
+
+    if file_in is not None and file_in.type != file.type:
+        match file_in.type:
+            case FileTypeEnum.DIRECTORY:
+                raise FilesNotADirectoryError(path)
+            case FileTypeEnum.REGULAR:
+                raise FilesIsADirectoryError(path)
+            case _:
+                assert_never(file_in.type)
 
     if new_path is not None:
         if not await file_exists(
@@ -354,8 +367,22 @@ async def update_file(
         await connection.execute(insert_new_ancestors_query)
         # fmt: on
 
+        await connection.commit()
+
     if file_in is not None:
-        ...
+        match file_in:
+            case RegularFileUpdateTuple(content=content):
+                if content is not None:
+                    await _write_file(
+                        content,
+                        _id_to_physical_path(file.id, files_dir=files_dir),
+                        chunk_size=upload_chunk_size,
+                        max_file_size=upload_max_file_size,
+                    )
+            case DirectoryUpdateTuple():
+                ...
+            case _:
+                assert_never(file_in)
 
     return file.id
 
