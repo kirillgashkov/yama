@@ -7,27 +7,31 @@ from pydantic import BaseModel
 
 from yama.database.connections import sqlalchemy_async_engine
 from yama.database.settings import Settings as DatabaseSettings
+from yama.files.routes import router as files_router
+from yama.files.settings import Settings as FilesSettings
 from yama.security.routes import router as security_router
 from yama.users.routes import router as users_router
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
-    settings = DatabaseSettings()
+    database_settings = DatabaseSettings()
+    files_settings = FilesSettings()
 
     async with sqlalchemy_async_engine(
-        host=settings.host,
-        port=settings.port,
-        username=settings.username,
-        password=settings.password,
-        database=settings.database,
+        host=database_settings.host,
+        port=database_settings.port,
+        username=database_settings.username,
+        password=database_settings.password,
+        database=database_settings.database,
     ) as engine:
-        # `engine` must not be accessed directly, it must
-        # be accessed through a lifetime dependency
-        yield {"engine": engine}
+        # `engine` and `files_settings` must not be accessed directly,
+        # they must be accessed through lifetime dependencies
+        yield {"engine": engine, "files_settings": files_settings}
 
 
 app = FastAPI(lifespan=lifespan)
+app.include_router(files_router)
 app.include_router(security_router)
 app.include_router(users_router)
 
