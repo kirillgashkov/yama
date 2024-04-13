@@ -32,7 +32,6 @@ def _check_file_path(
     assert len(path_str.encode()) <= MAX_FILE_PATH_LENGTH, "File path is too long"
 
     path = handler(path_str)
-
     if not isinstance(path, PurePosixPath):
         raise RuntimeError("File path is not a PurePosixPath")
 
