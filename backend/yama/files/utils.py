@@ -535,6 +535,8 @@ async def _write_file(
     files_dir: Path,
     max_file_size: int,
 ) -> int:
+    files_dir.mkdir(parents=True, exist_ok=True)
+
     incomplete_path = _id_to_incomplete_physical_path(id, files_dir=files_dir)
     complete_path = _id_to_physical_path(id, files_dir=files_dir)
 
