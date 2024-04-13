@@ -61,6 +61,37 @@ class FilesNotADirectoryError(FilesFileError):
 
 
 # FIXME: Add security
+async def file_exists(
+    path: FilePath,
+    /,
+    *,
+    type_: FileTypeEnum | None = None,
+    user_id: UUID,
+    working_dir_id: UUID,
+    root_dir_id: UUID,
+    connection: AsyncConnection,
+) -> bool:
+    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
+        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
+    )
+
+    file_exists_subquery_base = (
+        select(1)
+        .select_from(FileAncestorFileDescendant)
+        .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
+        .where(FileAncestorFileDescendant.descendant_path == descendant_path)
+    )
+    if type_ is not None:
+        file_exists_subquery_base = file_exists_subquery_base.join(
+            File, FileAncestorFileDescendant.descendant_id == File.id
+        ).where(File.type == type_.value)
+    file_exists_subquery = file_exists_subquery_base.exists()
+
+    query = select(file_exists_subquery)
+    return (await connection.execute(query)).scalar_one()
+
+
+# FIXME: Add security
 async def create_file(
     path: FilePath,
     /,
@@ -499,37 +530,6 @@ async def _get_file_by_path(
         raise FilesFileNotFoundError(path)
 
     return File(**file_row)
-
-
-# FIXME: Add security
-async def file_exists(
-    path: FilePath,
-    /,
-    *,
-    type_: FileTypeEnum | None = None,
-    user_id: UUID,
-    working_dir_id: UUID,
-    root_dir_id: UUID,
-    connection: AsyncConnection,
-) -> bool:
-    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
-    )
-
-    file_exists_subquery_base = (
-        select(1)
-        .select_from(FileAncestorFileDescendant)
-        .where(FileAncestorFileDescendant.ancestor_id == ancestor_id)
-        .where(FileAncestorFileDescendant.descendant_path == descendant_path)
-    )
-    if type_ is not None:
-        file_exists_subquery_base = file_exists_subquery_base.join(
-            File, FileAncestorFileDescendant.descendant_id == File.id
-        ).where(File.type == type_.value)
-    file_exists_subquery = file_exists_subquery_base.exists()
-
-    query = select(file_exists_subquery)
-    return (await connection.execute(query)).scalar_one()
 
 
 async def _write_file(
