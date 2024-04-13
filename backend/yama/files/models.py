@@ -18,14 +18,14 @@ from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 from yama.model.models import ModelBase
 
 
-def check_file_name(name: str) -> str:
+def _check_file_name(name: str) -> str:
     assert len(name.encode()) <= MAX_FILE_NAME_LENGTH, "File name is too long"
     assert name.isprintable(), "File name contains non-printable characters"
     assert "/" not in name, "File name contains '/'"
     return name
 
 
-def check_file_path(
+def _check_file_path(
     path_str: Any, handler: ValidatorFunctionWrapHandler
 ) -> PurePosixPath:
     assert isinstance(path_str, str), "File path is not a string"
@@ -42,12 +42,12 @@ def check_file_path(
         names = path.parts
 
     for name in names:
-        check_file_name(name)
+        _check_file_name(name)
 
     return path
 
 
-def normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
+def _normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
     # POSIX allows treating a path beginning with two slashes in an
     # implementation-defined manner which is respected by Python's pathlib by not
     # collapsing the two slashes into one. We treat such paths as absolute paths.
@@ -56,14 +56,14 @@ def normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
     return path
 
 
-FileName: TypeAlias = Annotated[str, AfterValidator(check_file_name)]
+FileName: TypeAlias = Annotated[str, AfterValidator(_check_file_name)]
 FileNameAdapter: TypeAdapter[FileName] = TypeAdapter(FileName)  # pyright: ignore [reportCallIssue, reportAssignmentType]
 
 # TODO: Handle `..` in file path
 FilePath: TypeAlias = Annotated[
     PurePosixPath,
-    AfterValidator(normalize_file_path_root),
-    WrapValidator(check_file_path),
+    AfterValidator(_normalize_file_path_root),
+    WrapValidator(_check_file_path),
 ]
 FilePathAdapter: TypeAdapter[FilePath] = TypeAdapter(FilePath)  # pyright: ignore [reportCallIssue, reportAssignmentType]
 
