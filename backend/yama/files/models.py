@@ -27,12 +27,12 @@ def _check_file_name(name: str) -> str:
 
 
 def _check_file_path(
-    path_str: Any, handler: ValidatorFunctionWrapHandler
+    path_data: Any, handler: ValidatorFunctionWrapHandler
 ) -> PurePosixPath:
-    assert isinstance(path_str, str), "File path is not a string"
-    assert len(path_str.encode()) <= MAX_FILE_PATH_LENGTH, "File path is too long"
+    assert isinstance(path_data, str), "File path is not a string"
+    assert len(path_data.encode()) <= MAX_FILE_PATH_LENGTH, "File path is too long"
 
-    path = handler(path_str)
+    path = handler(path_data)
     if not isinstance(path, PurePosixPath):
         raise RuntimeError("File path is not a PurePosixPath")
 
