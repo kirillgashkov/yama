@@ -59,7 +59,12 @@ async def create_file(
 # FIXME: Handle `utils.get_file` errors
 # FIXME: Add security
 # TODO: Return ID-based `content_url`
-@router.post("/files/{path:path}")
+@router.get(
+    "/files/{path:path}",
+    description="Get the file detail or file content if the content query parameter is true.",
+    response_model=FileReadDetail,
+    responses={200: {"content": {"*/*": {}}}},  # OpenAPI 3
+)
 async def get_file(
     *,
     path: FilePath,
