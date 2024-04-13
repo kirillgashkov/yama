@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
 from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from yama.model.models import ModelBase
 
 
 def check_file_name(name: str) -> str:
@@ -72,6 +73,29 @@ class FileTypeEnum(str, Enum):
     DIRECTORY = "directory"
 
 
+FileTypeEnumAdapter: TypeAdapter[FileTypeEnum] = TypeAdapter(FileTypeEnum)
+
+
+class FileRead(ModelBase):
+    id: UUID
+    type: FileTypeEnum
+
+
+class RegularReadDetail(ModelBase):
+    id: UUID
+    type: Literal[FileTypeEnum.REGULAR]
+    content_url: str
+
+
+class DirectoryReadDetail(ModelBase):
+    id: UUID
+    type: Literal[FileTypeEnum.DIRECTORY]
+    files: dict[FileName, FileRead]
+
+
+FileReadDetail: TypeAlias = RegularReadDetail | DirectoryReadDetail
+
+
 class RegularFileCreateTuple(NamedTuple):
     content: UploadFile
     type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
@@ -120,7 +144,7 @@ FileUpdateTuple: TypeAlias = RegularFileUpdateTuple | DirectoryUpdateTuple
 class FileType(TableBase):
     __tablename__ = "file_types"
 
-    type: Mapped[FileTypeEnum] = mapped_column(String, primary_key=True)
+    type: Mapped[str] = mapped_column(String, primary_key=True)
 
 
 class File(TableBase):
@@ -129,7 +153,7 @@ class File(TableBase):
     id: Mapped[UUID] = mapped_column(
         server_default=func.uuid_generate_v4(), primary_key=True
     )
-    type: Mapped[FileTypeEnum] = mapped_column(ForeignKey("file_types.type"))
+    type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
 
 
 class FileAncestorFileDescendant(TableBase):

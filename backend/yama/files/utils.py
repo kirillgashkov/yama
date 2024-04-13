@@ -20,6 +20,7 @@ from yama.files.models import (
     FilePath,
     FileReadTuple,
     FileTypeEnum,
+    FileTypeEnumAdapter,
     FileUpdateTuple,
     RegularFileCreateTuple,
     RegularFileReadTuple,
@@ -91,7 +92,7 @@ async def create_file(
     ):
         raise FilesFileExistsError(path)
 
-    insert_file_query = insert(File).values(type=file_in.type).returning(File)
+    insert_file_query = insert(File).values(type=file_in.type.value).returning(File)
     file_row = (await connection.execute(insert_file_query)).mappings().one()
     file = File(**file_row)
 
@@ -171,8 +172,9 @@ async def get_file(
         root_dir_id=root_dir_id,
         connection=connection,
     )
+    file_type = FileTypeEnumAdapter.validate_python(file.type)
 
-    if type_ is not None and type_ != file.type:
+    if type_ is not None and type_ != file_type:
         match type_:
             case FileTypeEnum.DIRECTORY:
                 raise FilesNotADirectoryError(path)
@@ -181,7 +183,7 @@ async def get_file(
             case _:
                 assert_never(type_)
 
-    match file.type:
+    match file_type:
         case FileTypeEnum.DIRECTORY:
             directory_entries_query = (
                 select(File.id, File.type, FileAncestorFileDescendant.descendant_path)
@@ -195,23 +197,25 @@ async def get_file(
             )
             directory_entries = [
                 DirectoryEntryReadTuple(
-                    id=row["id"], type=row["type"], name=row["descendant_path"]
+                    id=row["id"],
+                    type=FileTypeEnumAdapter.validate_python(row["type"]),
+                    name=row["descendant_path"],
                 )
                 for row in directory_entries_rows
             ]
             return DirectoryReadTuple(
-                id=file.id, type=file.type, content=directory_entries
+                id=file.id, type=file_type, content=directory_entries
             )
         case FileTypeEnum.REGULAR:
             return RegularFileReadTuple(
                 id=file.id,
-                type=file.type,
+                type=file_type,
                 content_physical_path=_id_to_physical_path(
                     file.id, files_dir=files_dir
                 ),
             )
         case _:
-            assert_never(file.type)
+            assert_never(file_type)
 
 
 # FIXME: Add security
@@ -235,8 +239,9 @@ async def update_file(
         root_dir_id=root_dir_id,
         connection=connection,
     )
+    file_type = FileTypeEnumAdapter.validate_python(file.type)
 
-    if file_in is not None and file_in.type != file.type:
+    if file_in is not None and file_in.type != file_type:
         match file_in.type:
             case FileTypeEnum.DIRECTORY:
                 raise FilesNotADirectoryError(path)
@@ -401,8 +406,9 @@ async def delete_file(
         root_dir_id=root_dir_id,
         connection=connection,
     )
+    file_type = FileTypeEnumAdapter.validate_python(file.type)
 
-    if type_ is not None and type_ != file.type:
+    if type_ is not None and type_ != file_type:
         match type_:
             case FileTypeEnum.DIRECTORY:
                 raise FilesNotADirectoryError(path)
@@ -433,7 +439,7 @@ async def delete_file(
     )
     select_regular_file_ids_query = (
         select(delete_files_cte.c.id)
-        .where(delete_files_cte.c.type == FileTypeEnum.REGULAR)
+        .where(delete_files_cte.c.type == FileTypeEnum.REGULAR.value)
         .add_cte(delete_descendant_relationships_cte)
         .add_cte(delete_ancestor_relationships_cte)
         .add_cte(delete_files_cte)
@@ -519,7 +525,7 @@ async def file_exists(
     if type_ is not None:
         file_exists_subquery_base = file_exists_subquery_base.join(
             File, FileAncestorFileDescendant.descendant_id == File.id
-        ).where(File.type == type_)
+        ).where(File.type == type_.value)
     file_exists_subquery = file_exists_subquery_base.exists()
 
     query = select(file_exists_subquery)
@@ -535,6 +541,8 @@ async def _write_file(
     files_dir: Path,
     max_file_size: int,
 ) -> int:
+    files_dir.mkdir(parents=True, exist_ok=True)
+
     incomplete_path = _id_to_incomplete_physical_path(id, files_dir=files_dir)
     complete_path = _id_to_physical_path(id, files_dir=files_dir)
 

@@ -11,12 +11,14 @@ from yama.files.routes import router as files_router
 from yama.files.settings import Settings as FilesSettings
 from yama.security.routes import router as security_router
 from yama.users.routes import router as users_router
+from yama.users.settings import Settings as UsersSettings
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
-    database_settings = DatabaseSettings()
-    files_settings = FilesSettings()
+    database_settings = DatabaseSettings()  # pyright: ignore[reportCallIssue]
+    files_settings = FilesSettings()  # pyright: ignore[reportCallIssue]
+    users_settings = UsersSettings()  # pyright: ignore[reportCallIssue]
 
     async with sqlalchemy_async_engine(
         host=database_settings.host,
@@ -25,9 +27,13 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
         password=database_settings.password,
         database=database_settings.database,
     ) as engine:
-        # `engine` and `files_settings` must not be accessed directly,
-        # they must be accessed through lifetime dependencies
-        yield {"engine": engine, "files_settings": files_settings}
+        # These must not be accessed directly, they must
+        # be accessed through lifetime dependencies
+        yield {
+            "engine": engine,
+            "files_settings": files_settings,
+            "users_settings": users_settings,
+        }
 
 
 app = FastAPI(lifespan=lifespan)
