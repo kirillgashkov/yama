@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
 from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from yama.model.models import ModelBase
 
 
 def check_file_name(name: str) -> str:
@@ -70,6 +71,26 @@ FilePathAdapter: TypeAdapter[FilePath] = TypeAdapter(FilePath)  # pyright: ignor
 class FileTypeEnum(str, Enum):
     REGULAR = "regular"
     DIRECTORY = "directory"
+
+
+class FileRead(ModelBase):
+    id: UUID
+    type: FileTypeEnum
+
+
+class RegularReadDetail(ModelBase):
+    id: UUID
+    type: Literal[FileTypeEnum.REGULAR]
+    content_url: str
+
+
+class DirectoryReadDetail(ModelBase):
+    id: UUID
+    type: Literal[FileTypeEnum.DIRECTORY]
+    files: dict[FileName, FileRead]
+
+
+FileReadDetail: TypeAlias = RegularReadDetail | DirectoryReadDetail
 
 
 class RegularFileCreateTuple(NamedTuple):
