@@ -5,6 +5,7 @@ from typing import Any, Self, assert_never
 
 from pydantic import Field, TypeAdapter, model_validator
 
+from yama.files.models import FilePath, FilePathAdapter
 from yama.model.models import ModelBase
 
 
@@ -42,18 +43,18 @@ class ExportParameter(ModelBase):
 
 
 class ExportReader(ModelBase):
-    name: str = "commonmark"  # FIXME: Use the _path_ type from `files`
+    name: FilePath = FilePathAdapter.validate_python("commonmark")
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
 class ExportFilter(ModelBase):
-    name: str  # FIXME: Use the _path_ type from `files`
+    name: FilePath
     type: ExportFilterType
 
 
 class ExportWriter(ModelBase):
-    name: str = "latex"  # FIXME: Use the _path_ type from `files`
-    template: str | None = None  # FIXME: Use the _path_ type from `files`
+    name: FilePath = FilePathAdapter.validate_python("latex")
+    template: FilePath | None = None
     variables: dict[str, str] = Field(default_factory=dict)
 
 
