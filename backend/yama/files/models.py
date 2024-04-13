@@ -22,6 +22,7 @@ def _check_file_name(name: str) -> str:
     assert len(name.encode()) <= MAX_FILE_NAME_LENGTH, "File name is too long"
     assert name.isprintable(), "File name contains non-printable characters"
     assert "/" not in name, "File name contains '/'"
+    assert name != "..", "File name '..' is not supported"
     return name
 
 
@@ -58,7 +59,6 @@ def _normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
 FileName: TypeAlias = Annotated[str, AfterValidator(_check_file_name)]
 FileNameAdapter: TypeAdapter[FileName] = TypeAdapter(FileName)  # pyright: ignore [reportCallIssue, reportAssignmentType]
 
-# TODO: Handle `..` in file path
 FilePath: TypeAlias = Annotated[
     PurePosixPath,
     AfterValidator(_normalize_file_path_root),
