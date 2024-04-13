@@ -73,6 +73,9 @@ class FileTypeEnum(str, Enum):
     DIRECTORY = "directory"
 
 
+FileTypeEnumAdapter: TypeAdapter[FileTypeEnum] = TypeAdapter(FileTypeEnum)
+
+
 class FileRead(ModelBase):
     id: UUID
     type: FileTypeEnum
@@ -141,7 +144,7 @@ FileUpdateTuple: TypeAlias = RegularFileUpdateTuple | DirectoryUpdateTuple
 class FileType(TableBase):
     __tablename__ = "file_types"
 
-    type: Mapped[FileTypeEnum] = mapped_column(String, primary_key=True)
+    type: Mapped[str] = mapped_column(String, primary_key=True)
 
 
 class File(TableBase):
@@ -150,7 +153,7 @@ class File(TableBase):
     id: Mapped[UUID] = mapped_column(
         server_default=func.uuid_generate_v4(), primary_key=True
     )
-    type: Mapped[FileTypeEnum] = mapped_column(ForeignKey("file_types.type"))
+    type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
 
 
 class FileAncestorFileDescendant(TableBase):
