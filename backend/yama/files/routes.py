@@ -95,7 +95,7 @@ async def get_file(
             if content:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Content cannot be requested for '{type}' type",
+                    detail=f"Content cannot be requested for '{type_.value}' type",
                 )
             files = {e.name: FileRead(id=e.id, type=e.type) for e in entries}
             return DirectoryReadDetail(id=id, type=type_, files=files)
@@ -125,14 +125,14 @@ async def create_or_update_file(
             if content is not None:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Content cannot be provided for '{type}' type",
+                    detail=f"Content cannot be provided for '{type.value}' type",
                 )
             file_in = DirectoryCreateTuple(type=type)
         case FileTypeEnum.REGULAR:
             if content is None:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Content must be provided for '{type}' type",
+                    detail=f"Content must be provided for '{type.value}' type",
                 )
             file_in = RegularFileCreateTuple(type=type, content=content)
         case _:
