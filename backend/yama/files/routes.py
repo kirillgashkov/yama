@@ -29,9 +29,9 @@ from yama.files.models import (
     FileRead,
     FileReadDetail,
     FileTypeEnum,
-    RegularFileCreateTuple,
-    RegularFileReadTuple,
+    RegularCreateTuple,
     RegularReadDetail,
+    RegularReadTuple,
 )
 from yama.files.settings import Settings
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
@@ -87,7 +87,7 @@ async def get_file(
     )
 
     match file_out:
-        case RegularFileReadTuple(
+        case RegularReadTuple(
             id=id, type=type_, content_physical_path=content_physical_path
         ):
             if content:
@@ -139,7 +139,7 @@ async def create_or_update_file(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Content must be provided for '{type.value}' type",
                 )
-            file_in = RegularFileCreateTuple(type=type, content=content)
+            file_in = RegularCreateTuple(type=type, content=content)
         case _:
             assert_never(type)
 

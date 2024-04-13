@@ -22,9 +22,9 @@ from yama.files.models import (
     FileTypeEnum,
     FileTypeEnumAdapter,
     FileUpdateTuple,
-    RegularFileCreateTuple,
-    RegularFileReadTuple,
-    RegularFileUpdateTuple,
+    RegularCreateTuple,
+    RegularReadTuple,
+    RegularUpdateTuple,
 )
 
 
@@ -136,7 +136,7 @@ async def create_file(
     await connection.execute(insert_ancestors_query)
 
     match file_in:
-        case RegularFileCreateTuple(content=content):
+        case RegularCreateTuple(content=content):
             await _write_file(
                 content,
                 file.id,
@@ -207,7 +207,7 @@ async def get_file(
                 id=file.id, type=file_type, content=directory_entries
             )
         case FileTypeEnum.REGULAR:
-            return RegularFileReadTuple(
+            return RegularReadTuple(
                 id=file.id,
                 type=file_type,
                 content_physical_path=_id_to_physical_path(
@@ -371,7 +371,7 @@ async def update_file(
 
     if file_in is not None:
         match file_in:
-            case RegularFileUpdateTuple(content=content):
+            case RegularUpdateTuple(content=content):
                 if content is not None:
                     await _write_file(
                         content,

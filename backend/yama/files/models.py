@@ -96,7 +96,7 @@ class DirectoryReadDetail(ModelBase):
 FileReadDetail: TypeAlias = RegularReadDetail | DirectoryReadDetail
 
 
-class RegularFileCreateTuple(NamedTuple):
+class RegularCreateTuple(NamedTuple):
     content: UploadFile
     type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
 
@@ -105,10 +105,10 @@ class DirectoryCreateTuple(NamedTuple):
     type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
 
 
-FileCreateTuple: TypeAlias = RegularFileCreateTuple | DirectoryCreateTuple
+FileCreateTuple: TypeAlias = RegularCreateTuple | DirectoryCreateTuple
 
 
-class RegularFileReadTuple(NamedTuple):
+class RegularReadTuple(NamedTuple):
     id: UUID
     content_physical_path: Path
     type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
@@ -126,10 +126,10 @@ class DirectoryReadTuple(NamedTuple):
     type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
 
 
-FileReadTuple: TypeAlias = RegularFileReadTuple | DirectoryReadTuple
+FileReadTuple: TypeAlias = RegularReadTuple | DirectoryReadTuple
 
 
-class RegularFileUpdateTuple(NamedTuple):
+class RegularUpdateTuple(NamedTuple):
     type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
     content: UploadFile | None = None
 
@@ -138,7 +138,7 @@ class DirectoryUpdateTuple(NamedTuple):
     type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
 
 
-FileUpdateTuple: TypeAlias = RegularFileUpdateTuple | DirectoryUpdateTuple
+FileUpdateTuple: TypeAlias = RegularUpdateTuple | DirectoryUpdateTuple
 
 
 class FileType(TableBase):
