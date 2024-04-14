@@ -62,21 +62,74 @@ async def share_file(
     ...
 
 
-def _path_to_ancestor_id_and_descendant_path(
+async def _id_or_path_to_id(
+    id_or_path: UUID | FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+    connection: AsyncConnection,
+) -> UUID:
+    match id_or_path:
+        case UUID():
+            id_ = id_or_path
+        case FilePath():
+            id_ = await _path_to_id(
+                id_or_path,
+                root_dir_id=root_dir_id,
+                working_dir_id=working_dir_id,
+                connection=connection,
+            )
+        case _:
+            assert_never(id_or_path)
+
+    return id_
+
+
+async def _id_or_path_to_parent_id(
+    id_or_path: UUID | FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+    connection: AsyncConnection,
+) -> UUID:
+    match id_or_path:
+        case UUID():
+            parent_id = await _id_to_parent_id(id_or_path, connection=connection)
+        case FilePath():
+            parent_id = await _path_to_parent_id(
+                id_or_path,
+                root_dir_id=root_dir_id,
+                working_dir_id=working_dir_id,
+                connection=connection,
+            )
+        case _:
+            assert_never(id_or_path)
+
+    return parent_id
+
+
+async def _path_to_id(
     path: FilePath,
     /,
     *,
     root_dir_id: UUID,
     working_dir_id: UUID,
-) -> tuple[UUID, FilePath]:
-    if path.is_absolute():
-        ancestor_id = root_dir_id
-        descendant_path = path.relative_to("/")
-    else:
-        ancestor_id = working_dir_id
-        descendant_path = path
+    connection: AsyncConnection,
+) -> UUID:
+    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
+        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
+    )
 
-    return ancestor_id, descendant_path
+    try:
+        id_ = await _ancestor_id_and_descendant_path_to_id(
+            ancestor_id, descendant_path, connection=connection
+        )
+    except FilesFileNotFoundError as e:
+        raise FilesFileNotFoundError(path) from e
+
+    return id_
 
 
 async def _id_to_parent_id(id_: UUID, /, *, connection: AsyncConnection) -> UUID:
@@ -119,6 +172,23 @@ async def _path_to_parent_id(
     return parent_id
 
 
+def _path_to_ancestor_id_and_descendant_path(
+    path: FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+) -> tuple[UUID, FilePath]:
+    if path.is_absolute():
+        ancestor_id = root_dir_id
+        descendant_path = path.relative_to("/")
+    else:
+        ancestor_id = working_dir_id
+        descendant_path = path
+
+    return ancestor_id, descendant_path
+
+
 async def _ancestor_id_and_descendant_path_to_id(
     ancestor_id: UUID,
     descendant_path: FilePath,
@@ -134,76 +204,6 @@ async def _ancestor_id_and_descendant_path_to_id(
     id_ = (await connection.execute(id_query)).scalars().one_or_none()
     if id_ is None:
         raise FilesFileNotFoundError(descendant_path)
-
-    return id_
-
-
-async def _path_to_id(
-    path: FilePath,
-    /,
-    *,
-    root_dir_id: UUID,
-    working_dir_id: UUID,
-    connection: AsyncConnection,
-) -> UUID:
-    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
-    )
-
-    try:
-        id_ = await _ancestor_id_and_descendant_path_to_id(
-            ancestor_id, descendant_path, connection=connection
-        )
-    except FilesFileNotFoundError as e:
-        raise FilesFileNotFoundError(path) from e
-
-    return id_
-
-
-async def _id_or_path_to_parent_id(
-    id_or_path: UUID | FilePath,
-    /,
-    *,
-    root_dir_id: UUID,
-    working_dir_id: UUID,
-    connection: AsyncConnection,
-) -> UUID:
-    match id_or_path:
-        case UUID():
-            parent_id = await _id_to_parent_id(id_or_path, connection=connection)
-        case FilePath():
-            parent_id = await _path_to_parent_id(
-                id_or_path,
-                root_dir_id=root_dir_id,
-                working_dir_id=working_dir_id,
-                connection=connection,
-            )
-        case _:
-            assert_never(id_or_path)
-
-    return parent_id
-
-
-async def _id_or_path_to_id(
-    id_or_path: UUID | FilePath,
-    /,
-    *,
-    root_dir_id: UUID,
-    working_dir_id: UUID,
-    connection: AsyncConnection,
-) -> UUID:
-    match id_or_path:
-        case UUID():
-            id_ = id_or_path
-        case FilePath():
-            id_ = await _path_to_id(
-                id_or_path,
-                root_dir_id=root_dir_id,
-                working_dir_id=working_dir_id,
-                connection=connection,
-            )
-        case _:
-            assert_never(id_or_path)
 
     return id_
 
