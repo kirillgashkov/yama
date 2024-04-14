@@ -1,8 +1,14 @@
-from pathlib import PurePosixPath
-from typing import Annotated, Any, TypeAlias
+from enum import Enum
+from pathlib import Path, PurePosixPath
+from typing import Annotated, Any, Literal, NamedTuple, Optional, TypeAlias
+from uuid import UUID
 
+from fastapi import UploadFile
 from pydantic import AfterValidator, ValidatorFunctionWrapHandler, WrapValidator
+from sqlalchemy import ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column
 
+from yama.database.models import TableBase
 from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 
 
@@ -50,3 +56,122 @@ FilePath: TypeAlias = Annotated[
     AfterValidator(_normalize_file_path_root),
     WrapValidator(_check_file_path),
 ]
+
+
+class FileType(str, Enum):
+    REGULAR = "regular"
+    DIRECTORY = "directory"
+
+
+class ShareType(str, Enum):
+    READ = "read"
+    WRITE = "write"
+    SHARE = "share"
+
+
+class UserType(str, Enum):
+    UNIT = "unit"
+    GROUP = "group"
+
+
+class RegularRead(NamedTuple):
+    id: UUID
+    type: Literal[FileType.REGULAR]
+    content_path: Path | None
+
+
+class DirectoryRead(NamedTuple):
+    id: UUID
+    type: Literal[FileType.DIRECTORY]
+    files: "dict[FileName, FileRead] | None"
+
+
+FileRead: TypeAlias = RegularRead | DirectoryRead
+
+
+class RegularWrite(NamedTuple):
+    type: Literal[FileType.REGULAR]
+    content_stream: UploadFile
+
+
+class DirectoryWrite(NamedTuple):
+    ...
+
+
+FileWrite: TypeAlias = RegularWrite | DirectoryWrite
+
+
+class FileShare(NamedTuple):
+    ...
+
+
+class FileTypeTable(TableBase):
+    __tablename__ = "file_types"
+
+    type: Mapped[str] = mapped_column(String, primary_key=True)
+
+
+class FileTable(TableBase):
+    __tablename__ = "files"
+
+    id: Mapped[UUID] = mapped_column(
+        server_default=func.uuid_generate_v4(), primary_key=True
+    )
+    type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
+
+
+class FileAncestorFileDescendantTable(TableBase):
+    __tablename__ = "file_ancestors_file_descendants"
+
+    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"), primary_key=True)
+    descendant_id: Mapped[UUID] = mapped_column(
+        ForeignKey("files.id"), primary_key=True
+    )
+    descendant_name: Mapped[str]
+    descendant_path: Mapped[str]
+    descendant_depth: Mapped[int]
+
+
+class ShareTypeTable(TableBase):
+    __tablename__ = "share_types"
+
+    type: Mapped[str] = mapped_column(String, primary_key=True)
+
+
+class ShareTable(TableBase):
+    __tablename__ = "shares"
+
+    id: Mapped[UUID] = mapped_column(
+        server_default=func.uuid_generate_v4(), primary_key=True
+    )
+    type: Mapped[str] = mapped_column(ForeignKey("share_types.type"))
+    file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
+    by_user_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
+    to_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+
+
+class UserTypeTable(TableBase):
+    __tablename__ = "user_types"
+
+    type: Mapped[str] = mapped_column(String, primary_key=True)
+
+
+class UserTable(TableBase):
+    __tablename__ = "users"
+
+    id: Mapped[UUID] = mapped_column(
+        server_default=func.uuid_generate_v4(), primary_key=True
+    )
+    type: Mapped[str] = mapped_column(ForeignKey("user_types.type"))
+    handle: Mapped[str]
+    password_hash: Mapped[str | None]
+
+
+class UserAncestorUserDescendantTable(TableBase):
+    __tablename__ = "user_parents_user_childs"
+
+    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    descendant_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id"), primary_key=True
+    )
+    descendant_depth: Mapped[int]
