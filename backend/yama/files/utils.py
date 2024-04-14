@@ -15,7 +15,7 @@ from yama.files.models import (
 
 
 async def read_file(
-    path: FilePath,
+    id_or_path: UUID | FilePath,
     /,
     *,
     max_ancestor_distance: int | None = 0,
@@ -31,7 +31,7 @@ async def read_file(
 
 async def write_file(
     file_write: FileWrite,
-    path: FilePath,
+    id_or_path: UUID | FilePath,
     /,
     *,
     root_dir_id: UUID,
@@ -45,7 +45,7 @@ async def write_file(
 
 async def share_file(
     file_share: FileShare,
-    path: FilePath,
+    id_or_path: UUID | FilePath,
     /,
     *,
     root_dir_id: UUID,
