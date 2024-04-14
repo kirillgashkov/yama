@@ -11,6 +11,9 @@ from yama.files.models import (
     FileRead,
     FileShare,
     FileWrite,
+    ShareTable,
+    ShareType,
+    UserAncestorUserDescendantTable,
 )
 
 
@@ -30,6 +33,13 @@ async def read_file(
         id_or_path,
         root_dir_id=root_dir_id,
         working_dir_id=working_dir_id,
+        connection=connection,
+    )
+
+    await _check_share_for_file_and_user(
+        allowed_share_types=[ShareType.READ, ShareType.WRITE, ShareType.SHARE],
+        file_id=id_,
+        user_id=user_id,
         connection=connection,
     )
 
@@ -60,6 +70,40 @@ async def share_file(
     files_dir: Path,
 ) -> FileRead:
     ...
+
+
+async def _check_share_for_file_and_user(
+    *,
+    allowed_share_types: list[ShareType],
+    file_id: UUID,
+    user_id: UUID,
+    connection: AsyncConnection,
+):
+    ancestor_file_ids_cte = (
+        select(FileAncestorFileDescendantTable.ancestor_id)
+        .where(FileAncestorFileDescendantTable.descendant_id == file_id)
+        .cte()
+    )
+    ancestor_user_ids_cte = (
+        select(UserAncestorUserDescendantTable.ancestor_id)
+        .where(UserAncestorUserDescendantTable.descendant_id == user_id)
+        .cte()
+    )
+    share_id_query = (
+        select(ShareTable.id)
+        .select_from(ShareTable)
+        .join(ancestor_file_ids_cte, ShareTable.file_id == ancestor_file_ids_cte.c.ancestor_id)
+        .join(ancestor_user_ids_cte, ShareTable.to_user_id == ancestor_user_ids_cte.c.ancestor_id)
+        .where(ShareTable.type.in_([st.value for st in allowed_share_types]))
+        .limit(1)
+        .add_cte(ancestor_file_ids_cte)
+        .add_cte(ancestor_user_ids_cte)
+    )  # fmt: skip
+    share_id = (
+        (await connection.execute(share_id_query)).scalars().one_or_none()
+    )  # TODO: Log
+    if share_id is None:
+        raise NotImplementedError()
 
 
 async def _id_or_path_to_id(
