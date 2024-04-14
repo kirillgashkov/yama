@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import assert_never
 from uuid import UUID
 
 from sqlalchemy import select
@@ -26,7 +27,12 @@ async def read_file(
     connection: AsyncConnection,
     files_dir: Path,
 ) -> FileRead:
-    ...
+    id_ = await _id_or_path_to_id(
+        id_or_path,
+        root_dir_id=root_dir_id,
+        working_dir_id=working_dir_id,
+        connection=connection,
+    )
 
 
 async def write_file(
@@ -96,6 +102,30 @@ async def _path_to_id(
     id_ = (await connection.execute(file_query)).scalars().one_or_none()
     if id_ is None:
         raise FilesFileNotFoundError(path)
+
+    return id_
+
+
+async def _id_or_path_to_id(
+    id_or_path: UUID | FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+    connection: AsyncConnection,
+) -> UUID:
+    match id_or_path:
+        case UUID():
+            id_ = id_or_path
+        case FilePath():
+            id_ = await _path_to_id(
+                id_or_path,
+                root_dir_id=root_dir_id,
+                working_dir_id=working_dir_id,
+                connection=connection,
+            )
+        case _:
+            assert_never(id_or_path)
 
     return id_
 
