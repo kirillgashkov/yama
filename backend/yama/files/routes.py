@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
-from yama.files import utils
+from yama.files import _utils as utils
 from yama.files.dependencies import get_settings
 from yama.files.models import (
     DirectoryCreateTuple,
