@@ -4,12 +4,14 @@ from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.orm import aliased
 
 from yama.files.models import (
     FileAncestorFileDescendantTable,
     FilePath,
     FileRead,
     FileShare,
+    FileTable,
     FileWrite,
     ShareTable,
     ShareType,
@@ -21,8 +23,7 @@ async def read_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    max_ancestor_distance: int | None = 0,
-    max_descendant_distance: int | None = 0,
+    depth: int | None = 0,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
@@ -42,6 +43,39 @@ async def read_file(
         user_id=user_id,
         connection=connection,
     )
+
+    # # Faster depth == 0 solution
+    # descendants_query = (
+    #     select(
+    #         FileTable.id.label("ancestor_id"),
+    #         FileTable.id,
+    #         literal(".").label("name"),
+    #         FileTable.type,
+    #     )
+    #     .where(FileTable.id == id_)
+    # )
+
+    # General solution
+    fafd1 = aliased(FileAncestorFileDescendantTable)
+    fafd2 = aliased(FileAncestorFileDescendantTable)
+    descendants_query = (
+        select(
+            fafd2.ancestor_id,
+            fafd2.descendant_id.label("id"),
+            fafd2.descendant_path.label("name"),
+            FileTable.type,
+        )
+        .select_from(fafd1, fafd2)
+        .join(FileTable, fafd2.descendant_id == FileTable.id)
+        .where(fafd1.ancestor_id == id_)
+        .where(fafd2.descendant_id == fafd1.descendant_id)
+        .where((fafd1.descendant_depth == 0) | (fafd2.descendant_depth == 1))
+    )
+    if depth is not None:
+        descendants_query = descendants_query.where(fafd1.descendant_depth <= depth)
+    descendants = (await connection.execute(descendants_query)).mappings().all()
+
+    ...
 
 
 async def write_file(
