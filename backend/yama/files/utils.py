@@ -112,7 +112,7 @@ async def _check_share_for_file_and_user(
     file_id: UUID,
     user_id: UUID,
     connection: AsyncConnection,
-):
+) -> None:
     ancestor_file_ids_cte = (
         select(FileAncestorFileDescendantTable.ancestor_id)
         .where(FileAncestorFileDescendantTable.descendant_id == file_id)
