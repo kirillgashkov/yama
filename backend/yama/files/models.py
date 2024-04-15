@@ -5,7 +5,7 @@ from uuid import UUID
 
 from fastapi import UploadFile
 from pydantic import AfterValidator, ValidatorFunctionWrapHandler, WrapValidator
-from sqlalchemy import ForeignKey, String, func
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
@@ -103,7 +103,7 @@ class FileShare(NamedTuple):
 class FileTypeDb(TableBase):
     __tablename__ = "file_types"
 
-    type: Mapped[str] = mapped_column(String, primary_key=True)
+    type: Mapped[str] = mapped_column(primary_key=True)
 
 
 class FileDb(TableBase):
@@ -129,7 +129,7 @@ class FileAncestorFileDescendantDb(TableBase):
 class ShareTypeDb(TableBase):
     __tablename__ = "share_types"
 
-    type: Mapped[str] = mapped_column(String, primary_key=True)
+    type: Mapped[str] = mapped_column(primary_key=True)
 
 
 class ShareDb(TableBase):
