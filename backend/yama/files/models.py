@@ -168,7 +168,7 @@ class UserTable(TableBase):
 
 
 class UserAncestorUserDescendantTable(TableBase):
-    __tablename__ = "user_parents_user_childs"
+    __tablename__ = "user_ancestors_user_descendants"
 
     ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     descendant_id: Mapped[UUID] = mapped_column(
