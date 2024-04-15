@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import assert_never
 from uuid import UUID
 
@@ -151,7 +151,7 @@ async def _id_or_path_to_id(
     match id_or_path:
         case UUID():
             id_ = id_or_path
-        case FilePath():
+        case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
             id_ = await _path_to_id(
                 id_or_path,
                 root_dir_id=root_dir_id,
@@ -175,7 +175,7 @@ async def _id_or_path_to_parent_id(
     match id_or_path:
         case UUID():
             parent_id = await _id_to_parent_id(id_or_path, connection=connection)
-        case FilePath():
+        case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
             parent_id = await _path_to_parent_id(
                 id_or_path,
                 root_dir_id=root_dir_id,
