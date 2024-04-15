@@ -8,7 +8,7 @@ from yama.database.models import TableBase
 
 
 class UserType(str, Enum):
-    UNIT = "unit"
+    USER = "user"
     GROUP = "group"
 
 
