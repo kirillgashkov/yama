@@ -48,7 +48,8 @@ async def read_file(
         connection=connection,
     )
 
-    # # Faster depth == 0 solution
+    # # Faster depth == 0 solution (note: for the read file `parent_id` and `name` should
+    # # be discarded because they aren't used for the read file and could be incorrect)
     # descendants_query = (
     #     select(
     #         literal(None).label("parent_id"),
@@ -59,7 +60,24 @@ async def read_file(
     #     .where(FileDb.id == id_)
     # )
 
-    # General solution
+    # # # Faster depth == 1 solution (note: for the read file `parent_id` and `name` should
+    # # # be discarded because they aren't used for the read file and could be incorrect)
+    # descendants_query = (
+    #     select(
+    #         FileAncestorFileDescendantDb.ancestor_id.label("parent_id"),
+    #         FileAncestorFileDescendantDb.descendant_path.label("name"),
+    #         FileDb.id,
+    #         FileDb.type,
+    #     )
+    #     # Select the file and its children
+    #     .select_from(FileAncestorFileDescendantDb)
+    #     .where((FileAncestorFileDescendantDb.ancestor_id == id_) & FileAncestorFileDescendantDb.descendant_depth.in_([0, 1]))
+    #     # Select file information for the file and each child
+    #     .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
+    # )  # fmt: skip
+
+    # General solution (note: for the read file `parent_id` and `name` should be
+    # discarded because they aren't used for the read file and could be incorrect)
     fafd1 = aliased(FileAncestorFileDescendantDb)
     fafd2 = aliased(FileAncestorFileDescendantDb)
     descendants_query = (
@@ -79,6 +97,7 @@ async def read_file(
     )  # fmt: skip
     if depth is not None:
         descendants_query = descendants_query.where(fafd1.descendant_depth <= depth)
+
     descendants = (await connection.execute(descendants_query)).mappings().all()
     return descendants  # type: ignore  # FIXME: Remove
 
