@@ -63,7 +63,7 @@ class FileType(str, Enum):
     DIRECTORY = "directory"
 
 
-class ShareType(str, Enum):
+class FileShareType(str, Enum):
     READ = "read"
     WRITE = "write"
     SHARE = "share"
@@ -126,19 +126,19 @@ class FileAncestorFileDescendantDb(TableBase):
     descendant_depth: Mapped[int]
 
 
-class ShareTypeDb(TableBase):
-    __tablename__ = "share_types"
+class FileShareTypeDb(TableBase):
+    __tablename__ = "file_share_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class ShareDb(TableBase):
-    __tablename__ = "shares"
+class FileShareDb(TableBase):
+    __tablename__ = "file_shares"
 
     id: Mapped[UUID] = mapped_column(
         server_default=func.uuid_generate_v4(), primary_key=True
     )
-    type: Mapped[str] = mapped_column(ForeignKey("share_types.type"))
+    type: Mapped[str] = mapped_column(ForeignKey("file_share_types.type"))
     file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
     by_user_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
     to_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))

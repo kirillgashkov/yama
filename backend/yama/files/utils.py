@@ -12,9 +12,9 @@ from yama.files.models import (
     FilePath,
     FileRead,
     FileShare,
+    FileShareDb,
+    FileShareType,
     FileWrite,
-    ShareDb,
-    ShareType,
 )
 from yama.users.models import UserAncestorUserDescendantDb
 
@@ -38,7 +38,11 @@ async def read_file(
     )
 
     await _check_share_for_file_and_user(
-        allowed_share_types=[ShareType.READ, ShareType.WRITE, ShareType.SHARE],
+        allowed_types=[
+            FileShareType.READ,
+            FileShareType.WRITE,
+            FileShareType.SHARE,
+        ],
         file_id=id_,
         user_id=user_id,
         connection=connection,
@@ -107,7 +111,7 @@ async def share_file(
 
 async def _check_share_for_file_and_user(
     *,
-    allowed_share_types: list[ShareType],
+    allowed_types: list[FileShareType],
     file_id: UUID,
     user_id: UUID,
     connection: AsyncConnection,
@@ -123,11 +127,11 @@ async def _check_share_for_file_and_user(
         .cte()
     )
     share_id_query = (
-        select(ShareDb.id)
-        .select_from(ShareDb)
-        .join(ancestor_file_ids_cte, ShareDb.file_id == ancestor_file_ids_cte.c.ancestor_id)
-        .join(ancestor_user_ids_cte, ShareDb.to_user_id == ancestor_user_ids_cte.c.ancestor_id)
-        .where(ShareDb.type.in_([st.value for st in allowed_share_types]))
+        select(FileShareDb.id)
+        .select_from(FileShareDb)
+        .join(ancestor_file_ids_cte, FileShareDb.file_id == ancestor_file_ids_cte.c.ancestor_id)
+        .join(ancestor_user_ids_cte, FileShareDb.to_user_id == ancestor_user_ids_cte.c.ancestor_id)
+        .where(FileShareDb.type.in_([t.value for t in allowed_types]))
         .limit(1)
         .add_cte(ancestor_file_ids_cte)
         .add_cte(ancestor_user_ids_cte)
