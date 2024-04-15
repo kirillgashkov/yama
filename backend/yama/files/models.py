@@ -122,7 +122,6 @@ class FileAncestorFileDescendantDb(TableBase):
     descendant_id: Mapped[UUID] = mapped_column(
         ForeignKey("files.id"), primary_key=True
     )
-    descendant_name: Mapped[str]
     descendant_path: Mapped[str]
     descendant_depth: Mapped[int]
 
