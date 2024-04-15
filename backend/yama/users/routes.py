@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama.database.dependencies import get_connection
 from yama.security.dependencies import get_current_user_id
 from yama.security.utils import hash_password
-from yama.users.models import User, UserIn, UserOut
+from yama.users._models import User, UserIn, UserOut
 from yama.users.utils import user_exists
 
 router = APIRouter()

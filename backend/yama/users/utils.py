@@ -1,7 +1,7 @@
 from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.users.models import User
+from yama.users._models import User
 
 
 async def user_exists(username: str, connection: AsyncConnection) -> bool:
