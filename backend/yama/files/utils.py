@@ -2,7 +2,7 @@ from pathlib import Path, PurePosixPath
 from typing import assert_never
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import case, literal, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 
@@ -48,8 +48,7 @@ async def read_file(
         connection=connection,
     )
 
-    # # Faster depth == 0 solution (note: for the read file `parent_id` and `name` should
-    # # be discarded because they aren't used for the read file and could be incorrect)
+    # # Faster depth == 0 solution
     # descendants_query = (
     #     select(
     #         literal(None).label("parent_id"),
@@ -60,8 +59,7 @@ async def read_file(
     #     .where(FileDb.id == id_)
     # )
 
-    # # # Faster depth == 1 solution (note: for the read file `parent_id` and `name` should
-    # # # be discarded because they aren't used for the read file and could be incorrect)
+    # # Faster depth == 1 solution
     # descendants_query = (
     #     select(
     #         FileAncestorFileDescendantDb.ancestor_id.label("parent_id"),
@@ -76,14 +74,13 @@ async def read_file(
     #     .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
     # )  # fmt: skip
 
-    # General solution (note: for the read file `parent_id` and `name` should be
-    # discarded because they aren't used for the read file and could be incorrect)
+    # General solution
     fafd1 = aliased(FileAncestorFileDescendantDb)
     fafd2 = aliased(FileAncestorFileDescendantDb)
     descendants_query = (
         select(
-            fafd2.ancestor_id.label("parent_id"),
-            fafd2.descendant_path.label("name"),
+            case((fafd1.descendant_depth > 0, fafd2.ancestor_id), else_=literal(None)).label("parent_id"),
+            case((fafd1.descendant_depth > 0, fafd2.descendant_path), else_=literal(None)).label("name"),
             FileDb.id,
             FileDb.type,
         )
