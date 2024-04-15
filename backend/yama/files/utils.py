@@ -15,8 +15,8 @@ from yama.files.models import (
     FileWrite,
     ShareTable,
     ShareType,
-    UserAncestorUserDescendantTable,
 )
+from yama.users.models import UserAncestorUserDescendantDb
 
 
 async def read_file(
@@ -73,7 +73,6 @@ async def read_file(
     )
     if depth is not None:
         descendants_query = descendants_query.where(fafd1.descendant_depth <= depth)
-    descendants = (await connection.execute(descendants_query)).mappings().all()
 
     ...
 
@@ -119,8 +118,8 @@ async def _check_share_for_file_and_user(
         .cte()
     )
     ancestor_user_ids_cte = (
-        select(UserAncestorUserDescendantTable.ancestor_id)
-        .where(UserAncestorUserDescendantTable.descendant_id == user_id)
+        select(UserAncestorUserDescendantDb.ancestor_id)
+        .where(UserAncestorUserDescendantDb.descendant_id == user_id)
         .cte()
     )
     share_id_query = (

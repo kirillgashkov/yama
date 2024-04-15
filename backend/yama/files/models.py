@@ -69,11 +69,6 @@ class ShareType(str, Enum):
     SHARE = "share"
 
 
-class UserType(str, Enum):
-    UNIT = "unit"
-    GROUP = "group"
-
-
 class RegularRead(NamedTuple):
     id: UUID
     type: Literal[FileType.REGULAR]
@@ -148,30 +143,3 @@ class ShareTable(TableBase):
     file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
     by_user_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
     to_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-
-
-class UserTypeTable(TableBase):
-    __tablename__ = "user_types"
-
-    type: Mapped[str] = mapped_column(String, primary_key=True)
-
-
-class UserTable(TableBase):
-    __tablename__ = "users"
-
-    id: Mapped[UUID] = mapped_column(
-        server_default=func.uuid_generate_v4(), primary_key=True
-    )
-    type: Mapped[str] = mapped_column(ForeignKey("user_types.type"))
-    handle: Mapped[str]
-    password_hash: Mapped[str | None]
-
-
-class UserAncestorUserDescendantTable(TableBase):
-    __tablename__ = "user_ancestors_user_descendants"
-
-    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    descendant_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), primary_key=True
-    )
-    descendant_depth: Mapped[int]
