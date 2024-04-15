@@ -51,12 +51,12 @@ async def read_file(
     # # Faster depth == 0 solution
     # descendants_query = (
     #     select(
-    #         FileTable.id.label("ancestor_id"),
-    #         FileTable.id,
-    #         literal(".").label("name"),
-    #         FileTable.type,
+    #         literal(None).label("parent_id"),
+    #         literal(None).label("name"),
+    #         FileDb.id,
+    #         FileDb.type,
     #     )
-    #     .where(FileTable.id == id_)
+    #     .where(FileDb.id == id_)
     # )
 
     # General solution
