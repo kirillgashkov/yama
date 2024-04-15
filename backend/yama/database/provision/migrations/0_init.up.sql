@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS file_shares (
     user_id uuid NOT NULL,
     created_by uuid NOT NULL,
     PRIMARY KEY (id),
-    FOREIGN KEY (type) REFERENCES file_types (type),
+    FOREIGN KEY (type) REFERENCES file_share_types (type),
     FOREIGN KEY (file_id) REFERENCES files (id),
     FOREIGN KEY (user_id) REFERENCES users (id),
     FOREIGN KEY (created_by) REFERENCES users (id)
