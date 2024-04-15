@@ -100,13 +100,13 @@ class FileShare(NamedTuple):
     ...
 
 
-class FileTypeTable(TableBase):
+class FileTypeDb(TableBase):
     __tablename__ = "file_types"
 
     type: Mapped[str] = mapped_column(String, primary_key=True)
 
 
-class FileTable(TableBase):
+class FileDb(TableBase):
     __tablename__ = "files"
 
     id: Mapped[UUID] = mapped_column(
@@ -115,7 +115,7 @@ class FileTable(TableBase):
     type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
 
 
-class FileAncestorFileDescendantTable(TableBase):
+class FileAncestorFileDescendantDb(TableBase):
     __tablename__ = "file_ancestors_file_descendants"
 
     ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"), primary_key=True)
@@ -127,13 +127,13 @@ class FileAncestorFileDescendantTable(TableBase):
     descendant_depth: Mapped[int]
 
 
-class ShareTypeTable(TableBase):
+class ShareTypeDb(TableBase):
     __tablename__ = "share_types"
 
     type: Mapped[str] = mapped_column(String, primary_key=True)
 
 
-class ShareTable(TableBase):
+class ShareDb(TableBase):
     __tablename__ = "shares"
 
     id: Mapped[UUID] = mapped_column(

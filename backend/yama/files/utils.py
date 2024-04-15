@@ -7,13 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 
 from yama.files.models import (
-    FileAncestorFileDescendantTable,
+    FileAncestorFileDescendantDb,
+    FileDb,
     FilePath,
     FileRead,
     FileShare,
-    FileTable,
     FileWrite,
-    ShareTable,
+    ShareDb,
     ShareType,
 )
 from yama.users.models import UserAncestorUserDescendantDb
@@ -56,17 +56,17 @@ async def read_file(
     # )
 
     # General solution
-    fafd1 = aliased(FileAncestorFileDescendantTable)
-    fafd2 = aliased(FileAncestorFileDescendantTable)
+    fafd1 = aliased(FileAncestorFileDescendantDb)
+    fafd2 = aliased(FileAncestorFileDescendantDb)
     descendants_query = (
         select(
             fafd2.ancestor_id,
             fafd2.descendant_id.label("id"),
             fafd2.descendant_path.label("name"),
-            FileTable.type,
+            FileDb.type,
         )
         .select_from(fafd1, fafd2)
-        .join(FileTable, fafd2.descendant_id == FileTable.id)
+        .join(FileDb, fafd2.descendant_id == FileDb.id)
         .where(fafd1.ancestor_id == id_)
         .where(fafd2.descendant_id == fafd1.descendant_id)
         .where((fafd1.descendant_depth == 0) | (fafd2.descendant_depth == 1))
@@ -113,8 +113,8 @@ async def _check_share_for_file_and_user(
     connection: AsyncConnection,
 ) -> None:
     ancestor_file_ids_cte = (
-        select(FileAncestorFileDescendantTable.ancestor_id)
-        .where(FileAncestorFileDescendantTable.descendant_id == file_id)
+        select(FileAncestorFileDescendantDb.ancestor_id)
+        .where(FileAncestorFileDescendantDb.descendant_id == file_id)
         .cte()
     )
     ancestor_user_ids_cte = (
@@ -123,11 +123,11 @@ async def _check_share_for_file_and_user(
         .cte()
     )
     share_id_query = (
-        select(ShareTable.id)
-        .select_from(ShareTable)
-        .join(ancestor_file_ids_cte, ShareTable.file_id == ancestor_file_ids_cte.c.ancestor_id)
-        .join(ancestor_user_ids_cte, ShareTable.to_user_id == ancestor_user_ids_cte.c.ancestor_id)
-        .where(ShareTable.type.in_([st.value for st in allowed_share_types]))
+        select(ShareDb.id)
+        .select_from(ShareDb)
+        .join(ancestor_file_ids_cte, ShareDb.file_id == ancestor_file_ids_cte.c.ancestor_id)
+        .join(ancestor_user_ids_cte, ShareDb.to_user_id == ancestor_user_ids_cte.c.ancestor_id)
+        .where(ShareDb.type.in_([st.value for st in allowed_share_types]))
         .limit(1)
         .add_cte(ancestor_file_ids_cte)
         .add_cte(ancestor_user_ids_cte)
@@ -211,9 +211,9 @@ async def _path_to_id(
 
 async def _id_to_parent_id(id_: UUID, /, *, connection: AsyncConnection) -> UUID:
     parent_id_query = (
-        select(FileAncestorFileDescendantTable.ancestor_id)
-        .where(FileAncestorFileDescendantTable.descendant_id == id_)
-        .where(FileAncestorFileDescendantTable.descendant_depth == 1)
+        select(FileAncestorFileDescendantDb.ancestor_id)
+        .where(FileAncestorFileDescendantDb.descendant_id == id_)
+        .where(FileAncestorFileDescendantDb.descendant_depth == 1)
     )
     parent_id = (await connection.execute(parent_id_query)).scalars().one_or_none()
     if parent_id is None:
@@ -274,9 +274,9 @@ async def _ancestor_id_and_descendant_path_to_id(
     connection: AsyncConnection,
 ) -> UUID:
     id_query = (
-        select(FileAncestorFileDescendantTable.descendant_id)
-        .where(FileAncestorFileDescendantTable.ancestor_id == ancestor_id)
-        .where(FileAncestorFileDescendantTable.descendant_path == str(descendant_path))
+        select(FileAncestorFileDescendantDb.descendant_id)
+        .where(FileAncestorFileDescendantDb.ancestor_id == ancestor_id)
+        .where(FileAncestorFileDescendantDb.descendant_path == str(descendant_path))
     )
     id_ = (await connection.execute(id_query)).scalars().one_or_none()
     if id_ is None:
