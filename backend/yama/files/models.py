@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path, PurePosixPath
-from typing import Annotated, Any, Literal, NamedTuple, Optional, TypeAlias
+from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
 from fastapi import UploadFile
@@ -141,4 +141,4 @@ class FileShareDb(TableBase):
     type: Mapped[str] = mapped_column(ForeignKey("file_share_types.type"))
     file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    created_by: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
