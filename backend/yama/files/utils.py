@@ -62,8 +62,8 @@ async def read_file(
     # # Faster depth == 1 solution
     # descendants_query = (
     #     select(
-    #         FileAncestorFileDescendantDb.ancestor_id.label("parent_id"),
-    #         FileAncestorFileDescendantDb.descendant_path.label("name"),
+    #         case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
+    #         case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
     #         FileDb.id,
     #         FileDb.type,
     #     )
