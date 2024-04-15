@@ -140,5 +140,5 @@ class FileShareDb(TableBase):
     )
     type: Mapped[str] = mapped_column(ForeignKey("file_share_types.type"))
     file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
-    by_user_id: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))
-    to_user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[Optional[UUID]] = mapped_column(ForeignKey("users.id"))

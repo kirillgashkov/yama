@@ -130,7 +130,7 @@ async def _check_share_for_file_and_user(
         select(FileShareDb.id)
         .select_from(FileShareDb)
         .join(ancestor_file_ids_cte, FileShareDb.file_id == ancestor_file_ids_cte.c.ancestor_id)
-        .join(ancestor_user_ids_cte, FileShareDb.to_user_id == ancestor_user_ids_cte.c.ancestor_id)
+        .join(ancestor_user_ids_cte, FileShareDb.user_id == ancestor_user_ids_cte.c.ancestor_id)
         .where(FileShareDb.type.in_([t.value for t in allowed_types]))
         .limit(1)
         .add_cte(ancestor_file_ids_cte)
