@@ -23,7 +23,7 @@ async def read_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    depth: int | None = 0,
+    depth: int | None = 1,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
@@ -64,21 +64,23 @@ async def read_file(
     fafd2 = aliased(FileAncestorFileDescendantDb)
     descendants_query = (
         select(
-            fafd2.ancestor_id,
-            fafd2.descendant_id.label("id"),
+            fafd2.ancestor_id.label("parent_id"),
             fafd2.descendant_path.label("name"),
+            FileDb.id,
             FileDb.type,
         )
-        .select_from(fafd1, fafd2)
-        .join(FileDb, fafd2.descendant_id == FileDb.id)
+        # Select descendants of the file (the descendants include the file itself)
+        .select_from(fafd1)
         .where(fafd1.ancestor_id == id_)
-        .where(fafd2.descendant_id == fafd1.descendant_id)
-        .where((fafd1.descendant_depth == 0) | (fafd2.descendant_depth == 1))
-    )
+        # Select file information for each descendant
+        .join(FileDb, fafd1.descendant_id == FileDb.id)
+        # Select parent and name within parent for each descendant if available
+        .outerjoin(fafd2, (fafd1.descendant_id == fafd2.descendant_id) & (fafd2.descendant_depth == 1))
+    )  # fmt: skip
     if depth is not None:
         descendants_query = descendants_query.where(fafd1.descendant_depth <= depth)
-
-    ...
+    descendants = (await connection.execute(descendants_query)).mappings().all()
+    return descendants  # type: ignore  # FIXME: Remove
 
 
 async def write_file(
