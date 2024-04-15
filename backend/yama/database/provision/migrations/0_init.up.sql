@@ -2,11 +2,28 @@ BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE IF NOT EXISTS user_types (
+    type varchar NOT NULL,
+    PRIMARY KEY (type)
+);
+INSERT INTO user_types (type) VALUES ('user'), ('group');
+
 CREATE TABLE IF NOT EXISTS users (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),
-    username varchar NOT NULL,
-    password_hash varchar NOT NULL,
-    PRIMARY KEY (id)
+    type varchar NOT NULL,
+    handle varchar NOT NULL,
+    password_hash varchar,
+    PRIMARY KEY (id),
+    FOREIGN KEY (type) REFERENCES user_types (type)
+);
+
+CREATE TABLE IF NOT EXISTS user_ancestors_user_descendants (
+    ancestor_id uuid NOT NULL,
+    descendant_id uuid NOT NULL,
+    descendant_depth integer NOT NULL,
+    PRIMARY KEY (ancestor_id, descendant_id),
+    FOREIGN KEY (ancestor_id) REFERENCES users (id),
+    FOREIGN KEY (descendant_id) REFERENCES users (id)
 );
 
 CREATE TABLE IF NOT EXISTS file_types (
