@@ -1,5 +1,5 @@
 from enum import Enum
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
@@ -68,6 +68,35 @@ class FileShareType(str, Enum):
     READ = "read"
     WRITE = "write"
     SHARE = "share"
+
+
+class RegularContentRead(NamedTuple):
+    path: Path
+
+
+class RegularRead(NamedTuple):
+    id: UUID
+    type: Literal[FileType.REGULAR]
+    content: RegularContentRead | None = None
+
+
+class DirectoryContentFileRead(NamedTuple):
+    name: FileName
+    file: "FileRead"
+
+
+class DirectoryContentRead(NamedTuple):
+    count_: int
+    items: list[DirectoryContentFileRead]
+
+
+class DirectoryRead(NamedTuple):
+    id: UUID
+    type: Literal[FileType.DIRECTORY]
+    content: DirectoryContentRead | None = None
+
+
+FileRead: TypeAlias = RegularRead | DirectoryRead
 
 
 class RegularContentReadOut(ModelBase):
