@@ -4,7 +4,6 @@ from uuid import UUID
 
 from sqlalchemy import case, literal, select
 from sqlalchemy.ext.asyncio import AsyncConnection
-from sqlalchemy.orm import aliased
 
 from yama.files.models import (
     FileAncestorFileDescendantDb,
@@ -23,7 +22,8 @@ async def read_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    depth: int | None = 1,
+    metadata: bool = True,
+    content: bool = False,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
@@ -48,8 +48,8 @@ async def read_file(
         connection=connection,
     )
 
-    # # Faster depth == 0 solution
-    # descendants_query = (
+    # # Metadata-only query
+    # files_query = (
     #     select(
     #         literal(None).label("parent_id"),
     #         literal(None).label("name"),
@@ -59,44 +59,23 @@ async def read_file(
     #     .where(FileDb.id == id_)
     # )
 
-    # # Faster depth == 1 solution
-    # descendants_query = (
-    #     select(
-    #         case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
-    #         case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
-    #         FileDb.id,
-    #         FileDb.type,
-    #     )
-    #     # Select the file and its children
-    #     .select_from(FileAncestorFileDescendantDb)
-    #     .where((FileAncestorFileDescendantDb.ancestor_id == id_) & FileAncestorFileDescendantDb.descendant_depth.in_([0, 1]))
-    #     # Select file information for the file and each child
-    #     .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
-    # )  # fmt: skip
-
-    # General solution
-    fafd1 = aliased(FileAncestorFileDescendantDb)
-    fafd2 = aliased(FileAncestorFileDescendantDb)
-    descendants_query = (
+    # General query
+    files_query = (
         select(
-            case((fafd1.descendant_depth > 0, fafd2.ancestor_id), else_=literal(None)).label("parent_id"),
-            case((fafd1.descendant_depth > 0, fafd2.descendant_path), else_=literal(None)).label("name"),
+            case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
+            case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
             FileDb.id,
             FileDb.type,
         )
-        # Select descendants of the file (the descendants include the file itself)
-        .select_from(fafd1)
-        .where(fafd1.ancestor_id == id_)
-        # Select file information for each descendant
-        .join(FileDb, fafd1.descendant_id == FileDb.id)
-        # Select parent and name within parent for each descendant if available
-        .outerjoin(fafd2, (fafd1.descendant_id == fafd2.descendant_id) & (fafd2.descendant_depth == 1))
+        # Select the file and its children
+        .select_from(FileAncestorFileDescendantDb)
+        .where((FileAncestorFileDescendantDb.ancestor_id == id_) & FileAncestorFileDescendantDb.descendant_depth.in_([0, 1]))
+        # Select file information for the file and each child
+        .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
     )  # fmt: skip
-    if depth is not None:
-        descendants_query = descendants_query.where(fafd1.descendant_depth <= depth)
 
-    descendants = (await connection.execute(descendants_query)).mappings().all()
-    return descendants  # type: ignore  # FIXME: Remove
+    files = (await connection.execute(files_query)).mappings().all()
+    return files  # type: ignore  # FIXME: Remove
 
 
 async def write_file(
