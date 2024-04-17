@@ -1,5 +1,5 @@
 from enum import Enum
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
 from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from yama.model.models import ModelBase
 
 
 def _check_file_name(name: str) -> str:
@@ -69,19 +70,33 @@ class FileShareType(str, Enum):
     SHARE = "share"
 
 
-class RegularRead(NamedTuple):
+class RegularContentReadOut(ModelBase):
+    url: str
+
+
+class RegularReadOut(ModelBase):
     id: UUID
     type: Literal[FileType.REGULAR]
-    content_path: Path | None
+    content: RegularContentReadOut | None = None
 
 
-class DirectoryRead(NamedTuple):
+class DirectoryContentFileReadOut(ModelBase):
+    name: FileName
+    file: "FileReadOut"
+
+
+class DirectoryContentReadOut(ModelBase):
+    count: int
+    items: list[DirectoryContentFileReadOut]
+
+
+class DirectoryReadOut(ModelBase):
     id: UUID
     type: Literal[FileType.DIRECTORY]
-    files: "dict[FileName, FileRead] | None"
+    content: DirectoryContentReadOut | None = None
 
 
-FileRead: TypeAlias = RegularRead | DirectoryRead
+FileReadOut: TypeAlias = RegularReadOut | DirectoryReadOut
 
 
 class RegularWrite(NamedTuple):
