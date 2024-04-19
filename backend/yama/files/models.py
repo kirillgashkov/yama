@@ -128,13 +128,17 @@ class DirectoryOut(ModelBase):
 FileOut: TypeAlias = RegularOut | DirectoryOut
 
 
+class RegularContentWrite(NamedTuple):
+    upload_file: UploadFile
+
+
 class RegularWrite(NamedTuple):
     type: Literal[FileType.REGULAR]
-    content_stream: UploadFile
+    content: RegularContentWrite
 
 
 class DirectoryWrite(NamedTuple):
-    ...
+    type: Literal[FileType.DIRECTORY]
 
 
 FileWrite: TypeAlias = RegularWrite | DirectoryWrite
