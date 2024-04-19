@@ -13,7 +13,6 @@ from yama.files.models import (
     FileAncestorFileDescendantDb,
     FileDb,
     FilePath,
-    FileShare,
     FileShareDb,
     FileShareType,
     FileType,
@@ -62,20 +61,6 @@ async def read_file(
 
 async def write_file(
     file_write: FileWrite,
-    id_or_path: UUID | FilePath,
-    /,
-    *,
-    root_dir_id: UUID,
-    user_id: UUID,
-    working_dir_id: UUID,
-    connection: AsyncConnection,
-    files_dir: Path,
-) -> File:
-    ...
-
-
-async def share_file(
-    file_share: FileShare,
     id_or_path: UUID | FilePath,
     /,
     *,

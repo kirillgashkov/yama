@@ -140,10 +140,6 @@ class DirectoryWrite(NamedTuple):
 FileWrite: TypeAlias = RegularWrite | DirectoryWrite
 
 
-class FileShare(NamedTuple):
-    ...
-
-
 class FileTypeDb(TableBase):
     __tablename__ = "file_types"
 
