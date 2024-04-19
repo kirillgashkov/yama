@@ -6,20 +6,20 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
-    DirectoryContentFileRead,
-    DirectoryContentRead,
-    DirectoryRead,
+    Directory,
+    DirectoryContent,
+    DirectoryContentFile,
+    File,
     FileAncestorFileDescendantDb,
     FileDb,
     FilePath,
-    FileRead,
     FileShare,
     FileShareDb,
     FileShareType,
     FileType,
     FileWrite,
-    RegularContentRead,
-    RegularRead,
+    Regular,
+    RegularContent,
 )
 from yama.users.models import UserAncestorUserDescendantDb
 
@@ -34,7 +34,7 @@ async def read_file(
     working_dir_id: UUID,
     connection: AsyncConnection,
     files_dir: Path,
-) -> FileRead:
+) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
         root_dir_id=root_dir_id,
@@ -70,7 +70,7 @@ async def write_file(
     working_dir_id: UUID,
     connection: AsyncConnection,
     files_dir: Path,
-) -> FileRead:
+) -> File:
     ...
 
 
@@ -84,31 +84,31 @@ async def share_file(
     working_dir_id: UUID,
     connection: AsyncConnection,
     files_dir: Path,
-) -> FileRead:
+) -> File:
     ...
 
 
 async def _make_file(
     *, id_: UUID, content: bool, files_dir: Path, connection: AsyncConnection
-) -> FileRead:
+) -> File:
     file_db_query = select(FileDb).where(FileDb.id == id_)
     file_db_row = (await connection.execute(file_db_query)).mappings().one()
     file_db = FileDb(**file_db_row)
 
-    file: FileRead
+    file: File
     match type_ := FileType(file_db.type):
         case FileType.REGULAR:
             if content:
-                file = RegularRead(
+                file = Regular(
                     id=file_db.id,
                     type=type_,
                     content=_make_regular_content(id_=file_db.id, files_dir=files_dir),
                 )
             else:
-                file = RegularRead(id=file_db.id, type=type_)
+                file = Regular(id=file_db.id, type=type_)
         case FileType.DIRECTORY:
             if content:
-                file = DirectoryRead(
+                file = Directory(
                     id=file_db.id,
                     type=type_,
                     content=(
@@ -118,7 +118,7 @@ async def _make_file(
                     ),
                 )
             else:
-                file = DirectoryRead(id=file_db.id, type=type_)
+                file = Directory(id=file_db.id, type=type_)
 
         case _:
             assert_never(type_)
@@ -126,14 +126,14 @@ async def _make_file(
     return file
 
 
-def _make_regular_content(*, id_: UUID, files_dir: Path) -> RegularContentRead:
+def _make_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
     physical_path = _id_to_physical_path(id_, files_dir=files_dir)
-    return RegularContentRead(physical_path=physical_path)
+    return RegularContent(physical_path=physical_path)
 
 
 async def _make_directory_content(
     *, id_: UUID, connection: AsyncConnection
-) -> DirectoryContentRead:
+) -> DirectoryContent:
     content_files_db_query = (
         select(
             FileAncestorFileDescendantDb.descendant_path.label("name"),
@@ -155,19 +155,19 @@ async def _make_directory_content(
 
     content_files = []
     for name, file_db in content_files_db:
-        file: FileRead
+        file: File
         match type_ := FileType(file_db.type):
             case FileType.REGULAR:
-                file = RegularRead(id=file_db.id, type=type_)
+                file = Regular(id=file_db.id, type=type_)
             case FileType.DIRECTORY:
-                file = DirectoryRead(id=file_db.id, type=type_)
+                file = Directory(id=file_db.id, type=type_)
             case _:
                 assert_never(type_)
 
-        content_file = DirectoryContentFileRead(name=name, file=file)
+        content_file = DirectoryContentFile(name=name, file=file)
         content_files.append(content_file)
 
-    return DirectoryContentRead(count_=len(content_files), items=content_files)
+    return DirectoryContent(count_=len(content_files), items=content_files)
 
 
 def _id_to_physical_path(id: UUID, /, *, files_dir: Path) -> Path:

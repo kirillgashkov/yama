@@ -70,62 +70,62 @@ class FileShareType(str, Enum):
     SHARE = "share"
 
 
-class RegularContentRead(NamedTuple):
+class RegularContent(NamedTuple):
     physical_path: Path
 
 
-class RegularRead(NamedTuple):
+class Regular(NamedTuple):
     id: UUID
     type: Literal[FileType.REGULAR]
-    content: RegularContentRead | None = None
+    content: RegularContent | None = None
 
 
-class DirectoryContentFileRead(NamedTuple):
+class DirectoryContentFile(NamedTuple):
     name: FileName
-    file: "FileRead"
+    file: "File"
 
 
-class DirectoryContentRead(NamedTuple):
+class DirectoryContent(NamedTuple):
     count_: int
-    items: list[DirectoryContentFileRead]
+    items: list[DirectoryContentFile]
 
 
-class DirectoryRead(NamedTuple):
+class Directory(NamedTuple):
     id: UUID
     type: Literal[FileType.DIRECTORY]
-    content: DirectoryContentRead | None = None
+    content: DirectoryContent | None = None
 
 
-FileRead: TypeAlias = RegularRead | DirectoryRead
+File: TypeAlias = Regular | Directory
 
 
-class RegularContentReadOut(ModelBase):
+class RegularContentOut(ModelBase):
     url: str
 
 
-class RegularReadOut(ModelBase):
+class RegularOut(ModelBase):
     id: UUID
     type: Literal[FileType.REGULAR]
-    content: RegularContentReadOut | None = None
+    content: RegularContentOut | None = None
 
 
-class DirectoryContentFileReadOut(ModelBase):
+class DirectoryContentFileOut(ModelBase):
     name: FileName
-    file: "FileReadOut"
+    file: "FileOut"
 
 
-class DirectoryContentReadOut(ModelBase):
+class DirectoryContentOut(ModelBase):
     count: int
-    items: list[DirectoryContentFileReadOut]
+    items: list[DirectoryContentFileOut]
 
 
-class DirectoryReadOut(ModelBase):
+class DirectoryOut(ModelBase):
     id: UUID
     type: Literal[FileType.DIRECTORY]
-    content: DirectoryContentReadOut | None = None
+    content: DirectoryContentOut | None = None
 
 
-FileReadOut: TypeAlias = RegularReadOut | DirectoryReadOut
+FileOut: TypeAlias = RegularOut | DirectoryOut
 
 
 class RegularWrite(NamedTuple):
