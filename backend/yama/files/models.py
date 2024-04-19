@@ -71,7 +71,7 @@ class FileShareType(str, Enum):
 
 
 class RegularContentRead(NamedTuple):
-    path: Path
+    physical_path: Path
 
 
 class RegularRead(NamedTuple):

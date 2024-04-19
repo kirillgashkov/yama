@@ -2,10 +2,13 @@ from pathlib import Path, PurePosixPath
 from typing import assert_never
 from uuid import UUID
 
-from sqlalchemy import case, literal, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.files.models import (
+    DirectoryContentFileRead,
+    DirectoryContentRead,
+    DirectoryRead,
     FileAncestorFileDescendantDb,
     FileDb,
     FilePath,
@@ -13,7 +16,10 @@ from yama.files.models import (
     FileShare,
     FileShareDb,
     FileShareType,
+    FileType,
     FileWrite,
+    RegularContentRead,
+    RegularRead,
 )
 from yama.users.models import UserAncestorUserDescendantDb
 
@@ -48,34 +54,69 @@ async def read_file(
         connection=connection,
     )
 
-    # # Metadata-only query
-    # files_query = (
-    #     select(
-    #         literal(None).label("parent_id"),
-    #         literal(None).label("name"),
-    #         FileDb.id,
-    #         FileDb.type,
-    #     )
-    #     .where(FileDb.id == id_)
-    # )
+    file_query = select(FileDb.id, FileDb.type).where(FileDb.id == id_)
+    file_row = (await connection.execute(file_query)).mappings().one()
+    file_db = FileDb(id=file_row["id"], type=file_row["type"])
 
-    # General query
-    files_query = (
+    content_files_query = (
         select(
-            case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
-            case((FileAncestorFileDescendantDb.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
+            FileAncestorFileDescendantDb.descendant_path.label("name"),
             FileDb.id,
             FileDb.type,
         )
-        # Select the file and its children
         .select_from(FileAncestorFileDescendantDb)
-        .where((FileAncestorFileDescendantDb.ancestor_id == id_) & FileAncestorFileDescendantDb.descendant_depth.in_([0, 1]))
-        # Select file information for the file and each child
+        .where((FileAncestorFileDescendantDb.ancestor_id == id_) & (FileAncestorFileDescendantDb.descendant_depth == 1))
         .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
     )  # fmt: skip
+    content_files_rows = (
+        (await connection.execute(content_files_query)).mappings().all()
+    )
+    content_files_db = [
+        (row["name"], FileDb(id=row["id"], type=row["type"]))
+        for row in content_files_rows
+    ]
 
-    files = (await connection.execute(files_query)).mappings().all()
-    return files  # type: ignore  # FIXME: Remove
+    content_files = []
+    for name, content_file_db in content_files_db:
+        content_file_file: FileRead
+        content_file_file_type = FileType(content_file_db.type)
+        match content_file_file_type:
+            case FileType.REGULAR:
+                content_file_file = RegularRead(
+                    id=content_file_db.id, type=content_file_file_type
+                )
+            case FileType.DIRECTORY:
+                content_file_file = DirectoryRead(
+                    id=content_file_db.id, type=content_file_file_type
+                )
+            case _:
+                assert_never(content_file_file_type)
+        content_file = DirectoryContentFileRead(name=name, file=content_file_file)
+        content_files.append(content_file)
+
+    file: FileRead
+    file_type = FileType(file_db.type)
+    match file_type:
+        case FileType.REGULAR:
+            file = RegularRead(
+                id=file_db.id,
+                type=file_type,
+                content=RegularContentRead(
+                    physical_path=_id_to_physical_path(file_db.id, files_dir=files_dir)
+                ),
+            )
+        case FileType.DIRECTORY:
+            file = DirectoryRead(
+                id=file_db.id,
+                type=file_type,
+                content=DirectoryContentRead(
+                    count_=len(content_files), items=content_files
+                ),
+            )
+        case _:
+            assert_never(file_type)
+
+    return file
 
 
 async def write_file(
@@ -104,6 +145,10 @@ async def share_file(
     files_dir: Path,
 ) -> FileRead:
     ...
+
+
+def _id_to_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
+    return files_dir / id.hex
 
 
 async def _check_share_for_file_and_user(
