@@ -28,7 +28,6 @@ async def read_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    metadata: bool = True,
     content: bool = False,
     root_dir_id: UUID,
     user_id: UUID,
@@ -54,67 +53,9 @@ async def read_file(
         connection=connection,
     )
 
-    file_query = select(FileDb.id, FileDb.type).where(FileDb.id == id_)
-    file_row = (await connection.execute(file_query)).mappings().one()
-    file_db = FileDb(id=file_row["id"], type=file_row["type"])
-
-    content_files_query = (
-        select(
-            FileAncestorFileDescendantDb.descendant_path.label("name"),
-            FileDb.id,
-            FileDb.type,
-        )
-        .select_from(FileAncestorFileDescendantDb)
-        .where((FileAncestorFileDescendantDb.ancestor_id == id_) & (FileAncestorFileDescendantDb.descendant_depth == 1))
-        .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
-    )  # fmt: skip
-    content_files_rows = (
-        (await connection.execute(content_files_query)).mappings().all()
+    file = await _make_file(
+        id_=id_, content=content, connection=connection, files_dir=files_dir
     )
-    content_files_db = [
-        (row["name"], FileDb(id=row["id"], type=row["type"]))
-        for row in content_files_rows
-    ]
-
-    content_files = []
-    for name, content_file_db in content_files_db:
-        content_file_file: FileRead
-        content_file_file_type = FileType(content_file_db.type)
-        match content_file_file_type:
-            case FileType.REGULAR:
-                content_file_file = RegularRead(
-                    id=content_file_db.id, type=content_file_file_type
-                )
-            case FileType.DIRECTORY:
-                content_file_file = DirectoryRead(
-                    id=content_file_db.id, type=content_file_file_type
-                )
-            case _:
-                assert_never(content_file_file_type)
-        content_file = DirectoryContentFileRead(name=name, file=content_file_file)
-        content_files.append(content_file)
-
-    file: FileRead
-    file_type = FileType(file_db.type)
-    match file_type:
-        case FileType.REGULAR:
-            file = RegularRead(
-                id=file_db.id,
-                type=file_type,
-                content=RegularContentRead(
-                    physical_path=_id_to_physical_path(file_db.id, files_dir=files_dir)
-                ),
-            )
-        case FileType.DIRECTORY:
-            file = DirectoryRead(
-                id=file_db.id,
-                type=file_type,
-                content=DirectoryContentRead(
-                    count_=len(content_files), items=content_files
-                ),
-            )
-        case _:
-            assert_never(file_type)
 
     return file
 
@@ -145,6 +86,44 @@ async def share_file(
     files_dir: Path,
 ) -> FileRead:
     ...
+
+
+async def _make_file(
+    *, id_: UUID, content: bool, files_dir: Path, connection: AsyncConnection
+) -> FileRead:
+    file_db_query = select(FileDb).where(FileDb.id == id_)
+    file_db_row = (await connection.execute(file_db_query)).mappings().one()
+    file_db = FileDb(**file_db_row)
+
+    file: FileRead
+    match type_ := FileType(file_db.type):
+        case FileType.REGULAR:
+            if content:
+                file = RegularRead(
+                    id=file_db.id,
+                    type=type_,
+                    content=_make_regular_content(id_=file_db.id, files_dir=files_dir),
+                )
+            else:
+                file = RegularRead(id=file_db.id, type=type_)
+        case FileType.DIRECTORY:
+            if content:
+                file = DirectoryRead(
+                    id=file_db.id,
+                    type=type_,
+                    content=(
+                        await _make_directory_content(
+                            id_=file_db.id, connection=connection
+                        )
+                    ),
+                )
+            else:
+                file = DirectoryRead(id=file_db.id, type=type_)
+
+        case _:
+            assert_never(type_)
+
+    return file
 
 
 def _make_regular_content(*, id_: UUID, files_dir: Path) -> RegularContentRead:
