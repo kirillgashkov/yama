@@ -53,7 +53,7 @@ async def read_file(
         connection=connection,
     )
 
-    file = await _make_file(
+    file = await _get_file(
         id_=id_, content=content, connection=connection, files_dir=files_dir
     )
 
@@ -88,7 +88,7 @@ async def share_file(
     ...
 
 
-async def _make_file(
+async def _get_file(
     *, id_: UUID, content: bool, files_dir: Path, connection: AsyncConnection
 ) -> File:
     file_db_query = select(FileDb).where(FileDb.id == id_)
@@ -102,7 +102,7 @@ async def _make_file(
                 file = Regular(
                     id=file_db.id,
                     type=type_,
-                    content=_make_regular_content(id_=file_db.id, files_dir=files_dir),
+                    content=_get_regular_content(id_=file_db.id, files_dir=files_dir),
                 )
             else:
                 file = Regular(id=file_db.id, type=type_)
@@ -112,7 +112,7 @@ async def _make_file(
                     id=file_db.id,
                     type=type_,
                     content=(
-                        await _make_directory_content(
+                        await _get_directory_content(
                             id_=file_db.id, connection=connection
                         )
                     ),
@@ -126,12 +126,12 @@ async def _make_file(
     return file
 
 
-def _make_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
+def _get_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
     physical_path = _id_to_physical_path(id_, files_dir=files_dir)
     return RegularContent(physical_path=physical_path)
 
 
-async def _make_directory_content(
+async def _get_directory_content(
     *, id_: UUID, connection: AsyncConnection
 ) -> DirectoryContent:
     content_files_db_query = (
