@@ -15,7 +15,7 @@ class AsyncReadable(Protocol):
 
 class Driver(ABC):
     @abstractmethod
-    async def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]:
+    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]:
         ...
 
     @abstractmethod
