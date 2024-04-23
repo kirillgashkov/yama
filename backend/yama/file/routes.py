@@ -35,8 +35,8 @@ from yama.file._models import (
 from yama.file.dependencies import get_settings
 from yama.file.settings import Settings
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
-from yama.users.dependencies import get_settings as get_users_settings
-from yama.users.settings import Settings as UsersSettings
+from yama.users.dependencies import get_settings as get_user_settings
+from yama.users.settings import Settings as UserSettings
 
 router = APIRouter()
 
@@ -73,13 +73,13 @@ async def get_file(
     working_dir_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Settings, Depends(get_settings)],
-    users_settings: Annotated[UsersSettings, Depends(get_users_settings)],
+    user_settings: Annotated[UserSettings, Depends(get_user_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> FileReadDetail | FileResponse:
     file_out = await utils.get_file(
         path,
         type_=type,
-        user_id=user_id or users_settings.public_user_id,
+        user_id=user_id or user_settings.public_user_id,
         working_dir_id=working_dir_id or settings.root_dir_id,
         files_dir=settings.files_dir,
         root_dir_id=settings.root_dir_id,
