@@ -45,18 +45,20 @@ class FileSystemDriver(Driver):
         )
         complete_path = _id_to_path(id_, file_system_dir=self.file_system_dir)
 
-        file_size = 0
-        async with aiofiles.open(incomplete_path, "wb") as f:
-            while chunk := await content.read(self.chunk_size):
-                file_size += len(chunk)
+        try:
+            file_size = 0
+            async with aiofiles.open(incomplete_path, "wb") as f:
+                while chunk := await content.read(self.chunk_size):
+                    file_size += len(chunk)
 
-                if file_size > self.max_file_size:
-                    incomplete_path.unlink(missing_ok=True)
-                    raise FileTooLargeError()
+                    if file_size > self.max_file_size:
+                        raise FileTooLargeError()
 
-                await f.write(chunk)
+                    await f.write(chunk)
 
-        incomplete_path.rename(complete_path)
+            incomplete_path.rename(complete_path)
+        finally:
+            incomplete_path.unlink(missing_ok=True)
 
         return file_size
 
