@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from yama.file.driver.utils import Driver
 from yama.file.models import (
     Directory,
     DirectoryContent,
@@ -69,7 +70,7 @@ async def write_file(
     user_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
-    files_dir: Path,
+    driver: Driver,
 ) -> File:
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
@@ -77,6 +78,17 @@ async def write_file(
         working_dir_id=working_dir_id,
         connection=connection,
     )
+
+    await _check_share_for_file_and_user(
+        allowed_types=[
+            FileShareType.WRITE,
+            FileShareType.SHARE,
+        ],
+        file_id=id_ or parent_id,
+        user_id=user_id,
+        connection=connection,
+    )
+
     raise NotImplementedError()
 
 
