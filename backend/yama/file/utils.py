@@ -155,10 +155,6 @@ async def _get_directory_content(
     return DirectoryContent(count_=len(content_files), items=content_files)
 
 
-def _id_to_physical_path(id: UUID, /, *, files_dir: Path) -> Path:
-    return files_dir / id.hex
-
-
 async def _check_share_for_file_and_user(
     *,
     allowed_types: list[FileShareType],
