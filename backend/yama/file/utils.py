@@ -450,10 +450,6 @@ async def _ancestor_id_and_descendant_paths_to_ids(
     return descendant_path_to_id
 
 
-class UploadFileTooLargeError(Exception):
-    ...
-
-
 class FilesFileError(Exception):
     def __init__(
         self, ancestor_id: UUID, descendant_path: FilePath = PurePosixPath("."), /
