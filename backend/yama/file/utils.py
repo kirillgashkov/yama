@@ -71,7 +71,13 @@ async def write_file(
     connection: AsyncConnection,
     files_dir: Path,
 ) -> File:
-    ...
+    parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
+        id_or_path,
+        root_dir_id=root_dir_id,
+        working_dir_id=working_dir_id,
+        connection=connection,
+    )
+    raise NotImplementedError()
 
 
 async def _get_file(
@@ -237,6 +243,33 @@ async def _id_or_path_to_parent_id(
     return parent_id
 
 
+async def _id_or_path_to_parent_id_and_id_or_none(
+    id_or_path: UUID | FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+    connection: AsyncConnection,
+) -> tuple[UUID, UUID | None]:
+    parent_id: UUID
+    id_: UUID | None
+    match id_or_path:
+        case UUID():
+            parent_id = await _id_to_parent_id(id_or_path, connection=connection)
+            id_ = id_or_path
+        case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
+            parent_id, id_ = await _path_to_parent_id_and_id_or_none(
+                id_or_path,
+                root_dir_id=root_dir_id,
+                working_dir_id=working_dir_id,
+                connection=connection,
+            )
+        case _:
+            assert_never(id_or_path)
+
+    return parent_id, id_
+
+
 async def _path_to_id(
     path: FilePath,
     /,
@@ -301,7 +334,7 @@ async def _path_to_parent_id(
     return parent_id
 
 
-async def _path_to_parent_id_and_id(
+async def _path_to_parent_id_and_id_or_none(
     path: FilePath,
     /,
     *,
