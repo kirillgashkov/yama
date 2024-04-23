@@ -112,8 +112,7 @@ async def _get_file(
 
 
 def _get_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
-    physical_path = _id_to_physical_path(id_, files_dir=files_dir)
-    return RegularContent(physical_path=physical_path)
+    ...
 
 
 async def _get_directory_content(

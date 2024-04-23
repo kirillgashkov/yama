@@ -1,5 +1,5 @@
 from enum import Enum
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
@@ -9,6 +9,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
+from yama.file.driver.utils import AsyncReadable
 from yama.file.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 from yama.model.models import ModelBase
 
@@ -73,7 +74,7 @@ class FileShareType(str, Enum):
 
 
 class RegularContent(NamedTuple):
-    physical_path: Path
+    content_stream: AsyncReadable
 
 
 class Regular(NamedTuple):
