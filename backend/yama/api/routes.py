@@ -7,8 +7,8 @@ from pydantic import BaseModel
 
 from yama.database.connections import sqlalchemy_async_engine
 from yama.database.settings import Settings as DatabaseSettings
-from yama.files.routes import router as files_router
-from yama.files.settings import Settings as FilesSettings
+from yama.file.routes import router as files_router
+from yama.file.settings import Settings as FilesSettings
 from yama.security.routes import router as security_router
 from yama.users.routes import router as users_router
 from yama.users.settings import Settings as UsersSettings

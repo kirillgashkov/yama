@@ -17,8 +17,8 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
-from yama.files import _utils as utils
-from yama.files._models import (
+from yama.file import _utils as utils
+from yama.file._models import (
     DirectoryCreateTuple,
     DirectoryReadDetail,
     DirectoryReadTuple,
@@ -32,8 +32,8 @@ from yama.files._models import (
     RegularReadDetail,
     RegularReadTuple,
 )
-from yama.files.dependencies import get_settings
-from yama.files.settings import Settings
+from yama.file.dependencies import get_settings
+from yama.file.settings import Settings
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
 from yama.users.dependencies import get_settings as get_users_settings
 from yama.users.settings import Settings as UsersSettings

@@ -9,7 +9,7 @@ from sqlalchemy import and_, case, delete, literal, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.files._models import (
+from yama.file._models import (
     DirectoryCreateTuple,
     DirectoryEntryReadTuple,
     DirectoryReadTuple,

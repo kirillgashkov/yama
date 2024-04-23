@@ -8,7 +8,7 @@ MAX_FILE_PATH_LENGTH = 4095
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="yama_files_")
+    model_config = SettingsConfigDict(env_prefix="yama_file_")
 
     files_base_url: str
     files_dir: Path

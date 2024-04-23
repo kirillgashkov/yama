@@ -5,7 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.files.models import (
+from yama.file.models import (
     Directory,
     DirectoryContent,
     DirectoryContentFile,

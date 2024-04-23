@@ -4,17 +4,12 @@ from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
 from fastapi import UploadFile
-from pydantic import (
-    AfterValidator,
-    TypeAdapter,
-    ValidatorFunctionWrapHandler,
-    WrapValidator,
-)
-from sqlalchemy import ForeignKey, String, func
+from pydantic import AfterValidator, ValidatorFunctionWrapHandler, WrapValidator
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
-from yama.files.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from yama.file.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 from yama.model.models import ModelBase
 
 
@@ -57,96 +52,105 @@ def _normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
 
 
 FileName: TypeAlias = Annotated[str, AfterValidator(_check_file_name)]
-FileNameAdapter: TypeAdapter[FileName] = TypeAdapter(FileName)  # pyright: ignore [reportCallIssue, reportAssignmentType]
-
 FilePath: TypeAlias = Annotated[
     PurePosixPath,
     AfterValidator(_normalize_file_path_root),
     WrapValidator(_check_file_path),
 ]
-FilePathAdapter: TypeAdapter[FilePath] = TypeAdapter(FilePath)  # pyright: ignore [reportCallIssue, reportAssignmentType]
 
 
-class FileTypeEnum(str, Enum):
+class FileType(str, Enum):
     REGULAR = "regular"
     DIRECTORY = "directory"
 
 
-FileTypeEnumAdapter: TypeAdapter[FileTypeEnum] = TypeAdapter(FileTypeEnum)
+class FileShareType(str, Enum):
+    READ = "read"
+    WRITE = "write"
+    SHARE = "share"
 
 
-class FileRead(ModelBase):
+class RegularContent(NamedTuple):
+    physical_path: Path
+
+
+class Regular(NamedTuple):
     id: UUID
-    type: FileTypeEnum
+    type: Literal[FileType.REGULAR]
+    content: RegularContent | None = None
 
 
-class RegularReadDetail(ModelBase):
-    id: UUID
-    type: Literal[FileTypeEnum.REGULAR]
-    content_url: str
-
-
-class DirectoryReadDetail(ModelBase):
-    id: UUID
-    type: Literal[FileTypeEnum.DIRECTORY]
-    files: dict[FileName, FileRead]
-
-
-FileReadDetail: TypeAlias = RegularReadDetail | DirectoryReadDetail
-
-
-class RegularCreateTuple(NamedTuple):
-    content: UploadFile
-    type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
-
-
-class DirectoryCreateTuple(NamedTuple):
-    type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
-
-
-FileCreateTuple: TypeAlias = RegularCreateTuple | DirectoryCreateTuple
-
-
-class RegularReadTuple(NamedTuple):
-    id: UUID
-    content_physical_path: Path
-    type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
-
-
-class DirectoryEntryReadTuple(NamedTuple):
-    id: UUID
-    type: FileTypeEnum
+class DirectoryContentFile(NamedTuple):
     name: FileName
+    file: "File"
 
 
-class DirectoryReadTuple(NamedTuple):
+class DirectoryContent(NamedTuple):
+    count_: int
+    items: list[DirectoryContentFile]
+
+
+class Directory(NamedTuple):
     id: UUID
-    content: list[DirectoryEntryReadTuple]
-    type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
+    type: Literal[FileType.DIRECTORY]
+    content: DirectoryContent | None = None
 
 
-FileReadTuple: TypeAlias = RegularReadTuple | DirectoryReadTuple
+File: TypeAlias = Regular | Directory
 
 
-class RegularUpdateTuple(NamedTuple):
-    type: Literal[FileTypeEnum.REGULAR] = FileTypeEnum.REGULAR
-    content: UploadFile | None = None
+class RegularContentOut(ModelBase):
+    url: str
 
 
-class DirectoryUpdateTuple(NamedTuple):
-    type: Literal[FileTypeEnum.DIRECTORY] = FileTypeEnum.DIRECTORY
+class RegularOut(ModelBase):
+    id: UUID
+    type: Literal[FileType.REGULAR]
+    content: RegularContentOut | None = None
 
 
-FileUpdateTuple: TypeAlias = RegularUpdateTuple | DirectoryUpdateTuple
+class DirectoryContentFileOut(ModelBase):
+    name: FileName
+    file: "FileOut"
 
 
-class FileType(TableBase):
+class DirectoryContentOut(ModelBase):
+    count: int
+    items: list[DirectoryContentFileOut]
+
+
+class DirectoryOut(ModelBase):
+    id: UUID
+    type: Literal[FileType.DIRECTORY]
+    content: DirectoryContentOut | None = None
+
+
+FileOut: TypeAlias = RegularOut | DirectoryOut
+
+
+class RegularContentWrite(NamedTuple):
+    upload_file: UploadFile
+
+
+class RegularWrite(NamedTuple):
+    type: Literal[FileType.REGULAR]
+    content: RegularContentWrite
+
+
+class DirectoryWrite(NamedTuple):
+    type: Literal[FileType.DIRECTORY]
+
+
+FileWrite: TypeAlias = RegularWrite | DirectoryWrite
+
+
+class FileTypeDb(TableBase):
     __tablename__ = "file_types"
 
-    type: Mapped[str] = mapped_column(String, primary_key=True)
+    type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class File(TableBase):
+class FileDb(TableBase):
     __tablename__ = "files"
 
     id: Mapped[UUID] = mapped_column(
@@ -155,7 +159,7 @@ class File(TableBase):
     type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
 
 
-class FileAncestorFileDescendant(TableBase):
+class FileAncestorFileDescendantDb(TableBase):
     __tablename__ = "file_ancestors_file_descendants"
 
     ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"), primary_key=True)
@@ -164,3 +168,21 @@ class FileAncestorFileDescendant(TableBase):
     )
     descendant_path: Mapped[str]
     descendant_depth: Mapped[int]
+
+
+class FileShareTypeDb(TableBase):
+    __tablename__ = "file_share_types"
+
+    type: Mapped[str] = mapped_column(primary_key=True)
+
+
+class FileShareDb(TableBase):
+    __tablename__ = "file_shares"
+
+    id: Mapped[UUID] = mapped_column(
+        server_default=func.uuid_generate_v4(), primary_key=True
+    )
+    type: Mapped[str] = mapped_column(ForeignKey("file_share_types.type"))
+    file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
