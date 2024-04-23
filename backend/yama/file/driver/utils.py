@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Protocol
 from uuid import UUID
@@ -14,7 +15,7 @@ class AsyncReadable(Protocol):
 
 class Driver(ABC):
     @abstractmethod
-    async def read_regular_content(self, id_: UUID, /) -> AsyncReadable:
+    async def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]:
         ...
 
     @abstractmethod
@@ -36,7 +37,7 @@ class FileSystemDriver(Driver):
         self.file_system_dir = file_system_dir
         self.max_file_size = max_file_size
 
-    async def read_regular_content(self, id_: UUID, /) -> AsyncReadable:
+    async def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]:
         ...
 
     async def write_regular_content(
