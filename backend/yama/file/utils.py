@@ -89,6 +89,9 @@ async def write_file(
         connection=connection,
     )
 
+    if id_ is not None and overwrite:
+        raise FilesFileExistsError(id_)
+
     raise NotImplementedError()
 
 
@@ -298,7 +301,7 @@ async def _path_to_id(
         ancestor_id, descendant_path, connection=connection
     )
     if id_ is None:
-        raise FilesFileNotFoundError(path)
+        raise FilesFileNotFoundError(ancestor_id, descendant_path)
 
     return id_
 
@@ -340,7 +343,7 @@ async def _path_to_parent_id(
                 parent_ancestor_id, parent_descendant_path, connection=connection
             )
             if parent_id_or_none is None:
-                raise FilesFileNotFoundError(parent_descendant_path)
+                raise FilesFileNotFoundError(parent_ancestor_id, parent_descendant_path)
             parent_id = parent_id_or_none
 
     return parent_id
@@ -380,7 +383,7 @@ async def _path_to_parent_id_and_id_or_none(
 
             parent_id_or_none = descendant_path_to_id.get(parent_descendant_path)
             if parent_id_or_none is None:
-                raise FilesFileNotFoundError(parent_descendant_path)
+                raise FilesFileNotFoundError(ancestor_id, parent_descendant_path)
             parent_id = parent_id_or_none
             id_ = descendant_path_to_id.get(descendant_path)
 
@@ -452,11 +455,14 @@ class UploadFileTooLargeError(Exception):
 
 
 class FilesFileError(Exception):
-    def __init__(self, path: FilePath) -> None:
-        self.path = path
+    def __init__(
+        self, ancestor_id: UUID, descendant_path: FilePath = PurePosixPath("."), /
+    ) -> None:
+        self.ancestor_id = ancestor_id
+        self.descendant_path = descendant_path
 
     def __str__(self) -> str:
-        return f"'{self.path}'"
+        return f"'{self.descendant_path}' relative to {self.ancestor_id}"
 
 
 class FilesFileExistsError(FilesFileError):
