@@ -207,7 +207,7 @@ async def _check_share_for_file_and_user(
         (await connection.execute(share_id_query)).scalars().one_or_none()
     )  # TODO: Log
     if share_id is None:
-        raise NotImplementedError()
+        raise FilesPermissionError(file_id)
 
 
 async def _id_or_path_to_id(
@@ -314,7 +314,9 @@ async def _id_to_parent_id(id_: UUID, /, *, connection: AsyncConnection) -> UUID
     )
     parent_id = (await connection.execute(parent_id_query)).scalars().one_or_none()
     if parent_id is None:
-        raise NotImplementedError()
+        # Ideally descendant_path should be '..' but since FilePath
+        # doesn't support it, '.' (the default) will do.
+        raise FilesFileNotFoundError(id_)
 
     return id_
 
@@ -477,5 +479,5 @@ class FilesNotADirectoryError(FilesFileError):
     ...
 
 
-# class FilesPermissionError(FilesFileError):
-#     ...
+class FilesPermissionError(FilesFileError):
+    ...
