@@ -14,15 +14,17 @@ class AsyncReadable(Protocol):
 
 class Driver(ABC):
     @abstractmethod
-    async def read_regular(self, id_: UUID, /) -> AsyncReadable:
+    async def read_regular_content(self, id_: UUID, /) -> AsyncReadable:
         ...
 
     @abstractmethod
-    async def write_regular(self, content: AsyncReadable, id_: UUID, /) -> int:
+    async def write_regular_content(
+        self, content_stream: AsyncReadable, id_: UUID, /
+    ) -> int:
         ...
 
     @abstractmethod
-    async def remove_regular(self, id_: UUID, /) -> None:
+    async def remove_regular_content(self, id_: UUID, /) -> None:
         ...
 
 
@@ -34,10 +36,12 @@ class FileSystemDriver(Driver):
         self.file_system_dir = file_system_dir
         self.max_file_size = max_file_size
 
-    async def read_regular(self, id_: UUID, /) -> AsyncReadable:
+    async def read_regular_content(self, id_: UUID, /) -> AsyncReadable:
         ...
 
-    async def write_regular(self, content: AsyncReadable, id_: UUID, /) -> int:
+    async def write_regular_content(
+        self, content_stream: AsyncReadable, id_: UUID, /
+    ) -> int:
         self.file_system_dir.mkdir(parents=True, exist_ok=True)
 
         incomplete_path = _id_to_incomplete_path(
@@ -48,7 +52,7 @@ class FileSystemDriver(Driver):
         try:
             file_size = 0
             async with aiofiles.open(incomplete_path, "wb") as f:
-                while chunk := await content.read(self.chunk_size):
+                while chunk := await content_stream.read(self.chunk_size):
                     file_size += len(chunk)
 
                     if file_size > self.max_file_size:
@@ -62,7 +66,7 @@ class FileSystemDriver(Driver):
 
         return file_size
 
-    async def remove_regular(self, id_: UUID, /) -> None:
+    async def remove_regular_content(self, id_: UUID, /) -> None:
         ...
 
 
