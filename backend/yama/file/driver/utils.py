@@ -5,6 +5,7 @@ from typing import Protocol
 from uuid import UUID
 
 import aiofiles
+import aiofiles.os
 
 
 # Satisfied by fastapi.UploadFile and aiofiles's files
@@ -71,7 +72,12 @@ class FileSystemDriver(Driver):
         return file_size
 
     async def remove_regular_content(self, id_: UUID, /) -> None:
-        ...
+        path = _id_to_path(id_, file_system_dir=self.file_system_dir)
+
+        try:
+            await aiofiles.os.remove(path)
+        except FileNotFoundError:
+            ...
 
 
 def _id_to_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
