@@ -38,7 +38,10 @@ class FileSystemDriver(Driver):
         self.max_file_size = max_file_size
 
     async def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]:
-        ...
+        path = _id_to_path(id_, file_system_dir=self.file_system_dir)
+
+        async with aiofiles.open(path, "rb") as f:
+            yield f
 
     async def write_regular_content(
         self, content_stream: AsyncReadable, id_: UUID, /
@@ -57,7 +60,7 @@ class FileSystemDriver(Driver):
                     file_size += len(chunk)
 
                     if file_size > self.max_file_size:
-                        raise FileTooLargeError()
+                        raise DriverFileTooLargeError()
 
                     await f.write(chunk)
 
@@ -79,5 +82,5 @@ def _id_to_incomplete_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
     return file_system_dir / (id_.hex + ".incomplete")
 
 
-class FileTooLargeError(Exception):
+class DriverFileTooLargeError(Exception):
     ...
