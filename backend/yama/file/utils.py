@@ -20,7 +20,7 @@ from yama.file.models import (
     Regular,
     RegularContent,
 )
-from yama.users.models import UserAncestorUserDescendantDb
+from yama.user.models import UserAncestorUserDescendantDb
 
 
 async def read_file(

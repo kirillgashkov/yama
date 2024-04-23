@@ -1,6 +1,6 @@
 from fastapi import Request
 
-from yama.users.settings import Settings
+from yama.user.settings import Settings
 
 
 # `get_settings()` is a lifetime dependency that provides

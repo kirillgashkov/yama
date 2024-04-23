@@ -10,8 +10,8 @@ from yama.database.settings import Settings as DatabaseSettings
 from yama.file.routes import router as file_router
 from yama.file.settings import Settings as FileSettings
 from yama.security.routes import router as security_router
-from yama.users.routes import router as user_router
-from yama.users.settings import Settings as UserSettings
+from yama.user.routes import router as user_router
+from yama.user.settings import Settings as UserSettings
 
 
 @asynccontextmanager

@@ -35,8 +35,8 @@ from yama.file._models import (
 from yama.file.dependencies import get_settings
 from yama.file.settings import Settings
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
-from yama.users.dependencies import get_settings as get_user_settings
-from yama.users.settings import Settings as UserSettings
+from yama.user.dependencies import get_settings as get_user_settings
+from yama.user.settings import Settings as UserSettings
 
 router = APIRouter()
 
