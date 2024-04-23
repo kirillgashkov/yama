@@ -64,6 +64,7 @@ async def write_file(
     id_or_path: UUID | FilePath,
     /,
     *,
+    overwrite: bool = False,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
@@ -252,12 +253,11 @@ async def _path_to_id(
         path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
     )
 
-    try:
-        id_ = await _ancestor_id_and_descendant_path_to_id(
-            ancestor_id, descendant_path, connection=connection
-        )
-    except FilesFileNotFoundError as e:
-        raise FilesFileNotFoundError(path) from e
+    id_ = await _ancestor_id_and_descendant_path_to_id_or_none(
+        ancestor_id, descendant_path, connection=connection
+    )
+    if id_ is None:
+        raise FilesFileNotFoundError(path)
 
     return id_
 
@@ -295,11 +295,55 @@ async def _path_to_parent_id(
         case _:
             parent_ancestor_id = ancestor_id
             parent_descendant_path = descendant_path.parent
-            parent_id = await _ancestor_id_and_descendant_path_to_id(
+            parent_id_or_none = await _ancestor_id_and_descendant_path_to_id_or_none(
                 parent_ancestor_id, parent_descendant_path, connection=connection
             )
+            if parent_id_or_none is None:
+                raise FilesFileNotFoundError(parent_descendant_path)
+            parent_id = parent_id_or_none
 
     return parent_id
+
+
+async def _path_to_parent_id_and_id(
+    path: FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+    connection: AsyncConnection,
+) -> tuple[UUID, UUID | None]:
+    ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
+        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
+    )
+
+    parent_id: UUID
+    id_: UUID | None
+    match len(descendant_path.parts):
+        case 0:
+            parent_id = await _id_to_parent_id(ancestor_id, connection=connection)
+            id_ = ancestor_id
+        case 1:
+            parent_id = ancestor_id
+            id_ = await _ancestor_id_and_descendant_path_to_id_or_none(
+                ancestor_id, descendant_path, connection=connection
+            )
+        case _:
+            parent_descendant_path = descendant_path.parent
+
+            descendant_path_to_id = await _ancestor_id_and_descendant_paths_to_ids(
+                ancestor_id,
+                [parent_descendant_path, descendant_path],
+                connection=connection,
+            )
+
+            parent_id_or_none = descendant_path_to_id.get(parent_descendant_path)
+            if parent_id_or_none is None:
+                raise FilesFileNotFoundError(parent_descendant_path)
+            parent_id = parent_id_or_none
+            id_ = descendant_path_to_id.get(descendant_path)
+
+    return parent_id, id_
 
 
 def _path_to_ancestor_id_and_descendant_path(
@@ -319,23 +363,47 @@ def _path_to_ancestor_id_and_descendant_path(
     return ancestor_id, descendant_path
 
 
-async def _ancestor_id_and_descendant_path_to_id(
+async def _ancestor_id_and_descendant_path_to_id_or_none(
     ancestor_id: UUID,
     descendant_path: FilePath,
     /,
     *,
     connection: AsyncConnection,
-) -> UUID:
-    id_query = (
-        select(FileAncestorFileDescendantDb.descendant_id)
-        .where(FileAncestorFileDescendantDb.ancestor_id == ancestor_id)
-        .where(FileAncestorFileDescendantDb.descendant_path == str(descendant_path))
+) -> UUID | None:
+    descendant_path_to_id = await _ancestor_id_and_descendant_paths_to_ids(
+        ancestor_id, [descendant_path], connection=connection
     )
-    id_ = (await connection.execute(id_query)).scalars().one_or_none()
-    if id_ is None:
-        raise FilesFileNotFoundError(descendant_path)
+    return descendant_path_to_id.get(descendant_path)
 
-    return id_
+
+async def _ancestor_id_and_descendant_paths_to_ids(
+    ancestor_id: UUID,
+    descendant_paths: list[FilePath],
+    /,
+    *,
+    connection: AsyncConnection,
+) -> dict[FilePath, UUID]:
+    descendant_path_to_id_query = (
+        select(
+            FileAncestorFileDescendantDb.descendant_path,
+            FileAncestorFileDescendantDb.descendant_id,
+        )
+        .where(FileAncestorFileDescendantDb.ancestor_id == ancestor_id)
+        .where(
+            FileAncestorFileDescendantDb.descendant_path.in_(
+                str(p) for p in descendant_paths
+            )
+        )
+    )
+    descendant_path_to_id_rows = (
+        (await connection.execute(descendant_path_to_id_query)).mappings().all()
+    )
+    descendant_path_to_id: dict[FilePath, UUID] = {
+        PurePosixPath(row["descendant_path"]): row["descendant_id"]
+        for row in descendant_path_to_id_rows
+    }  # HACK: Implicit type cast
+
+    return descendant_path_to_id
 
 
 class UploadFileTooLargeError(Exception):
