@@ -2,7 +2,7 @@ from pathlib import Path, PurePosixPath
 from typing import assert_never
 from uuid import UUID
 
-from sqlalchemy import case, delete, insert, literal, select, union
+from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.file.driver.utils import Driver
@@ -183,6 +183,57 @@ async def _get_file(
             assert_never(type_)
 
     return file
+
+
+async def _move_file(
+    id_: UUID,
+    new_parent_id: UUID,
+    new_name: FileName,
+    /,
+    *,
+    connection: AsyncConnection,
+) -> File:
+    select_descendants_db_cte = (
+        select(
+            FileAncestorFileDescendantDb.descendant_id,
+            FileAncestorFileDescendantDb.descendant_path,
+            FileAncestorFileDescendantDb.descendant_depth,
+        )
+        .where(FileAncestorFileDescendantDb.ancestor_id == id_)
+        .cte()
+    )
+    delete_old_descendant_ancestors_cte = (
+        delete(FileAncestorFileDescendantDb)
+        .where(FileAncestorFileDescendantDb.descendant_id == select_descendants_db_cte.c.descendant_id)
+        .where(FileAncestorFileDescendantDb.descendant_depth > select_descendants_db_cte.c.descendant_depth)
+        .cte()
+    )  # fmt: skip
+    insert_new_descendant_ancestors_query = (
+        insert(FileAncestorFileDescendantDb)
+        .from_select(
+            ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
+            select(
+                FileAncestorFileDescendantDb.ancestor_id,
+                select_descendants_db_cte.c.descendant_id,
+                case(
+                    (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path == "."), literal(new_name)),
+                    (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path != "."), literal(new_name) + "/" + select_descendants_db_cte.c.descendant_path),
+                    (and_(FileAncestorFileDescendantDb.descendant_path != ".", select_descendants_db_cte.c.descendant_path == "."), FileAncestorFileDescendantDb.descendant_path + "/" + literal(new_name)),
+                    else_=(FileAncestorFileDescendantDb.descendant_path + "/" + literal(new_name) + "/" + select_descendants_db_cte.c.descendant_path),
+                ).label("descendant_path"),
+                (FileAncestorFileDescendantDb.descendant_depth + select_descendants_db_cte.c.descendant_depth + 1).label("descendant_depth"),
+            )
+            .select_from(FileAncestorFileDescendantDb, select_descendants_db_cte)
+            .where(FileAncestorFileDescendantDb.descendant_id == new_parent_id)
+        )
+        .add_cte(select_descendants_db_cte)
+        .add_cte(delete_old_descendant_ancestors_cte)
+    )  # fmt: skip
+    await connection.execute(insert_new_descendant_ancestors_query)
+
+    # await connection.commit()
+
+    raise NotImplementedError()
 
 
 async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
