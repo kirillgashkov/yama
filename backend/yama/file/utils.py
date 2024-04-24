@@ -89,7 +89,7 @@ async def write_file(
         connection=connection,
     )
 
-    if id_ is not None and overwrite:
+    if id_ is not None and not overwrite:
         raise FilesFileExistsError(id_)
 
     raise NotImplementedError()
