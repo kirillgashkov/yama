@@ -2,7 +2,7 @@ from pathlib import Path, PurePosixPath
 from typing import assert_never
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import case, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.file.driver.utils import Driver
@@ -13,6 +13,7 @@ from yama.file.models import (
     File,
     FileAncestorFileDescendantDb,
     FileDb,
+    FileName,
     FilePath,
     FileShareDb,
     FileShareType,
@@ -95,6 +96,55 @@ async def write_file(
     raise NotImplementedError()
 
 
+async def _add_file(
+    file_write: FileWrite,
+    parent_id: UUID,
+    name: FileName,
+    /,
+    *,
+    user_id: UUID,
+    connection: AsyncConnection,
+) -> File:
+    insert_file_db_query = (
+        insert(FileDb).values(type=file_write.type.value).returning(FileDb)
+    )
+    file_db_row = (await connection.execute(insert_file_db_query)).mappings().one()
+    file_db = FileDb(**file_db_row)
+
+    insert_share_db_query = insert(FileShareDb).values(
+        type=FileShareType.SHARE.value,
+        file_id=file_db.id,
+        user_id=user_id,
+        created_by=user_id,
+    )
+    await connection.execute(insert_share_db_query)
+
+    insert_ancestors_db_query = insert(FileAncestorFileDescendantDb).from_select(
+        ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
+        union(
+            select(
+                literal(file_db.id).label("ancestor_id"),
+                literal(file_db.id).label("descendant_id"),
+                literal(".").label("descendant_path"),
+                literal(0).label("descendant_depth"),
+            ),
+            select(
+                FileAncestorFileDescendantDb.ancestor_id,
+                literal(file_db.id).label("descendant_id"),
+                case(
+                    (FileAncestorFileDescendantDb.descendant_path == ".", literal(name)),
+                    else_=(FileAncestorFileDescendantDb.descendant_path + "/" + literal(name)),
+                ).label("descendant_path"),
+                (FileAncestorFileDescendantDb.descendant_depth + 1).label("descendant_depth"),
+            ).where(FileAncestorFileDescendantDb.descendant_id == parent_id),
+        ),
+    )  # fmt: skip
+    await connection.execute(insert_ancestors_db_query)
+
+    raise NotImplementedError()
+
+
+# TODO: Make id_ parameter positional
 async def _get_file(
     *, id_: UUID, content: bool, files_dir: Path, connection: AsyncConnection
 ) -> File:
