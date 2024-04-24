@@ -2,7 +2,7 @@ from pathlib import Path, PurePosixPath
 from typing import assert_never
 from uuid import UUID
 
-from sqlalchemy import case, insert, literal, select, union
+from sqlalchemy import case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.file.driver.utils import Driver
@@ -141,6 +141,8 @@ async def _add_file(
     )  # fmt: skip
     await connection.execute(insert_ancestors_db_query)
 
+    # await connection.commit()  # Maybe yield before committing?
+
     raise NotImplementedError()
 
 
@@ -181,6 +183,41 @@ async def _get_file(
             assert_never(type_)
 
     return file
+
+
+async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
+    delete_descendants_db_cte = (
+        delete(FileAncestorFileDescendantDb)
+        .where(FileAncestorFileDescendantDb.ancestor_id == id_)
+        .returning(FileAncestorFileDescendantDb.descendant_id)
+        .cte()
+    )
+    delete_descendant_ancestors_db_cte = (
+        delete(FileAncestorFileDescendantDb)
+        .where(FileAncestorFileDescendantDb.descendant_id == delete_descendants_db_cte.c.descendant_id)
+        .cte()
+    )  # fmt: skip
+    delete_descendant_shares_db_cte = (
+        delete(FileShareDb)
+        .where(FileShareDb.file_id == delete_descendants_db_cte.c.descendant_id)
+        .cte()
+    )
+    delete_descendant_files_db_query = (
+        delete(FileDb)
+        .where(FileDb.id == delete_descendants_db_cte.c.descendant_id)
+        .returning(FileDb)
+        .add_cte(delete_descendants_db_cte)
+        .add_cte(delete_descendant_ancestors_db_cte)
+        .add_cte(delete_descendant_shares_db_cte)
+    )
+    descendant_files_db_rows = (
+        (await connection.execute(delete_descendant_files_db_query)).mappings().all()
+    )
+    _ = descendant_files_db_rows
+
+    # await connection.commit()
+
+    raise NotImplementedError()
 
 
 def _get_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
