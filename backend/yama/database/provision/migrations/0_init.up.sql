@@ -18,10 +18,11 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE TABLE IF NOT EXISTS user_ancestors_user_descendants (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
     ancestor_id uuid NOT NULL,
     descendant_id uuid NOT NULL,
     descendant_depth integer NOT NULL,
-    PRIMARY KEY (ancestor_id, descendant_id),
+    PRIMARY KEY (id),
     FOREIGN KEY (ancestor_id) REFERENCES users (id),
     FOREIGN KEY (descendant_id) REFERENCES users (id)
 );
@@ -40,11 +41,12 @@ CREATE TABLE IF NOT EXISTS files (
 );
 
 CREATE TABLE IF NOT EXISTS file_ancestors_file_descendants (
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
     ancestor_id uuid NOT NULL,
     descendant_id uuid NOT NULL,
     descendant_path varchar NOT NULL,
     descendant_depth integer NOT NULL,
-    PRIMARY KEY (ancestor_id, descendant_id),
+    PRIMARY KEY (id),
     FOREIGN KEY (ancestor_id) REFERENCES files (id),
     FOREIGN KEY (descendant_id) REFERENCES files (id)
 );

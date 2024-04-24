@@ -165,10 +165,11 @@ class FileDb(TableBase):
 class FileAncestorFileDescendantDb(TableBase):
     __tablename__ = "file_ancestors_file_descendants"
 
-    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"), primary_key=True)
-    descendant_id: Mapped[UUID] = mapped_column(
-        ForeignKey("files.id"), primary_key=True
+    id: Mapped[UUID] = mapped_column(
+        server_default=func.uuid_generate_v4(), primary_key=True
     )
+    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
+    descendant_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
     descendant_path: Mapped[str]
     descendant_depth: Mapped[int]
 

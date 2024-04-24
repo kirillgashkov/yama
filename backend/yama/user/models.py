@@ -32,8 +32,9 @@ class UserDb(TableBase):
 class UserAncestorUserDescendantDb(TableBase):
     __tablename__ = "user_ancestors_user_descendants"
 
-    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    descendant_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), primary_key=True
+    id: Mapped[UUID] = mapped_column(
+        server_default=func.uuid_generate_v4(), primary_key=True
     )
+    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+    descendant_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     descendant_depth: Mapped[int]
