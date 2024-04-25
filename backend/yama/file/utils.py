@@ -1,5 +1,6 @@
+from collections import OrderedDict, defaultdict
 from pathlib import Path, PurePosixPath
-from typing import assert_never
+from typing import NamedTuple, assert_never
 from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
@@ -269,6 +270,83 @@ async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
     # await connection.commit()
 
     raise NotImplementedError()
+
+
+class _FileParentIdAndName(NamedTuple):
+    parent_id: UUID
+    name: FileName
+
+
+def _make_files(
+    files_db_with_parent_id_and_name: list[tuple[FileDb, _FileParentIdAndName | None]],
+) -> list[File]:
+    id_to_file_db: OrderedDict[UUID, FileDb] = OrderedDict()
+    parent_id_to_children: defaultdict[UUID, list[tuple[FileName, UUID]]] = defaultdict(
+        list
+    )
+    child_ids: set[UUID] = set()
+
+    for file_db, parent_id_and_name in files_db_with_parent_id_and_name:
+        id_to_file_db[file_db.id] = file_db
+
+        if parent_id_and_name:
+            parent_id, name = parent_id_and_name
+            parent_id_to_children[parent_id].append((name, file_db.id))
+            child_ids.add(file_db.id)
+
+    # root_ids doesn't include parent IDs without FileDb.  # FIXME: Include or raise an error.
+    root_ids: list[UUID] = []
+
+    for id_ in id_to_file_db:
+        if id_ not in child_ids:
+            root_ids.append(id_)
+
+    id_to_file: dict[UUID, File] = {}
+    stack: list[UUID] = root_ids
+
+    while stack and (id_ := stack.pop()):
+        children = parent_id_to_children[id_]
+
+        not_made_child_ids: list[UUID] = []
+        for _, child_id in children:
+            if child_id not in id_to_file:
+                not_made_child_ids.append(child_id)
+
+        if not_made_child_ids:
+            stack.append(id_)
+            stack.extend(not_made_child_ids)
+            continue
+
+        content_files: list[DirectoryContentFile] = []
+        for child_name, child_id in children:
+            child_file = id_to_file[child_id]
+            content_file = DirectoryContentFile(name=child_name, file=child_file)
+            content_files.append(content_file)
+
+        file: File
+        file_db = id_to_file_db[id_]
+        file_type = FileType(file_db.type)
+        match file_type:
+            case FileType.REGULAR:
+                if content_files:
+                    raise ValueError("Regular file can't have content files")
+                file = Regular(id=file_db.id, type=file_type)  # FIXME: content?
+            case FileType.DIRECTORY:
+                file_content = DirectoryContent(
+                    count_=len(content_files), items=content_files
+                )
+                file = Directory(id=file_db.id, type=file_type, content=file_content)
+            case _:
+                assert_never(file_type)
+
+        id_to_file[id_] = file
+
+    files: list[File] = []
+    for root_id in root_ids:
+        file = id_to_file[root_id]
+        files.append(file)
+
+    return files
 
 
 def _get_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
