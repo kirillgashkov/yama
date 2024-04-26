@@ -280,6 +280,16 @@ class _FileParentIdAndName(NamedTuple):
 def _make_files(
     files_db_with_parent_id_and_name: list[tuple[FileDb, _FileParentIdAndName | None]],
 ) -> list[File]:
+    """
+    Makes tree-like files from edge-like database rows.
+
+    If it is possible to tell if a file has content or not based on the database rows,
+    the file will have content, otherwise the file's content will be None. Notably, a
+    directory without content files will have a None content instead of an empty
+    content because it is impossible to tell None content and empty content apart having
+    database rows only.
+    """
+
     # Prepare maps and sets. ids is an ad hoc ordered set needed to collect all
     # occurring file IDs and respect the original order of files.
 
