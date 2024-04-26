@@ -335,7 +335,7 @@ def _make_files(
                 file_content = DirectoryContent(
                     count_=len(content_files), items=content_files
                 )
-                file = Directory(id=file_db.id, type=file_type, content=file_content)
+                file = Directory(id=file_db.id, type=file_type, content=file_content)  # FIXME: When to include content?
             case _:
                 assert_never(file_type)
 
