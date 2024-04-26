@@ -13,7 +13,6 @@ from yama.file.models import (
     DirectoryContentFile,
     File,
     FileAncestorFileDescendantDb,
-    FileContent,
     FileDb,
     FileName,
     FilePath,
@@ -280,25 +279,31 @@ class _FileParentIdAndName(NamedTuple):
 
 def _make_files(
     files_db_with_parent_id_and_name: list[tuple[FileDb, _FileParentIdAndName | None]],
-) -> OrderedDict[UUID, File | FileContent]:
-    id_to_file_db: OrderedDict[UUID, FileDb] = OrderedDict()
+) -> list[File]:
+    id_to_file_db: dict[UUID, FileDb] = {}
     parent_id_to_children: defaultdict[UUID, list[tuple[FileName, UUID]]] = defaultdict(
         list
     )
     child_ids: set[UUID] = set()
+    ids: OrderedDict[UUID, bool] = OrderedDict()
 
     for file_db, parent_id_and_name in files_db_with_parent_id_and_name:
-        id_to_file_db[file_db.id] = file_db
-
         if parent_id_and_name:
             parent_id, name = parent_id_and_name
             parent_id_to_children[parent_id].append((name, file_db.id))
             child_ids.add(file_db.id)
+            ids[parent_id] = True
 
-    # root_ids doesn't include parent IDs without FileDb.  # FIXME: Include or raise an error.
+        id_to_file_db[file_db.id] = file_db
+        ids[file_db.id] = True
+
+    for id_ in ids:
+        if id_ not in id_to_file_db:
+            raise ValueError("File must have 'FileDb'")
+
     root_ids: list[UUID] = []
 
-    for id_ in id_to_file_db:
+    for id_ in ids:
         if id_ not in child_ids:
             root_ids.append(id_)
 
@@ -318,36 +323,43 @@ def _make_files(
             stack.extend(not_made_child_ids)
             continue
 
-        content_files: list[DirectoryContentFile] = []
+        directory_content_files: list[DirectoryContentFile] = []
         for child_name, child_id in children:
             child_file = id_to_file[child_id]
-            content_file = DirectoryContentFile(name=child_name, file=child_file)
-            content_files.append(content_file)
+            directory_content_file = DirectoryContentFile(
+                name=child_name, file=child_file
+            )
+            directory_content_files.append(directory_content_file)
+        directory_content = (
+            DirectoryContent(
+                count_=len(directory_content_files),
+                items=directory_content_files,
+            )
+            if directory_content_files
+            else None
+        )
 
         file: File
         file_db = id_to_file_db[id_]
         file_type = FileType(file_db.type)
         match file_type:
             case FileType.REGULAR:
-                if content_files:
-                    raise ValueError("Regular file can't have content files")
-                file = Regular(id=file_db.id, type=file_type)  # FIXME: content?
+                if directory_content:
+                    raise ValueError("Regular file can't have directory content")
+                file = Regular(id=file_db.id, type=file_type)
             case FileType.DIRECTORY:
-                file_content = DirectoryContent(
-                    count_=len(content_files), items=content_files
-                )
                 file = Directory(
-                    id=file_db.id, type=file_type, content=file_content
-                )  # FIXME: When to include content?
+                    id=file_db.id, type=file_type, content=directory_content
+                )
             case _:
                 assert_never(file_type)
 
         id_to_file[id_] = file
 
-    files: OrderedDict[UUID, File | FileContent] = OrderedDict()
+    files: list[File] = []
     for root_id in root_ids:
         file = id_to_file[root_id]
-        files[root_id] = file
+        files.append(file)
 
     return files
 
