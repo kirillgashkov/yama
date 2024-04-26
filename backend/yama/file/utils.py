@@ -106,41 +106,64 @@ async def _add_file(
     user_id: UUID,
     connection: AsyncConnection,
 ) -> File:
-    insert_file_db_query = (
-        insert(FileDb).values(type=file_write.type.value).returning(FileDb)
+    insert_file_db_cte = (
+        insert(FileDb).values(type=file_write.type.value).returning(FileDb).cte()
     )
-    file_db_row = (await connection.execute(insert_file_db_query)).mappings().one()
-    file_db = FileDb(**file_db_row)
-
-    insert_share_db_query = insert(FileShareDb).values(
-        type=FileShareType.SHARE.value,
-        file_id=file_db.id,
-        user_id=user_id,
-        created_by=user_id,
-    )
-    await connection.execute(insert_share_db_query)
-
-    insert_ancestors_db_query = insert(FileAncestorFileDescendantDb).from_select(
-        ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
-        union(
+    insert_share_db_cte = (
+        insert(FileShareDb)
+        .from_select(
+            ["type", "file_id", "user_id", "created_by"],
             select(
-                literal(file_db.id).label("ancestor_id"),
-                literal(file_db.id).label("descendant_id"),
-                literal(".").label("descendant_path"),
-                literal(0).label("descendant_depth"),
+                literal(FileShareType.SHARE.value).label("type"),
+                insert_file_db_cte.c.id,
+                literal(user_id).label("user_id"),
+                literal(user_id).label("created_by"),
             ),
-            select(
-                FileAncestorFileDescendantDb.ancestor_id,
-                literal(file_db.id).label("descendant_id"),
-                case(
-                    (FileAncestorFileDescendantDb.descendant_path == ".", literal(name)),
-                    else_=(FileAncestorFileDescendantDb.descendant_path + "/" + literal(name)),
-                ).label("descendant_path"),
-                (FileAncestorFileDescendantDb.descendant_depth + 1).label("descendant_depth"),
-            ).where(FileAncestorFileDescendantDb.descendant_id == parent_id),
-        ),
+        )
+        .cte()
+    )
+    insert_ancestors_db_cte = (
+        insert(FileAncestorFileDescendantDb)
+        .from_select(
+            ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
+            union(
+                select(
+                    insert_file_db_cte.c.id.label("ancestor_id"),
+                    insert_file_db_cte.c.id.label("descendant_id"),
+                    literal(".").label("descendant_path"),
+                    literal(0).label("descendant_depth"),
+                ),
+                select(
+                    FileAncestorFileDescendantDb.ancestor_id,
+                    insert_file_db_cte.c.id.label("descendant_id"),
+                    case(
+                        (FileAncestorFileDescendantDb.descendant_path == ".", name),
+                        else_=(FileAncestorFileDescendantDb.descendant_path + "/" + name),
+                    ).label("descendant_path"),
+                    (FileAncestorFileDescendantDb.descendant_depth + 1).label("descendant_depth"),
+                ).select_from(
+                    FileAncestorFileDescendantDb, insert_file_db_cte
+                ).where(FileAncestorFileDescendantDb.descendant_id == parent_id),
+            ),
+        ).cte()
     )  # fmt: skip
-    await connection.execute(insert_ancestors_db_query)
+    select_file_db_with_parent_id_and_name_query = (
+        select(
+            literal(None).label("parent_id"),
+            literal(None).label("name"),
+            insert_file_db_cte.c.id,
+            insert_file_db_cte.c.type,
+        )
+        .add_cte(insert_file_db_cte)
+        .add_cte(insert_share_db_cte)
+        .add_cte(insert_ancestors_db_cte)
+    )
+    file_db_with_parent_id_and_name_row = (
+        (await connection.execute(select_file_db_with_parent_id_and_name_query))
+        .mappings()
+        .one()
+    )
+    _ = file_db_with_parent_id_and_name_row
 
     # await connection.commit()  # Maybe yield before committing?
 
