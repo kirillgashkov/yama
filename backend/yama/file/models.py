@@ -99,6 +99,7 @@ class Directory(NamedTuple):
     content: DirectoryContent | None = None
 
 
+FileContent: TypeAlias = RegularContent | DirectoryContent
 File: TypeAlias = Regular | Directory
 
 

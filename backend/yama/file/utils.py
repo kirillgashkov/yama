@@ -13,6 +13,7 @@ from yama.file.models import (
     DirectoryContentFile,
     File,
     FileAncestorFileDescendantDb,
+    FileContent,
     FileDb,
     FileName,
     FilePath,
@@ -279,7 +280,7 @@ class _FileParentIdAndName(NamedTuple):
 
 def _make_files(
     files_db_with_parent_id_and_name: list[tuple[FileDb, _FileParentIdAndName | None]],
-) -> list[File]:
+) -> OrderedDict[UUID, File | FileContent]:
     id_to_file_db: OrderedDict[UUID, FileDb] = OrderedDict()
     parent_id_to_children: defaultdict[UUID, list[tuple[FileName, UUID]]] = defaultdict(
         list
@@ -335,16 +336,18 @@ def _make_files(
                 file_content = DirectoryContent(
                     count_=len(content_files), items=content_files
                 )
-                file = Directory(id=file_db.id, type=file_type, content=file_content)  # FIXME: When to include content?
+                file = Directory(
+                    id=file_db.id, type=file_type, content=file_content
+                )  # FIXME: When to include content?
             case _:
                 assert_never(file_type)
 
         id_to_file[id_] = file
 
-    files: list[File] = []
+    files: OrderedDict[UUID, File | FileContent] = OrderedDict()
     for root_id in root_ids:
         file = id_to_file[root_id]
-        files.append(file)
+        files[root_id] = file
 
     return files
 
