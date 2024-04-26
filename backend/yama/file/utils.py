@@ -302,7 +302,7 @@ def _make_files(
             root_ids.append(id_)
 
     id_to_file: dict[UUID, File] = {}
-    stack: list[UUID] = root_ids
+    stack: list[UUID] = root_ids.copy()
 
     while stack and (id_ := stack.pop()):
         children = parent_id_to_children[id_]
