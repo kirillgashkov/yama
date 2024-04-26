@@ -150,10 +150,10 @@ async def _add_file(
     )  # fmt: skip
     select_file_db_with_parent_id_and_name_query = (
         select(
-            literal(None).label("parent_id"),
-            literal(None).label("name"),
             insert_file_db_cte.c.id,
             insert_file_db_cte.c.type,
+            literal(None).label("parent_id"),
+            literal(None).label("name"),
         )
         .add_cte(insert_file_db_cte)
         .add_cte(insert_share_db_cte)
@@ -255,10 +255,10 @@ async def _move_file(
     )  # fmt: skip
     select_descendant_files_db_with_parent_id_and_name_query = (
         select(
-            case((select_descendants_db_cte.c.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
-            case((select_descendants_db_cte.c.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
             FileDb.id,
             FileDb.type,
+            case((select_descendants_db_cte.c.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
+            case((select_descendants_db_cte.c.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
         )
         # Select descendants of the file (the descendants include the file itself)
         .select_from(select_descendants_db_cte)
