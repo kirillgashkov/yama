@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
+from sqlalchemy.orm import aliased
 
 from yama.file.driver.utils import Driver
 from yama.file.models import (
@@ -282,34 +283,64 @@ async def _move_file(
 
 
 async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
-    delete_descendants_db_cte = (
-        delete(FileAncestorFileDescendantDb)
-        .where(FileAncestorFileDescendantDb.ancestor_id == id_)
-        .returning(FileAncestorFileDescendantDb.descendant_id)
+    fafd1 = aliased(FileAncestorFileDescendantDb)
+    fafd2 = aliased(FileAncestorFileDescendantDb)
+    select_descendant_files_db_with_parent_id_and_name_and_depth_cte = (
+        select(
+            FileDb.id,
+            FileDb.type,
+            case((fafd1.descendant_depth > 0, fafd2.ancestor_id), else_=literal(None)).label("parent_id"),
+            case((fafd1.descendant_depth > 0, fafd2.descendant_path), else_=literal(None)).label("name"),
+            fafd1.descendant_depth.label("depth"),  # FIXME: Use or remove.
+        )
+        # Select descendants (the descendants include the file itself)
+        .select_from(fafd1)
+        .where(fafd1.ancestor_id == id_)
+        # Select file for each descendant
+        .join(FileDb, fafd1.descendant_id == FileDb.id)
+        # Select parent ID and name for each descendant if exists
+        .outerjoin(fafd2, (fafd1.descendant_id == fafd2.descendant_id) & (fafd2.descendant_depth == 1))
         .cte()
-    )
+    )  # fmt: skip
     delete_descendant_ancestors_db_cte = (
         delete(FileAncestorFileDescendantDb)
-        .where(FileAncestorFileDescendantDb.descendant_id == delete_descendants_db_cte.c.descendant_id)
+        .where(FileAncestorFileDescendantDb.descendant_id == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id)
         .cte()
     )  # fmt: skip
     delete_descendant_shares_db_cte = (
         delete(FileShareDb)
-        .where(FileShareDb.file_id == delete_descendants_db_cte.c.descendant_id)
+        .where(
+            FileShareDb.file_id
+            == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id
+        )
         .cte()
     )
-    delete_descendant_files_db_query = (
+    delete_descendant_files_db_cte = (
         delete(FileDb)
-        .where(FileDb.id == delete_descendants_db_cte.c.descendant_id)
-        .returning(FileDb)
-        .add_cte(delete_descendants_db_cte)
+        .where(
+            FileDb.id
+            == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id
+        )
+        .cte()
+    )
+    select_descendant_files_db_with_parent_id_and_name_query = (
+        select(
+            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id,
+            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.type,
+            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.parent_id,
+            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.name,
+        )
+        .add_cte(select_descendant_files_db_with_parent_id_and_name_and_depth_cte)
         .add_cte(delete_descendant_ancestors_db_cte)
         .add_cte(delete_descendant_shares_db_cte)
-    )
-    descendant_files_db_rows = (
-        (await connection.execute(delete_descendant_files_db_query)).mappings().all()
-    )
-    _ = descendant_files_db_rows
+        .add_cte(delete_descendant_files_db_cte)
+    )  # fmt: skip
+    descendant_files_db_with_parent_id_and_name_rows = (
+        (await connection.execute(select_descendant_files_db_with_parent_id_and_name_query))
+        .mappings()
+        .all()
+    )  # fmt: skip
+    _ = descendant_files_db_with_parent_id_and_name_rows
 
     # await connection.commit()
 
