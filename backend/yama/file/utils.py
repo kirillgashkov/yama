@@ -280,6 +280,9 @@ class _FileParentIdAndName(NamedTuple):
 def _make_files(
     files_db_with_parent_id_and_name: list[tuple[FileDb, _FileParentIdAndName | None]],
 ) -> list[File]:
+    # Prepare maps and sets. ids is an ad hoc ordered set needed to collect all
+    # occurring file IDs and respect the original order of files.
+
     id_to_file_db: dict[UUID, FileDb] = {}
     parent_id_to_children: defaultdict[UUID, list[tuple[FileName, UUID]]] = defaultdict(
         list
@@ -297,9 +300,14 @@ def _make_files(
         id_to_file_db[file_db.id] = file_db
         ids[file_db.id] = True
 
+    # Validate maps and sets.
+
     for id_ in ids:
         if id_ not in id_to_file_db:
             raise ValueError("File must have 'FileDb'")
+
+    # Prepare root IDs - IDs of files that aren't children of other files in the current
+    # context.
 
     root_ids: list[UUID] = []
 
@@ -307,11 +315,16 @@ def _make_files(
         if id_ not in child_ids:
             root_ids.append(id_)
 
+    # Make files using iterative DFS since in order to build parents, their children
+    # need to be built first.
+
     id_to_file: dict[UUID, File] = {}
     stack: list[UUID] = root_ids.copy()
 
     while stack and (id_ := stack.pop()):
         children = parent_id_to_children[id_]
+
+        # Ensure that children are built before their parents.
 
         not_made_child_ids: list[UUID] = []
         for _, child_id in children:
@@ -322,6 +335,8 @@ def _make_files(
             stack.append(id_)
             stack.extend(not_made_child_ids)
             continue
+
+        # Make directory content if file has children.
 
         directory_content_files: list[DirectoryContentFile] = []
         for child_name, child_id in children:
@@ -339,6 +354,8 @@ def _make_files(
             else None
         )
 
+        # Make file.
+
         file: File
         file_db = id_to_file_db[id_]
         file_type = FileType(file_db.type)
@@ -355,6 +372,8 @@ def _make_files(
                 assert_never(file_type)
 
         id_to_file[id_] = file
+
+    # Return root files only.
 
     files: list[File] = []
     for root_id in root_ids:
