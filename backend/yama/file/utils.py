@@ -226,13 +226,13 @@ async def _move_file(
         .where(FileAncestorFileDescendantDb.ancestor_id == id_)
         .cte()
     )
-    delete_old_descendant_ancestors_cte = (
+    delete_old_descendant_ancestors_db_cte = (
         delete(FileAncestorFileDescendantDb)
         .where(FileAncestorFileDescendantDb.descendant_id == select_descendants_db_cte.c.descendant_id)
         .where(FileAncestorFileDescendantDb.descendant_depth > select_descendants_db_cte.c.descendant_depth)
         .cte()
     )  # fmt: skip
-    insert_new_descendant_ancestors_query = (
+    insert_new_descendant_ancestors_db_cte = (
         insert(FileAncestorFileDescendantDb)
         .from_select(
             ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
@@ -240,20 +240,41 @@ async def _move_file(
                 FileAncestorFileDescendantDb.ancestor_id,
                 select_descendants_db_cte.c.descendant_id,
                 case(
-                    (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path == "."), literal(new_name)),
+                    (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path == "."), new_name),
                     (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path != "."), literal(new_name) + "/" + select_descendants_db_cte.c.descendant_path),
-                    (and_(FileAncestorFileDescendantDb.descendant_path != ".", select_descendants_db_cte.c.descendant_path == "."), FileAncestorFileDescendantDb.descendant_path + "/" + literal(new_name)),
-                    else_=(FileAncestorFileDescendantDb.descendant_path + "/" + literal(new_name) + "/" + select_descendants_db_cte.c.descendant_path),
+                    (and_(FileAncestorFileDescendantDb.descendant_path != ".", select_descendants_db_cte.c.descendant_path == "."), FileAncestorFileDescendantDb.descendant_path + "/" + new_name),
+                    else_=(FileAncestorFileDescendantDb.descendant_path + "/" + new_name + "/" + select_descendants_db_cte.c.descendant_path),
                 ).label("descendant_path"),
                 (FileAncestorFileDescendantDb.descendant_depth + select_descendants_db_cte.c.descendant_depth + 1).label("descendant_depth"),
             )
             .select_from(FileAncestorFileDescendantDb, select_descendants_db_cte)
             .where(FileAncestorFileDescendantDb.descendant_id == new_parent_id)
         )
-        .add_cte(select_descendants_db_cte)
-        .add_cte(delete_old_descendant_ancestors_cte)
+        .cte()
     )  # fmt: skip
-    await connection.execute(insert_new_descendant_ancestors_query)
+    select_descendant_files_db_with_parent_id_and_name_query = (
+        select(
+            case((select_descendants_db_cte.c.descendant_depth > 0, FileAncestorFileDescendantDb.ancestor_id), else_=literal(None)).label("parent_id"),
+            case((select_descendants_db_cte.c.descendant_depth > 0, FileAncestorFileDescendantDb.descendant_path), else_=literal(None)).label("name"),
+            FileDb.id,
+            FileDb.type,
+        )
+        # Select descendants of the file (the descendants include the file itself)
+        .select_from(select_descendants_db_cte)
+        # Select file information for each descendant
+        .join(FileDb, select_descendants_db_cte.c.descendant_id == FileDb.id)
+        # Select parent and name within parent for each descendant if available
+        .outerjoin(FileAncestorFileDescendantDb, (select_descendants_db_cte.c.descendant_id == FileAncestorFileDescendantDb.descendant_id) & (FileAncestorFileDescendantDb.descendant_depth == 1))
+        .add_cte(select_descendants_db_cte)
+        .add_cte(delete_old_descendant_ancestors_db_cte)
+        .add_cte(insert_new_descendant_ancestors_db_cte)
+    )  # fmt: skip
+    descendant_files_db_with_parent_id_and_name_rows = (
+        (await connection.execute(select_descendant_files_db_with_parent_id_and_name_query))
+        .mappings()
+        .all()
+    )  # fmt: skip
+    _ = descendant_files_db_with_parent_id_and_name_rows
 
     # await connection.commit()
 
