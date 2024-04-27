@@ -33,12 +33,11 @@ async def read_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    content: bool = False,
+    max_depth: int | None,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
-    files_dir: Path,
 ) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
@@ -58,9 +57,7 @@ async def read_file(
         connection=connection,
     )
 
-    file = await _get_file(
-        id_=id_, content=content, connection=connection, files_dir=files_dir
-    )
+    file = await _get_file(id_, max_depth=max_depth, connection=connection)
 
     return file
 
@@ -184,41 +181,62 @@ async def _add_file(
     await connection.commit()
 
 
-# TODO: Make id_ parameter positional
 async def _get_file(
-    *, id_: UUID, content: bool, files_dir: Path, connection: AsyncConnection
+    id_: UUID, *, max_depth: int | None, connection: AsyncConnection
 ) -> File:
-    file_db_query = select(FileDb).where(FileDb.id == id_)
-    file_db_row = (await connection.execute(file_db_query)).mappings().one()
-    file_db = FileDb(**file_db_row)
+    descendant_alias = aliased(FileAncestorFileDescendantDb)
+    descendant_file_alias = aliased(FileDb)
+    descendant_parent_alias = aliased(FileAncestorFileDescendantDb)
 
-    file: File
-    match type_ := FileType(file_db.type):
-        case FileType.REGULAR:
-            if content:
-                file = Regular(
-                    id=file_db.id,
-                    type=type_,
-                    content=_get_regular_content(id_=file_db.id, files_dir=files_dir),
+    match max_depth:
+        case 0:
+            query = select(
+                descendant_file_alias.id,
+                descendant_file_alias.type,
+                literal(None).label("parent_id"),
+                literal(None).label("name"),
+            ).where(descendant_file_alias.id == id_)
+        case 1:
+            query = (
+                select(
+                    descendant_file_alias.id,
+                    descendant_file_alias.type,
+                    case((descendant_alias.descendant_depth > 0, descendant_alias.ancestor_id), else_=literal(None)).label("parent_id"),
+                    case((descendant_alias.descendant_depth > 0, descendant_alias.descendant_path), else_=literal(None)).label("name"),
                 )
-            else:
-                file = Regular(id=file_db.id, type=type_)
-        case FileType.DIRECTORY:
-            if content:
-                file = Directory(
-                    id=file_db.id,
-                    type=type_,
-                    content=(
-                        await _get_directory_content(
-                            id_=file_db.id, connection=connection
-                        )
-                    ),
+                .select_from(descendant_alias)
+                .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
+                .where((descendant_alias.ancestor_id == id_) & (descendant_alias.descendant_depth <= 1))
+            )  # fmt: skip
+        case max_depth if max_depth is None or max_depth >= 2:
+            query = (
+                select(
+                    descendant_file_alias.id,
+                    descendant_file_alias.type,
+                    case((descendant_alias.descendant_depth > 0, descendant_parent_alias.ancestor_id), else_=literal(None)).label("parent_id"),
+                    case((descendant_alias.descendant_depth > 0, descendant_parent_alias.descendant_path), else_=literal(None)).label("name"),
                 )
-            else:
-                file = Directory(id=file_db.id, type=type_)
-
+                .select_from(descendant_alias)
+                .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
+                .outerjoin(descendant_parent_alias, (descendant_alias.descendant_id == descendant_parent_alias.descendant_id) & (descendant_parent_alias.descendant_depth == 1))
+                .where(descendant_alias.ancestor_id == id_)
+            )  # fmt: skip
+            if max_depth is not None:
+                query = query.where(descendant_alias.descendant_depth <= max_depth)
         case _:
-            assert_never(type_)
+            raise ValueError("Invalid max_depth")
+
+    descendant_files_db_with_parent_id_and_name_rows = (
+        (await connection.execute(query)).mappings().all()
+    )
+    descendant_files_db_with_parent_id_and_name = [
+        (
+            FileDb(id=row["id"], type=FileType(row["type"])),
+            _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"]),
+        )
+        for row in descendant_files_db_with_parent_id_and_name_rows
+    ]
+    (file,) = _make_files(descendant_files_db_with_parent_id_and_name)
 
     return file
 
