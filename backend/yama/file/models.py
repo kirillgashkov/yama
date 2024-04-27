@@ -9,7 +9,6 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
-from yama.file.driver.utils import AsyncReadable
 from yama.file.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 from yama.model.models import ModelBase
 
@@ -73,14 +72,9 @@ class FileShareType(str, Enum):
     SHARE = "share"
 
 
-class RegularContent(NamedTuple):
-    content_stream: AsyncReadable
-
-
 class Regular(NamedTuple):
     id: UUID
     type: Literal[FileType.REGULAR]
-    content: RegularContent | None = None
 
 
 class DirectoryContentFile(NamedTuple):
