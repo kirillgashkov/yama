@@ -65,7 +65,7 @@ async def write_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    overwrite: bool = False,
+    overwrite: bool,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
