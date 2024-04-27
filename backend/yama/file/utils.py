@@ -1,8 +1,7 @@
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
-from contextlib import asynccontextmanager
 from pathlib import PurePosixPath
-from typing import AsyncIterator, NamedTuple, assert_never
+from typing import NamedTuple, assert_never
 from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
@@ -96,7 +95,6 @@ async def write_file(
     raise NotImplementedError()
 
 
-@asynccontextmanager
 async def _add_file(
     file_write: FileWrite,
     parent_id: UUID,
@@ -105,7 +103,10 @@ async def _add_file(
     *,
     user_id: UUID,
     connection: AsyncConnection,
-) -> AsyncIterator[File]:
+) -> tuple[File, AsyncConnection]:
+    """
+    Returns the added file and a connection with uncommitted transaction.
+    """
     insert_file_db_cte = (
         insert(FileDb).values(type=file_write.type.value).returning(FileDb).cte()
     )
@@ -175,9 +176,7 @@ async def _add_file(
     )
     (file,) = _make_files((file_db_with_parent_id_and_name,))
 
-    yield file
-
-    await connection.commit()
+    return file, connection
 
 
 async def _get_file(
@@ -240,7 +239,6 @@ async def _get_file(
     return file
 
 
-@asynccontextmanager
 async def _move_file(
     id_: UUID,
     new_parent_id: UUID,
@@ -248,7 +246,10 @@ async def _move_file(
     /,
     *,
     connection: AsyncConnection,
-) -> AsyncIterator[File]:
+) -> tuple[File, AsyncConnection]:
+    """
+    Returns the moved file and a connection with uncommitted transaction.
+    """
     select_descendants_db_cte = (
         select(
             FileAncestorFileDescendantDb.descendant_id,
@@ -315,15 +316,15 @@ async def _move_file(
     )
     (file,) = _make_files((file_db_with_parent_id_and_name,))
 
-    yield file
-
-    await connection.commit()
+    return file, connection
 
 
-@asynccontextmanager
 async def _remove_file(
     id_: UUID, /, *, connection: AsyncConnection
-) -> AsyncIterator[File]:
+) -> tuple[File, AsyncConnection]:
+    """
+    Returns the removed file and a connection with uncommitted transaction.
+    """
     fafd1 = aliased(FileAncestorFileDescendantDb)
     fafd2 = aliased(FileAncestorFileDescendantDb)
     select_descendant_files_db_with_parent_id_and_name_and_depth_cte = (
@@ -392,9 +393,7 @@ async def _remove_file(
     ]
     (file,) = _make_files(descendant_files_db_with_parent_id_and_name)
 
-    yield file
-
-    await connection.commit()
+    return file, connection
 
 
 class _FileParentIdAndName(NamedTuple):
