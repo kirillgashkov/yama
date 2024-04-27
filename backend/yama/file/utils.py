@@ -101,9 +101,9 @@ async def write_file(
         name = _id_or_path_to_name_or_raise(id_or_path)
 
         file, connection_to_commit = await _add_file(
-            file_write,
             parent_id,
             name,
+            type_=file_write.type,
             user_id=user_id,
             connection=connection,
         )
@@ -123,20 +123,18 @@ async def write_file(
 
 
 async def _add_file(
-    file_write: FileWrite,
     parent_id: UUID,
     name: FileName,
     /,
     *,
+    type_: FileType,
     user_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[File, AsyncConnection]:
     """
     Returns the added file and a connection with uncommitted transaction.
     """
-    insert_file_db_cte = (
-        insert(FileDb).values(type=file_write.type.value).returning(FileDb).cte()
-    )
+    insert_file_db_cte = insert(FileDb).values(type=type_.value).returning(FileDb).cte()
     insert_share_db_cte = (
         insert(FileShareDb)
         .from_select(
