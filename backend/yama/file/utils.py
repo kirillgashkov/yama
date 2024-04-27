@@ -1,6 +1,8 @@
 from collections import OrderedDict, defaultdict
+from collections.abc import Iterable
+from contextlib import asynccontextmanager
 from pathlib import Path, PurePosixPath
-from typing import NamedTuple, assert_never
+from typing import AsyncIterator, NamedTuple, assert_never
 from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
@@ -98,6 +100,7 @@ async def write_file(
     raise NotImplementedError()
 
 
+@asynccontextmanager
 async def _add_file(
     file_write: FileWrite,
     parent_id: UUID,
@@ -106,7 +109,7 @@ async def _add_file(
     *,
     user_id: UUID,
     connection: AsyncConnection,
-) -> File:
+) -> AsyncIterator[File]:
     insert_file_db_cte = (
         insert(FileDb).values(type=file_write.type.value).returning(FileDb).cte()
     )
@@ -164,11 +167,21 @@ async def _add_file(
         .mappings()
         .one()
     )
-    _ = file_db_with_parent_id_and_name_row
+    file_db_with_parent_id_and_name = (
+        FileDb(
+            id=file_db_with_parent_id_and_name_row["id"],
+            type=FileType(file_db_with_parent_id_and_name_row["type"]),
+        ),
+        _FileParentIdAndName(
+            parent_id=file_db_with_parent_id_and_name_row["parent_id"],
+            name=file_db_with_parent_id_and_name_row["name"],
+        ),
+    )
+    (file,) = _make_files((file_db_with_parent_id_and_name,))
 
-    # await connection.commit()  # Maybe yield before committing?
+    yield file
 
-    raise NotImplementedError()
+    await connection.commit()
 
 
 # TODO: Make id_ parameter positional
@@ -353,7 +366,9 @@ class _FileParentIdAndName(NamedTuple):
 
 
 def _make_files(
-    files_db_with_parent_id_and_name: list[tuple[FileDb, _FileParentIdAndName | None]],
+    files_db_with_parent_id_and_name: Iterable[
+        tuple[FileDb, _FileParentIdAndName | None]
+    ],
 ) -> list[File]:
     """
     Makes tree-like files from edge-like database rows.
