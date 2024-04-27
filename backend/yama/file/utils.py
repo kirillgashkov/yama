@@ -67,7 +67,7 @@ async def write_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    overwrite: bool,
+    exist_ok: bool = True,
     root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
@@ -95,7 +95,7 @@ async def write_file(
     if id_ is not None:
         file = await _get_file(id_, max_depth=0, connection=connection)
 
-        if not overwrite:
+        if not exist_ok:
             raise FilesFileExistsError(id_)
     else:
         name = _id_or_path_to_name_or_raise(id_or_path)
