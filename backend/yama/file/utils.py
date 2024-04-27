@@ -91,21 +91,16 @@ async def write_file(
         connection=connection,
     )
 
-    connection_add_file: AsyncConnection | None = None
+    connection_to_commit: AsyncConnection | None = None
     if id_ is not None:
         file = await _get_file(id_, max_depth=0, connection=connection)
 
         if not overwrite:
             raise FilesFileExistsError(id_)
     else:
-        if isinstance(id_or_path, UUID):
-            raise ValueError("UUID id_or_path can't be used to add file")
+        name = _id_or_path_to_name_or_raise(id_or_path)
 
-        name = id_or_path.name
-        if not name:
-            raise ValueError("FilePath id_or_path must have name to add file")
-
-        file, connection_add_file = await _add_file(
+        file, connection_to_commit = await _add_file(
             file_write,
             parent_id,
             name,
@@ -117,12 +112,12 @@ async def write_file(
         case RegularWrite(content=content):
             await driver.write_regular_content(content.upload_file, file.id)
         case DirectoryWrite():
-            ... 
+            ...
         case _:
             assert_never(file_write)
 
-    if connection_add_file is not None:
-        await connection_add_file.commit()
+    if connection_to_commit is not None:
+        await connection_to_commit.commit()
 
     return file
 
@@ -646,6 +641,17 @@ async def _id_or_path_to_parent_id_and_id_or_none(
             assert_never(id_or_path)
 
     return parent_id, id_
+
+
+def _id_or_path_to_name_or_raise(id_or_path: UUID | FilePath, /) -> FileName:
+    if isinstance(id_or_path, UUID):
+        raise ValueError("Cannot get file name from UUID")
+
+    name = id_or_path.name
+    if not name:
+        raise ValueError("Cannot get file name from path without names")
+
+    return name
 
 
 async def _path_to_id(
