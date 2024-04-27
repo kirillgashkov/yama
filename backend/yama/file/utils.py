@@ -483,14 +483,6 @@ def _make_files(
                 name=child_name, file=child_file
             )
             directory_content_files.append(directory_content_file)
-        directory_content = (
-            DirectoryContent(
-                count_=len(directory_content_files),
-                items=directory_content_files,
-            )
-            if directory_content_files
-            else None
-        )
 
         # Make file.
 
@@ -499,12 +491,14 @@ def _make_files(
         file_type = FileType(file_db.type)
         match file_type:
             case FileType.REGULAR:
-                if directory_content:
-                    raise ValueError("Regular file can't have directory content")
+                if directory_content_files:
+                    raise ValueError("Regular file can't have directory content files")
                 file = Regular(id=file_db.id, type=file_type)
             case FileType.DIRECTORY:
                 file = Directory(
-                    id=file_db.id, type=file_type, content=directory_content
+                    id=file_db.id,
+                    type=file_type,
+                    content=DirectoryContent(files=directory_content_files),
                 )
             case _:
                 assert_never(file_type)
@@ -561,7 +555,7 @@ async def _get_directory_content(
         content_file = DirectoryContentFile(name=name, file=file)
         content_files.append(content_file)
 
-    return DirectoryContent(count_=len(content_files), items=content_files)
+    return DirectoryContent(files=content_files)
 
 
 async def _check_share_for_file_and_user(

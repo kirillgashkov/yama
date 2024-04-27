@@ -89,14 +89,13 @@ class DirectoryContentFile(NamedTuple):
 
 
 class DirectoryContent(NamedTuple):
-    count_: int
-    items: list[DirectoryContentFile]
+    files: list[DirectoryContentFile]
 
 
 class Directory(NamedTuple):
     id: UUID
     type: Literal[FileType.DIRECTORY]
-    content: DirectoryContent | None = None
+    content: DirectoryContent
 
 
 File: TypeAlias = Regular | Directory
