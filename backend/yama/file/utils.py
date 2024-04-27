@@ -1,7 +1,7 @@
 from collections import OrderedDict, defaultdict
 from collections.abc import Iterable
 from contextlib import asynccontextmanager
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import AsyncIterator, NamedTuple, assert_never
 from uuid import UUID
 
@@ -24,7 +24,6 @@ from yama.file.models import (
     FileType,
     FileWrite,
     Regular,
-    RegularContent,
 )
 from yama.user.models import UserAncestorUserDescendantDb
 
@@ -513,49 +512,6 @@ def _make_files(
         files.append(file)
 
     return files
-
-
-def _get_regular_content(*, id_: UUID, files_dir: Path) -> RegularContent:
-    ...
-
-
-async def _get_directory_content(
-    *, id_: UUID, connection: AsyncConnection
-) -> DirectoryContent:
-    content_files_db_query = (
-        select(
-            FileAncestorFileDescendantDb.descendant_path.label("name"),
-            FileDb.id,
-            FileDb.type,
-        )
-        .select_from(FileAncestorFileDescendantDb)
-        .where(FileAncestorFileDescendantDb.ancestor_id == id_)
-        .where(FileAncestorFileDescendantDb.descendant_depth == 1)
-        .join(FileDb, FileAncestorFileDescendantDb.descendant_id == FileDb.id)
-    )
-    content_files_db_rows = (
-        (await connection.execute(content_files_db_query)).mappings().all()
-    )
-    content_files_db: list[tuple[str, FileDb]] = [
-        (row["name"], FileDb(id=row["id"], type=row["type"]))
-        for row in content_files_db_rows
-    ]  # HACK: Implicit type cast
-
-    content_files = []
-    for name, file_db in content_files_db:
-        file: File
-        match type_ := FileType(file_db.type):
-            case FileType.REGULAR:
-                file = Regular(id=file_db.id, type=type_)
-            case FileType.DIRECTORY:
-                file = Directory(id=file_db.id, type=type_)
-            case _:
-                assert_never(type_)
-
-        content_file = DirectoryContentFile(name=name, file=file)
-        content_files.append(content_file)
-
-    return DirectoryContent(files=content_files)
 
 
 async def _check_share_for_file_and_user(
