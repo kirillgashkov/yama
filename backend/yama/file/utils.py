@@ -13,6 +13,7 @@ from yama.file.models import (
     Directory,
     DirectoryContent,
     DirectoryContentFile,
+    DirectoryWrite,
     File,
     FileAncestorFileDescendantDb,
     FileDb,
@@ -23,6 +24,7 @@ from yama.file.models import (
     FileType,
     FileWrite,
     Regular,
+    RegularWrite,
 )
 from yama.user.models import UserAncestorUserDescendantDb
 
@@ -89,10 +91,40 @@ async def write_file(
         connection=connection,
     )
 
-    if id_ is not None and not overwrite:
-        raise FilesFileExistsError(id_)
+    connection_add_file: AsyncConnection | None = None
+    if id_ is not None:
+        file = await _get_file(id_, max_depth=0, connection=connection)
 
-    raise NotImplementedError()
+        if not overwrite:
+            raise FilesFileExistsError(id_)
+    else:
+        if isinstance(id_or_path, UUID):
+            raise ValueError("UUID id_or_path can't be used to add file")
+
+        name = id_or_path.name
+        if not name:
+            raise ValueError("FilePath id_or_path must have name to add file")
+
+        file, connection_add_file = await _add_file(
+            file_write,
+            parent_id,
+            name,
+            user_id=user_id,
+            connection=connection,
+        )
+
+    match file_write:
+        case RegularWrite(content=content):
+            await driver.write_regular_content(content.upload_file, file.id)
+        case DirectoryWrite():
+            ... 
+        case _:
+            assert_never(file_write)
+
+    if connection_add_file is not None:
+        await connection_add_file.commit()
+
+    return file
 
 
 async def _add_file(
