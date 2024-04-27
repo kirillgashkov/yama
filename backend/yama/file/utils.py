@@ -303,7 +303,10 @@ async def _move_file(
     await connection.commit()
 
 
-async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
+@asynccontextmanager
+async def _remove_file(
+    id_: UUID, /, *, connection: AsyncConnection
+) -> AsyncIterator[File]:
     fafd1 = aliased(FileAncestorFileDescendantDb)
     fafd2 = aliased(FileAncestorFileDescendantDb)
     select_descendant_files_db_with_parent_id_and_name_and_depth_cte = (
@@ -312,22 +315,24 @@ async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
             FileDb.type,
             case((fafd1.descendant_depth > 0, fafd2.ancestor_id), else_=literal(None)).label("parent_id"),
             case((fafd1.descendant_depth > 0, fafd2.descendant_path), else_=literal(None)).label("name"),
-            fafd1.descendant_depth.label("depth"),  # FIXME: Use or remove.
         )
         # Select descendants (the descendants include the file itself)
         .select_from(fafd1)
         .where(fafd1.ancestor_id == id_)
-        # Select file for each descendant
-        .join(FileDb, fafd1.descendant_id == FileDb.id)
+        # Select file for each descendant (should exist)
+        .outerjoin(FileDb, fafd1.descendant_id == FileDb.id)
         # Select parent ID and name for each descendant if exists
         .outerjoin(fafd2, (fafd1.descendant_id == fafd2.descendant_id) & (fafd2.descendant_depth == 1))
         .cte()
     )  # fmt: skip
     delete_descendant_ancestors_db_cte = (
         delete(FileAncestorFileDescendantDb)
-        .where(FileAncestorFileDescendantDb.descendant_id == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id)
+        .where(
+            FileAncestorFileDescendantDb.descendant_id
+            == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id
+        )
         .cte()
-    )  # fmt: skip
+    )
     delete_descendant_shares_db_cte = (
         delete(FileShareDb)
         .where(
@@ -361,11 +366,18 @@ async def _remove_file(id_: UUID, /, *, connection: AsyncConnection) -> File:
         .mappings()
         .all()
     )  # fmt: skip
-    _ = descendant_files_db_with_parent_id_and_name_rows
+    descendant_files_db_with_parent_id_and_name = [
+        (
+            FileDb(id=row["id"], type=FileType(row["type"])),
+            _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"]),
+        )
+        for row in descendant_files_db_with_parent_id_and_name_rows
+    ]
+    (file,) = _make_files(descendant_files_db_with_parent_id_and_name)
 
-    # await connection.commit()
+    yield file
 
-    raise NotImplementedError()
+    await connection.commit()
 
 
 class _FileParentIdAndName(NamedTuple):
