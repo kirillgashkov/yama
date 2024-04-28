@@ -26,6 +26,7 @@ from yama.file.models import (
     Regular,
     RegularWrite,
 )
+from yama.file.settings import Settings
 from yama.user.models import UserAncestorUserDescendantDb
 
 
@@ -34,14 +35,14 @@ async def read_file(
     /,
     *,
     max_depth: int | None,
-    root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
+    settings: Settings,
     connection: AsyncConnection,
 ) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
-        root_dir_id=root_dir_id,
+        root_dir_id=settings.root_dir_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
@@ -68,15 +69,15 @@ async def write_file(
     /,
     *,
     exist_ok: bool = True,
-    root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
     driver: Driver,
+    settings: Settings,
 ) -> File:
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
-        root_dir_id=root_dir_id,
+        root_dir_id=settings.root_dir_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
