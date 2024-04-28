@@ -172,7 +172,8 @@ async def _add_file(
                     FileAncestorFileDescendantDb, insert_file_db_cte
                 ).where(FileAncestorFileDescendantDb.descendant_id == parent_id),
             ),
-        ).cte()
+        )
+        .cte()
     )  # fmt: skip
     select_file_db_with_parent_id_and_name_query = (
         select(
@@ -185,6 +186,8 @@ async def _add_file(
         .add_cte(insert_share_db_cte)
         .add_cte(insert_ancestors_db_cte)
     )
+    # FIXME: Handle IntegrityError about "fafd_parent_id_child_name_uidx" that can be
+    # caused by insert_ancestors_db_cte.
     file_db_with_parent_id_and_name_row = (
         (await connection.execute(select_file_db_with_parent_id_and_name_query))
         .mappings()

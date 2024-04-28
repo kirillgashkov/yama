@@ -50,6 +50,9 @@ CREATE TABLE IF NOT EXISTS file_ancestors_file_descendants (
     FOREIGN KEY (ancestor_id) REFERENCES files (id),
     FOREIGN KEY (descendant_id) REFERENCES files (id)
 );
+CREATE UNIQUE INDEX fafd_parent_id_child_name_uidx
+    ON file_ancestors_file_descendants (ancestor_id, descendant_path)
+    WHERE descendant_depth = 1;
 
 CREATE TABLE IF NOT EXISTS file_share_types (
     type varchar NOT NULL,
