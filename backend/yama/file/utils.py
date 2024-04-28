@@ -223,29 +223,22 @@ async def _get_file(
     descendant_parent_alias = aliased(FileAncestorFileDescendantDb)
 
     match max_depth:
-        case 0:
-            query = select(
-                descendant_file_alias.id,
-                descendant_file_alias.type,
-                literal(None).label("parent_id"),
-                literal(None).label("name"),
-            ).where(descendant_file_alias.id == id_)
-        case 1:
+        case max_depth if max_depth is not None and max_depth >= 0 and max_depth <= 1:
             query = (
                 select(
-                    descendant_file_alias.id,
+                    descendant_alias.descendant_id.label("id"),
                     descendant_file_alias.type,
                     case((descendant_alias.descendant_depth > 0, descendant_alias.ancestor_id), else_=literal(None)).label("parent_id"),
                     case((descendant_alias.descendant_depth > 0, descendant_alias.descendant_path), else_=literal(None)).label("name"),
                 )
                 .select_from(descendant_alias)
                 .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
-                .where((descendant_alias.ancestor_id == id_) & (descendant_alias.descendant_depth <= 1))
+                .where((descendant_alias.ancestor_id == id_) & (descendant_alias.descendant_depth <= max_depth))
             )  # fmt: skip
         case max_depth if max_depth is None or max_depth >= 2:
             query = (
                 select(
-                    descendant_file_alias.id,
+                    descendant_alias.descendant_id.label("id"),
                     descendant_file_alias.type,
                     case((descendant_alias.descendant_depth > 0, descendant_parent_alias.ancestor_id), else_=literal(None)).label("parent_id"),
                     case((descendant_alias.descendant_depth > 0, descendant_parent_alias.descendant_path), else_=literal(None)).label("name"),
