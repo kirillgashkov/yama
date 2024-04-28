@@ -309,7 +309,7 @@ async def _move_file(
                 ).label("descendant_path"),
                 (FileAncestorFileDescendantDb.descendant_depth + select_descendants_db_cte.c.descendant_depth + 1).label("descendant_depth"),
             )
-            .select_from(FileAncestorFileDescendantDb, select_descendants_db_cte)
+            .select_from(select_descendants_db_cte, FileAncestorFileDescendantDb)
             .where(FileAncestorFileDescendantDb.descendant_id == new_parent_id)
         )
         .cte()
@@ -322,17 +322,21 @@ async def _move_file(
             literal(None).label("name"),
         )
         .select_from(select_descendants_db_cte)
-        .outerjoin(FileDb, select_descendants_db_cte.c.descendant_id == FileDb.id)
         .where(select_descendants_db_cte.c.descendant_id == id_)
+        .outerjoin(FileDb, select_descendants_db_cte.c.descendant_id == FileDb.id)
         .add_cte(select_descendants_db_cte)
         .add_cte(delete_old_descendant_ancestors_db_cte)
         .add_cte(insert_new_descendant_ancestors_db_cte)
     )
+    # FIXME: Handle IntegrityError about "fafd_parent_id_child_name_uidx" that can be
+    # caused by insert_new_descendant_ancestors_db_cte.
     file_db_with_parent_id_and_name_row = (
         (await connection.execute(select_file_db_with_parent_id_and_name_query))
         .mappings()
-        .one()
+        .one_or_none()
     )
+    if file_db_with_parent_id_and_name_row is None:
+        raise FilesFileNotFoundError(id_)
     file_db_with_parent_id_and_name = (
         FileDb(
             id=file_db_with_parent_id_and_name_row["id"],
