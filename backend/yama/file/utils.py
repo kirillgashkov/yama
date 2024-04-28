@@ -1,4 +1,4 @@
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict, defaultdict, deque
 from collections.abc import Iterable
 from pathlib import PurePosixPath
 from typing import NamedTuple, assert_never
@@ -534,6 +534,22 @@ def _make_files(
         files.append(file)
 
     return files
+
+
+def _file_to_descendant_files(file: File) -> Iterable[File]:
+    queue: deque[File] = deque([file])
+
+    while queue and (file := queue.pop()):
+        yield file
+
+        match file:
+            case Regular():
+                ...
+            case Directory():
+                for content_file in file.content.files:
+                    queue.append(content_file.file)
+            case _:
+                assert_never(file)
 
 
 async def _check_share_for_file_and_user(
