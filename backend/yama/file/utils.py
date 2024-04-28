@@ -364,7 +364,7 @@ async def _remove_file(
     """
     fafd1 = aliased(FileAncestorFileDescendantDb)
     fafd2 = aliased(FileAncestorFileDescendantDb)
-    select_descendant_files_db_with_parent_id_and_name_and_depth_cte = (
+    select_descendant_files_db_with_parent_id_and_name_cte = (
         select(
             FileDb.id,
             FileDb.type,
@@ -384,7 +384,7 @@ async def _remove_file(
         delete(FileAncestorFileDescendantDb)
         .where(
             FileAncestorFileDescendantDb.descendant_id
-            == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id
+            == select_descendant_files_db_with_parent_id_and_name_cte.c.id
         )
         .cte()
     )
@@ -392,7 +392,7 @@ async def _remove_file(
         delete(FileShareDb)
         .where(
             FileShareDb.file_id
-            == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id
+            == select_descendant_files_db_with_parent_id_and_name_cte.c.id
         )
         .cte()
     )
@@ -400,27 +400,31 @@ async def _remove_file(
         delete(FileDb)
         .where(
             FileDb.id
-            == select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id
+            == select_descendant_files_db_with_parent_id_and_name_cte.c.id
         )
         .cte()
     )
     select_descendant_files_db_with_parent_id_and_name_query = (
         select(
-            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.id,
-            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.type,
-            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.parent_id,
-            select_descendant_files_db_with_parent_id_and_name_and_depth_cte.c.name,
+            select_descendant_files_db_with_parent_id_and_name_cte.c.id,
+            select_descendant_files_db_with_parent_id_and_name_cte.c.type,
+            select_descendant_files_db_with_parent_id_and_name_cte.c.parent_id,
+            select_descendant_files_db_with_parent_id_and_name_cte.c.name,
         )
-        .add_cte(select_descendant_files_db_with_parent_id_and_name_and_depth_cte)
+        .add_cte(select_descendant_files_db_with_parent_id_and_name_cte)
         .add_cte(delete_descendant_ancestors_db_cte)
         .add_cte(delete_descendant_shares_db_cte)
         .add_cte(delete_descendant_files_db_cte)
     )  # fmt: skip
+
     descendant_files_db_with_parent_id_and_name_rows = (
         (await connection.execute(select_descendant_files_db_with_parent_id_and_name_query))
         .mappings()
         .all()
     )  # fmt: skip
+    if not descendant_files_db_with_parent_id_and_name_rows:
+        raise FilesFileNotFoundError(id_)
+
     descendant_files_db_with_parent_id_and_name = [
         (
             FileDb(id=row["id"], type=FileType(row["type"])),
