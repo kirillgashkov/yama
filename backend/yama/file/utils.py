@@ -186,6 +186,7 @@ async def _add_file(
         .add_cte(insert_share_db_cte)
         .add_cte(insert_ancestors_db_cte)
     )
+
     # FIXME: Handle IntegrityError about "fafd_parent_id_child_name_uidx" that can be
     # caused by insert_ancestors_db_cte.
     file_db_with_parent_id_and_name_row = (
@@ -193,6 +194,7 @@ async def _add_file(
         .mappings()
         .one()
     )
+
     file_db_with_parent_id_and_name = (
         FileDb(
             id=file_db_with_parent_id_and_name_row["id"],
@@ -256,6 +258,9 @@ async def _get_file(
     descendant_files_db_with_parent_id_and_name_rows = (
         (await connection.execute(query)).mappings().all()
     )
+    if not descendant_files_db_with_parent_id_and_name_rows:
+        raise FilesFileNotFoundError(id_)
+
     descendant_files_db_with_parent_id_and_name = [
         (
             FileDb(id=row["id"], type=FileType(row["type"])),
@@ -328,6 +333,7 @@ async def _move_file(
         .add_cte(delete_old_descendant_ancestors_db_cte)
         .add_cte(insert_new_descendant_ancestors_db_cte)
     )
+
     # FIXME: Handle IntegrityError about "fafd_parent_id_child_name_uidx" that can be
     # caused by insert_new_descendant_ancestors_db_cte.
     file_db_with_parent_id_and_name_row = (
@@ -337,6 +343,7 @@ async def _move_file(
     )
     if file_db_with_parent_id_and_name_row is None:
         raise FilesFileNotFoundError(id_)
+
     file_db_with_parent_id_and_name = (
         FileDb(
             id=file_db_with_parent_id_and_name_row["id"],
