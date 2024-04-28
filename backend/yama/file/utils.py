@@ -173,27 +173,32 @@ async def _add_file(
                 ).where(FileAncestorFileDescendantDb.descendant_id == parent_id),
             ),
         )
+        .returning(FileAncestorFileDescendantDb)
         .cte()
     )  # fmt: skip
     select_file_db_with_parent_id_and_name_query = (
         select(
-            insert_file_db_cte.c.id,
+            insert_ancestors_db_cte.c.ancestor_id.label("id"),
             insert_file_db_cte.c.type,
             literal(None).label("parent_id"),
             literal(None).label("name"),
         )
+        .select_from(insert_ancestors_db_cte)
+        .outerjoin(insert_file_db_cte, insert_ancestors_db_cte.c.ancestor_id == insert_file_db_cte.c.id)
         .add_cte(insert_file_db_cte)
         .add_cte(insert_share_db_cte)
         .add_cte(insert_ancestors_db_cte)
-    )
+    )  # fmt: skip
 
     # FIXME: Handle IntegrityError about "fafd_parent_id_child_name_uidx" that can be
     # caused by insert_ancestors_db_cte.
     file_db_with_parent_id_and_name_row = (
         (await connection.execute(select_file_db_with_parent_id_and_name_query))
         .mappings()
-        .one()
+        .one_or_none()
     )
+    if file_db_with_parent_id_and_name_row is None:
+        raise FilesFileNotFoundError(parent_id)
 
     file_db_with_parent_id_and_name = (
         FileDb(
