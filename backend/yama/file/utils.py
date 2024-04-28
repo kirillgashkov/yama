@@ -222,36 +222,35 @@ async def _get_file(
     descendant_file_alias = aliased(FileDb)
     descendant_parent_alias = aliased(FileAncestorFileDescendantDb)
 
-    match max_depth:
-        case max_depth if max_depth is not None and max_depth >= 0 and max_depth <= 1:
-            query = (
-                select(
-                    descendant_alias.descendant_id.label("id"),
-                    descendant_file_alias.type,
-                    case((descendant_alias.descendant_depth > 0, descendant_alias.ancestor_id), else_=literal(None)).label("parent_id"),
-                    case((descendant_alias.descendant_depth > 0, descendant_alias.descendant_path), else_=literal(None)).label("name"),
-                )
-                .select_from(descendant_alias)
-                .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
-                .where((descendant_alias.ancestor_id == id_) & (descendant_alias.descendant_depth <= max_depth))
-            )  # fmt: skip
-        case max_depth if max_depth is None or max_depth >= 2:
-            query = (
-                select(
-                    descendant_alias.descendant_id.label("id"),
-                    descendant_file_alias.type,
-                    case((descendant_alias.descendant_depth > 0, descendant_parent_alias.ancestor_id), else_=literal(None)).label("parent_id"),
-                    case((descendant_alias.descendant_depth > 0, descendant_parent_alias.descendant_path), else_=literal(None)).label("name"),
-                )
-                .select_from(descendant_alias)
-                .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
-                .outerjoin(descendant_parent_alias, (descendant_alias.descendant_id == descendant_parent_alias.descendant_id) & (descendant_parent_alias.descendant_depth == 1))
-                .where(descendant_alias.ancestor_id == id_)
-            )  # fmt: skip
-            if max_depth is not None:
-                query = query.where(descendant_alias.descendant_depth <= max_depth)
-        case _:
-            raise ValueError("Invalid max_depth")
+    if max_depth is not None and max_depth >= 0 and max_depth <= 1:
+        query = (
+            select(
+                descendant_alias.descendant_id.label("id"),
+                descendant_file_alias.type,
+                case((descendant_alias.descendant_depth > 0, descendant_alias.ancestor_id), else_=literal(None)).label("parent_id"),
+                case((descendant_alias.descendant_depth > 0, descendant_alias.descendant_path), else_=literal(None)).label("name"),
+            )
+            .select_from(descendant_alias)
+            .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
+            .where((descendant_alias.ancestor_id == id_) & (descendant_alias.descendant_depth <= max_depth))
+        )  # fmt: skip
+    elif max_depth is None or max_depth >= 2:
+        query = (
+            select(
+                descendant_alias.descendant_id.label("id"),
+                descendant_file_alias.type,
+                case((descendant_alias.descendant_depth > 0, descendant_parent_alias.ancestor_id), else_=literal(None)).label("parent_id"),
+                case((descendant_alias.descendant_depth > 0, descendant_parent_alias.descendant_path), else_=literal(None)).label("name"),
+            )
+            .select_from(descendant_alias)
+            .outerjoin(descendant_file_alias, descendant_alias.descendant_id == descendant_file_alias.id)
+            .outerjoin(descendant_parent_alias, (descendant_alias.descendant_id == descendant_parent_alias.descendant_id) & (descendant_parent_alias.descendant_depth == 1))
+            .where(descendant_alias.ancestor_id == id_)
+        )  # fmt: skip
+        if max_depth is not None:
+            query = query.where(descendant_alias.descendant_depth <= max_depth)
+    else:
+        raise ValueError("Invalid max_depth")
 
     descendant_files_db_with_parent_id_and_name_rows = (
         (await connection.execute(query)).mappings().all()
