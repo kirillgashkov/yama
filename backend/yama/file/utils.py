@@ -98,6 +98,15 @@ async def write_file(
 
         if not exist_ok:
             raise FilesFileExistsError(id_)
+
+        if file.type != file_write.type:
+            match file.type:
+                case FileType.REGULAR:
+                    raise FilesNotADirectoryError(file.id)
+                case FileType.DIRECTORY:
+                    raise FilesIsADirectoryError(file.id)
+                case _:
+                    assert_never(file.type)
     else:
         name = _id_or_path_to_name_or_raise(id_or_path)
 
