@@ -71,9 +71,9 @@ async def write_file(
     exist_ok: bool = True,
     user_id: UUID,
     working_dir_id: UUID,
+    settings: Settings,
     connection: AsyncConnection,
     driver: Driver,
-    settings: Settings,
 ) -> File:
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
@@ -121,6 +121,54 @@ async def write_file(
         await connection_to_commit.commit()
 
     return file
+
+
+async def remove_file(
+    id_or_path: UUID | FilePath,
+    /,
+    *,
+    missing_ok: bool = False,
+    root_dir_id: UUID,
+    user_id: UUID,
+    working_dir_id: UUID,
+    settings: Settings,
+    connection: AsyncConnection,
+    driver: Driver,
+) -> File:
+    id_ = await _id_or_path_to_id(
+        id_or_path,
+        root_dir_id=root_dir_id,
+        working_dir_id=working_dir_id,
+        connection=connection,
+    )
+
+    await _check_share_for_file_and_user(
+        allowed_types=[
+            FileShareType.READ,
+            FileShareType.WRITE,
+            FileShareType.SHARE,
+        ],
+        file_id=id_,
+        user_id=user_id,
+        connection=connection,
+    )
+
+    file, connection_to_commit = await _remove_file(id_, connection=connection)
+
+    for descendant_file in _file_to_descendant_files(file):
+        match descendant_file.type:
+            case FileType.REGULAR:
+                await driver.remove_regular_content(descendant_file.id)
+            case FileType.DIRECTORY:
+                ...
+            case _:
+                assert_never(descendant_file.type)
+
+    file_with_depth_0 = _file_to_file_with_depth_0(file)
+
+    await connection_to_commit.commit()
+
+    return file_with_depth_0
 
 
 async def _add_file(
@@ -398,10 +446,7 @@ async def _remove_file(
     )
     delete_descendant_files_db_cte = (
         delete(FileDb)
-        .where(
-            FileDb.id
-            == select_descendant_files_db_with_parent_id_and_name_cte.c.id
-        )
+        .where(FileDb.id == select_descendant_files_db_with_parent_id_and_name_cte.c.id)
         .cte()
     )
     select_descendant_files_db_with_parent_id_and_name_query = (
@@ -548,7 +593,7 @@ def _make_files(
     return files
 
 
-def _file_to_descendant_files(file: File) -> Iterable[File]:
+def _file_to_descendant_files(file: File, /) -> Iterable[File]:
     queue: deque[File] = deque([file])
 
     while queue and (file := queue.pop()):
@@ -562,6 +607,21 @@ def _file_to_descendant_files(file: File) -> Iterable[File]:
                     queue.append(content_file.file)
             case _:
                 assert_never(file)
+
+
+def _file_to_file_with_depth_0(file: File, /) -> File:
+    file_with_depth_0: File
+    match file:
+        case Regular():
+            file_with_depth_0 = file
+        case Directory():
+            file_with_depth_0 = Directory(
+                id=file.id, type=file.type, content=DirectoryContent(files=[])
+            )
+        case _:
+            assert_never(file)
+
+    return file_with_depth_0
 
 
 async def _check_share_for_file_and_user(
