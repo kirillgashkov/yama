@@ -151,7 +151,6 @@ async def remove_file(
 
     await _check_share_for_file_and_user(
         allowed_types=[
-            FileShareType.READ,
             FileShareType.WRITE,
             FileShareType.SHARE,
         ],
