@@ -136,8 +136,6 @@ async def remove_file(
     id_or_path: UUID | FilePath,
     /,
     *,
-    missing_ok: bool = False,
-    root_dir_id: UUID,
     user_id: UUID,
     working_dir_id: UUID,
     settings: Settings,
@@ -146,7 +144,7 @@ async def remove_file(
 ) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
-        root_dir_id=root_dir_id,
+        root_dir_id=settings.root_dir_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
