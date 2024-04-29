@@ -177,6 +177,58 @@ async def remove_file(
     return file_with_depth_0
 
 
+async def move_file(
+    src_id_or_path: UUID | FilePath,
+    dst_path: FilePath,
+    /,
+    *,
+    user_id: UUID,
+    working_dir_id: UUID,
+    settings: Settings,
+    connection: AsyncConnection,
+) -> File:
+    src_parent_id, src_id = await _id_or_path_to_parent_id_and_id(
+        src_id_or_path,
+        root_dir_id=settings.root_dir_id,
+        working_dir_id=working_dir_id,
+        connection=connection,
+    )
+    dst_parent_id = await _path_to_parent_id(
+        dst_path,
+        root_dir_id=settings.root_dir_id,
+        working_dir_id=working_dir_id,
+        connection=connection,
+    )
+    dst_name = _path_to_name_or_raise(dst_path)
+
+    await _check_share_for_file_and_user(
+        allowed_types=[
+            FileShareType.WRITE,
+            FileShareType.SHARE,
+        ],
+        file_id=src_parent_id,
+        user_id=user_id,
+        connection=connection,
+    )
+    await _check_share_for_file_and_user(
+        allowed_types=[
+            FileShareType.WRITE,
+            FileShareType.SHARE,
+        ],
+        file_id=dst_parent_id,
+        user_id=user_id,
+        connection=connection,
+    )
+
+    file, connection_to_commit = await _move_file(
+        src_id, dst_parent_id, dst_name, connection=connection
+    )
+
+    await connection_to_commit.commit()
+
+    return file
+
+
 async def _add_file(
     parent_id: UUID,
     name: FileName,
@@ -739,13 +791,45 @@ async def _id_or_path_to_parent_id_and_id_or_none(
     return parent_id, id_
 
 
+async def _id_or_path_to_parent_id_and_id(
+    id_or_path: UUID | FilePath,
+    /,
+    *,
+    root_dir_id: UUID,
+    working_dir_id: UUID,
+    connection: AsyncConnection,
+) -> tuple[UUID, UUID]:
+    parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
+        id_or_path,
+        root_dir_id=root_dir_id,
+        working_dir_id=working_dir_id,
+        connection=connection,
+    )
+    if id_ is None:
+        match id_or_path:
+            case UUID():
+                raise FilesFileNotFoundError(id_or_path)
+            case PurePosixPath():  # HACK: Type alias FilePath cannot be used with match
+                raise FilesFileNotFoundError(parent_id, PurePosixPath(id_or_path.name))
+            case _:
+                assert_never(id_or_path)
+
+    return parent_id, id_
+
+
+def _path_to_name_or_raise(path: FilePath, /) -> FileName:
+    name = path.name
+    if not name:
+        raise ValueError("Cannot get file name from path without names")
+
+    return name
+
+
 def _id_or_path_to_name_or_raise(id_or_path: UUID | FilePath, /) -> FileName:
     if isinstance(id_or_path, UUID):
         raise ValueError("Cannot get file name from UUID")
 
-    name = id_or_path.name
-    if not name:
-        raise ValueError("Cannot get file name from path without names")
+    name = _path_to_name_or_raise(id_or_path)
 
     return name
 
