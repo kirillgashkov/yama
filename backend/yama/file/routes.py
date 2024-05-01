@@ -28,7 +28,7 @@ from yama.user.settings import Settings as UserSettings
 router = APIRouter()
 
 
-@router.post("/files/{parent_path:path}")
+@router.post("/files/{parent_path:path}", description="Create file.")
 async def create_file(
     *,
     parent_path: FilePath,
