@@ -22,5 +22,4 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="yama_file_")
 
     driver: DriverSettings
-    files_base_url: str
     root_dir_id: UUID
