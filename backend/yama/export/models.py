@@ -5,7 +5,7 @@ from typing import Any, Self, assert_never
 
 from pydantic import Field, TypeAdapter, model_validator
 
-from yama.file._models import FilePath, FilePathAdapter
+from yama.file.models import FilePath, FilePathAdapter
 from yama.model.models import ModelBase
 
 
