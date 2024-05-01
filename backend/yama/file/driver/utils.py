@@ -2,11 +2,12 @@ from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Protocol, override
+from typing import Protocol
 from uuid import UUID
 
 import aiofiles
 import aiofiles.os
+from typing_extensions import override
 
 
 # Satisfied by fastapi.UploadFile and aiofiles's files
