@@ -28,8 +28,7 @@ from yama.file._models import (
 )
 
 
-class UploadFileTooLargeError(Exception):
-    ...
+class UploadFileTooLargeError(Exception): ...
 
 
 class FilesFileError(Exception):
@@ -40,20 +39,16 @@ class FilesFileError(Exception):
         return f"'{self.path}'"
 
 
-class FilesFileExistsError(FilesFileError):
-    ...
+class FilesFileExistsError(FilesFileError): ...
 
 
-class FilesFileNotFoundError(FilesFileError):
-    ...
+class FilesFileNotFoundError(FilesFileError): ...
 
 
-class FilesIsADirectoryError(FilesFileError):
-    ...
+class FilesIsADirectoryError(FilesFileError): ...
 
 
-class FilesNotADirectoryError(FilesFileError):
-    ...
+class FilesNotADirectoryError(FilesFileError): ...
 
 
 # class FilesPermissionError(FilesFileError):

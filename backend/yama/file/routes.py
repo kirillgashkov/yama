@@ -52,8 +52,7 @@ async def create_file(
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     settings: Annotated[Settings, Depends(get_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
-) -> None:
-    ...
+) -> None: ...
 
 
 # FIXME: Handle `utils.get_file` errors
@@ -167,8 +166,7 @@ async def delete_file(
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     settings: Annotated[Settings, Depends(get_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
-) -> None:
-    ...
+) -> None: ...
 
 
 def _make_content_url(
