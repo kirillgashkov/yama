@@ -84,7 +84,7 @@ class FileSystemDriver(Driver):
         try:
             await aiofiles.os.remove(path)
         except FileNotFoundError:
-            ...
+            raise DriverFileNotFound(id_)
 
 
 def _id_to_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
