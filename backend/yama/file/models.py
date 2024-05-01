@@ -4,7 +4,12 @@ from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
 from fastapi import UploadFile
-from pydantic import AfterValidator, ValidatorFunctionWrapHandler, WrapValidator
+from pydantic import (
+    AfterValidator,
+    TypeAdapter,
+    ValidatorFunctionWrapHandler,
+    WrapValidator,
+)
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -59,6 +64,7 @@ FilePath: TypeAlias = Annotated[
     AfterValidator(_normalize_file_path_root),
     WrapValidator(_check_file_path),
 ]  # FIXME: Use typing.NewType
+FilePathAdapter: TypeAdapter[FilePath] = TypeAdapter(FilePath)
 
 
 class FileType(str, Enum):
