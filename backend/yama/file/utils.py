@@ -7,6 +7,7 @@ from uuid import UUID
 from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
+from typing_extensions import override
 
 from yama.file.driver.utils import Driver
 from yama.file.models import (
@@ -120,7 +121,7 @@ async def write_file(
 
     match file_write:
         case RegularWrite(content=content):
-            await driver.write_regular_content(content.upload_file, file.id)
+            _ = await driver.write_regular_content(content.upload_file, file.id)
         case DirectoryWrite():
             ...
         case _:
@@ -740,30 +741,6 @@ async def _id_or_path_to_id(
     return id_
 
 
-async def _id_or_path_to_parent_id(
-    id_or_path: UUID | FilePath,
-    /,
-    *,
-    root_dir_id: UUID,
-    working_dir_id: UUID,
-    connection: AsyncConnection,
-) -> UUID:
-    match id_or_path:
-        case UUID():
-            parent_id = await _id_to_parent_id(id_or_path, connection=connection)
-        case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
-            parent_id = await _path_to_parent_id(
-                id_or_path,
-                root_dir_id=root_dir_id,
-                working_dir_id=working_dir_id,
-                connection=connection,
-            )
-        case _:
-            assert_never(id_or_path)
-
-    return parent_id
-
-
 async def _id_or_path_to_parent_id_and_id_or_none(
     id_or_path: UUID | FilePath,
     /,
@@ -994,7 +971,7 @@ async def _ancestor_id_and_descendant_paths_to_ids(
         (await connection.execute(descendant_path_to_id_query)).mappings().all()
     )
     descendant_path_to_id: dict[FilePath, UUID] = {
-        PurePosixPath(row["descendant_path"]): row["descendant_id"]
+        PurePosixPath(row["descendant_path"]): row["descendant_id"]  # pyright: ignore[reportAny]  # basedpyright-specific
         for row in descendant_path_to_id_rows
     }  # HACK: Implicit type cast
 
@@ -1003,11 +980,15 @@ async def _ancestor_id_and_descendant_paths_to_ids(
 
 class FilesFileError(Exception):
     def __init__(
-        self, ancestor_id: UUID, descendant_path: FilePath = PurePosixPath("."), /
+        self, ancestor_id: UUID, descendant_path: FilePath | None = None, /
     ) -> None:
+        super().__init__()
+        if descendant_path is None:
+            descendant_path = PurePosixPath(".")
         self.ancestor_id = ancestor_id
-        self.descendant_path = descendant_path
+        self.descendant_path: FilePath = descendant_path
 
+    @override
     def __str__(self) -> str:
         return f"'{self.descendant_path}' relative to {self.ancestor_id}"
 
