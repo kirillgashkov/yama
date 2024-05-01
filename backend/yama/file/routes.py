@@ -29,11 +29,11 @@ router = APIRouter()
 
 @router.get(
     "/files/{path:path}",
-    description="Get file's model or content depending on the content query parameter.",
+    description="Read file's model or content depending on the content query parameter.",
     response_model=FileOut,
     responses={200: {"content": {"*/*": {}}}},
 )
-async def get_file(
+async def read_file(
     *,
     path: FilePath,
     content: Annotated[bool, Query()] = False,
