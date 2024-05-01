@@ -62,3 +62,30 @@ async def test_file_system_driver_write_regular_content(*, tmp_path: Path) -> No
     ) as f:
         content = await f.read()
     assert content == b"# Foo\n\nBar.\n"
+
+
+async def test_file_system_driver_remove_regular_content(*, tmp_path: Path) -> None:
+    """Tests the FileSystemDriver.remove_regular_content method."""
+    # Given
+    file_system_dir = tmp_path / "file-system"
+    driver = FileSystemDriver(
+        chunk_size=64, file_system_dir=file_system_dir, max_file_size=512
+    )
+
+    file_system_dir.mkdir()
+    async with aiofiles.open(
+        file_system_dir / "42bd9c321c96485faf69b48536bc3c4a", "wb"
+    ) as f:
+        _ = await f.write(b"# Foo\n\nBar.\n")
+
+    # When
+    await driver.remove_regular_content(UUID("42bd9c32-1c96-485f-af69-b48536bc3c4a"))
+
+    # Then
+    assert not (file_system_dir / "42bd9c321c96485faf69b48536bc3c4a").exists()
+
+    # When & Then
+    with pytest.raises(DriverFileNotFound):
+        await driver.remove_regular_content(
+            UUID("00bd9c32-1c96-485f-af69-b48536bc3c4a")
+        )
