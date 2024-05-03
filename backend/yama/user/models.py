@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, func
@@ -20,7 +21,7 @@ class UserOut(ModelBase):
 
 
 class UserCreateIn(ModelBase):
-    type: UserType
+    type: Literal[UserType.USER]
     handle: str
     password: str
 
