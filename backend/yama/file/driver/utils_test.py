@@ -11,9 +11,7 @@ async def test_file_system_driver_read_regular_content(*, tmp_path: Path) -> Non
     """Tests the FileSystemDriver.read_regular_content method."""
     # Given
     file_system_dir = tmp_path / "file-system"
-    driver = FileSystemDriver(
-        chunk_size=64, file_system_dir=file_system_dir, max_file_size=512
-    )
+    driver = FileSystemDriver(file_system_dir=file_system_dir)
 
     file_system_dir.mkdir()
     async with aiofiles.open(
@@ -42,9 +40,7 @@ async def test_file_system_driver_write_regular_content(*, tmp_path: Path) -> No
     """Tests the FileSystemDriver.write_regular_content method."""
     # Given
     file_system_dir = tmp_path / "file-system"
-    driver = FileSystemDriver(
-        chunk_size=64, file_system_dir=file_system_dir, max_file_size=512
-    )
+    driver = FileSystemDriver(file_system_dir=file_system_dir)
 
     content_file = tmp_path / "some-file.md"
     async with aiofiles.open(content_file, "wb") as f:
@@ -53,7 +49,10 @@ async def test_file_system_driver_write_regular_content(*, tmp_path: Path) -> No
     # When
     async with aiofiles.open(content_file, "rb") as f:
         _ = await driver.write_regular_content(
-            f, UUID("42bd9c32-1c96-485f-af69-b48536bc3c4a")
+            f,
+            UUID("42bd9c32-1c96-485f-af69-b48536bc3c4a"),
+            chunk_size=64,
+            max_file_size=512,
         )
 
     # Then
@@ -68,9 +67,7 @@ async def test_file_system_driver_remove_regular_content(*, tmp_path: Path) -> N
     """Tests the FileSystemDriver.remove_regular_content method."""
     # Given
     file_system_dir = tmp_path / "file-system"
-    driver = FileSystemDriver(
-        chunk_size=64, file_system_dir=file_system_dir, max_file_size=512
-    )
+    driver = FileSystemDriver(file_system_dir=file_system_dir)
 
     file_system_dir.mkdir()
     async with aiofiles.open(

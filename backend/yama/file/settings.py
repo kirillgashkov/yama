@@ -11,8 +11,6 @@ MAX_FILE_PATH_LENGTH = 4095
 class FileSystemDriverSettings(BaseSettings):
     type: Literal["file-system"]
     file_system_dir: Path
-    chunk_size: int = 1024 * 1024 * 10  # 10 MiB
-    max_file_size: int = 1024 * 1024 * 512  # 512 MiB
 
 
 DriverSettings: TypeAlias = FileSystemDriverSettings
@@ -21,5 +19,7 @@ DriverSettings: TypeAlias = FileSystemDriverSettings
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="yama_file_")
 
+    chunk_size: int = 1024 * 1024 * 10  # 10 MiB
     driver: DriverSettings
+    max_file_size: int = 1024 * 1024 * 512  # 512 MiB
     root_file_id: UUID

@@ -22,7 +22,13 @@ class Driver(ABC):
 
     @abstractmethod
     async def write_regular_content(
-        self, content_stream: AsyncReadable, id_: UUID, /
+        self,
+        content_stream: AsyncReadable,
+        id_: UUID,
+        /,
+        *,
+        chunk_size: int,
+        max_file_size: int,
     ) -> int: ...
 
     @abstractmethod
@@ -30,13 +36,9 @@ class Driver(ABC):
 
 
 class FileSystemDriver(Driver):
-    def __init__(
-        self, /, *, chunk_size: int, file_system_dir: Path, max_file_size: int
-    ) -> None:
+    def __init__(self, /, *, file_system_dir: Path) -> None:
         super().__init__()
-        self.chunk_size = chunk_size
         self.file_system_dir = file_system_dir
-        self.max_file_size = max_file_size
 
     @override
     @asynccontextmanager
@@ -51,7 +53,13 @@ class FileSystemDriver(Driver):
 
     @override
     async def write_regular_content(
-        self, content_stream: AsyncReadable, id_: UUID, /
+        self,
+        content_stream: AsyncReadable,
+        id_: UUID,
+        /,
+        *,
+        chunk_size: int,
+        max_file_size: int,
     ) -> int:
         self.file_system_dir.mkdir(parents=True, exist_ok=True)
 
@@ -63,10 +71,10 @@ class FileSystemDriver(Driver):
         try:
             file_size = 0
             async with aiofiles.open(incomplete_path, "wb") as f:
-                while chunk := await content_stream.read(self.chunk_size):
+                while chunk := await content_stream.read(chunk_size):
                     file_size += len(chunk)
 
-                    if file_size > self.max_file_size:
+                    if file_size > max_file_size:
                         raise DriverFileTooLargeError()
 
                     _ = await f.write(chunk)
