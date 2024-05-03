@@ -38,7 +38,7 @@ async def create_user(
     user_in: UserIn,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> UserOut:
-    if await user_exists(user_in.username, connection):
+    if await user_exists(handle=user_in.username, connection=connection):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="User already exists",
