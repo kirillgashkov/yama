@@ -16,6 +16,7 @@ router = APIRouter()
 
 @router.get("/users/current")
 async def get_current_user(
+    *,
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> UserOut:
@@ -26,7 +27,7 @@ async def get_current_user(
 
 @router.get("/users")
 async def get_users(
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    *, connection: Annotated[AsyncConnection, Depends(get_connection)]
 ) -> list[UserOut]:
     query = select(User.id, User.username)
     rows = (await connection.execute(query)).mappings()
@@ -35,6 +36,7 @@ async def get_users(
 
 @router.post("/users")
 async def create_user(
+    *,
     user_in: UserIn,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> UserOut:
