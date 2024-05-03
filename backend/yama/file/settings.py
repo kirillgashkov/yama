@@ -17,10 +17,12 @@ DriverSettings: TypeAlias = FileSystemDriverSettings
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="yama_file_")
+    model_config = SettingsConfigDict(
+        env_prefix="yama_file__", env_nested_delimiter="__"
+    )
 
     chunk_size: int = 1024 * 1024 * 10  # 10 MiB
+    max_file_size: int = 1024 * 1024 * 512  # 512 MiB
     driver: DriverSettings
     files_base_url: str
-    max_file_size: int = 1024 * 1024 * 512  # 512 MiB
     root_file_id: UUID

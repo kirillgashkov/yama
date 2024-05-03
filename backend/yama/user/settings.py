@@ -4,6 +4,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="yama_user_")
+    model_config = SettingsConfigDict(env_prefix="yama_user__")
 
     public_user_id: UUID
