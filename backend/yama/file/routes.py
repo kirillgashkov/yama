@@ -7,6 +7,7 @@ from uuid import UUID
 from fastapi import (
     APIRouter,
     Depends,
+    Form,
     HTTPException,
     Query,
     UploadFile,
@@ -27,12 +28,16 @@ from yama.file.models import (
     DirectoryContentFileOut,
     DirectoryContentOut,
     DirectoryOut,
+    DirectoryWrite,
     File,
     FileOut,
     FilePath,
+    FileType,
     Regular,
     RegularContentOut,
+    RegularContentWrite,
     RegularOut,
+    RegularWrite,
 )
 from yama.file.settings import Settings
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
@@ -107,12 +112,46 @@ async def read_file(
 async def create_or_update_file(
     *,
     path: FilePath,
-    content: Annotated[UploadFile | None, FastAPIFile()] = None,
     working_file_id: Annotated[UUID | None, Query()] = None,
-    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    exist_ok: Annotated[bool, Query()] = True,
+    type: Annotated[FileType, Form()],
+    content: Annotated[UploadFile | None, FastAPIFile()] = None,
+    user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Settings, Depends(get_settings)],
+    user_settings: Annotated[UserSettings, Depends(get_user_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
-) -> FileOut: ...
+    driver: Annotated[Driver, Depends(get_driver)],
+) -> FileOut:
+    match type:
+        case FileType.REGULAR:
+            if content is None:
+                raise HTTPException(
+                    400, "content query parameter must be provided for regular files."
+                )
+            file_write = RegularWrite(
+                type=type, content=RegularContentWrite(stream=content)
+            )
+        case FileType.DIRECTORY:
+            if content is not None:
+                raise HTTPException(
+                    400, "content query parameter cannot be provided for directories."
+                )
+            file_write = DirectoryWrite(type=type)
+        case _:
+            assert_never(type)
+
+    file = await utils.write_file(
+        file_write,
+        path,
+        exist_ok=exist_ok,
+        user_id=user_id or user_settings.public_user_id,
+        working_file_id=working_file_id or settings.root_file_id,
+        settings=settings,
+        connection=connection,
+        driver=driver,
+    )
+    file_out = _make_file_out(file, files_base_url=settings.files_base_url)
+    return file_out
 
 
 @router.delete("/files/{path:path}", description="Delete file.")
