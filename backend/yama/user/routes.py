@@ -29,6 +29,21 @@ async def read_current_user(
     return _user_db_to_user_out(user_db)
 
 
+@router.get("/users/{id}")
+async def read_user(
+    *,
+    id: UUID,
+    connection: Annotated[AsyncConnection, Depends(get_connection)],
+) -> UserOut:
+    query = select(UserDb).where(UserDb.id == id)
+    row = (await connection.execute(query)).mappings().one_or_none()
+    if row is None:
+        raise HTTPException(400, "User not found.")
+    user_db = UserDb(**row)
+
+    return _user_db_to_user_out(user_db)
+
+
 @router.get("/users")
 async def read_users(
     *, connection: Annotated[AsyncConnection, Depends(get_connection)]
