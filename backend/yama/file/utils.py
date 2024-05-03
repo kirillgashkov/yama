@@ -37,14 +37,14 @@ async def read_file(
     *,
     max_depth: int | None,
     user_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     settings: Settings,
     connection: AsyncConnection,
 ) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
         root_file_id=settings.root_file_id,
-        working_dir_id=working_dir_id,
+        working_file_id=working_file_id,
         connection=connection,
     )
 
@@ -71,7 +71,7 @@ async def write_file(
     *,
     exist_ok: bool = True,
     user_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     settings: Settings,
     connection: AsyncConnection,
     driver: Driver,
@@ -79,7 +79,7 @@ async def write_file(
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
         root_file_id=settings.root_file_id,
-        working_dir_id=working_dir_id,
+        working_file_id=working_file_id,
         connection=connection,
     )
 
@@ -138,7 +138,7 @@ async def remove_file(
     /,
     *,
     user_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     settings: Settings,
     connection: AsyncConnection,
     driver: Driver,
@@ -146,7 +146,7 @@ async def remove_file(
     id_ = await _id_or_path_to_id(
         id_or_path,
         root_file_id=settings.root_file_id,
-        working_dir_id=working_dir_id,
+        working_file_id=working_file_id,
         connection=connection,
     )
 
@@ -184,20 +184,20 @@ async def move_file(
     /,
     *,
     user_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     settings: Settings,
     connection: AsyncConnection,
 ) -> File:
     src_parent_id, src_id = await _id_or_path_to_parent_id_and_id(
         src_id_or_path,
         root_file_id=settings.root_file_id,
-        working_dir_id=working_dir_id,
+        working_file_id=working_file_id,
         connection=connection,
     )
     dst_parent_id = await _path_to_parent_id(
         dst_path,
         root_file_id=settings.root_file_id,
-        working_dir_id=working_dir_id,
+        working_file_id=working_file_id,
         connection=connection,
     )
     dst_name = _path_to_name_or_raise(dst_path)
@@ -722,7 +722,7 @@ async def _id_or_path_to_id(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
     match id_or_path:
@@ -732,7 +732,7 @@ async def _id_or_path_to_id(
             id_ = await _path_to_id(
                 id_or_path,
                 root_file_id=root_file_id,
-                working_dir_id=working_dir_id,
+                working_file_id=working_file_id,
                 connection=connection,
             )
         case _:
@@ -746,7 +746,7 @@ async def _id_or_path_to_parent_id_and_id_or_none(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID | None]:
     parent_id: UUID
@@ -759,7 +759,7 @@ async def _id_or_path_to_parent_id_and_id_or_none(
             parent_id, id_ = await _path_to_parent_id_and_id_or_none(
                 id_or_path,
                 root_file_id=root_file_id,
-                working_dir_id=working_dir_id,
+                working_file_id=working_file_id,
                 connection=connection,
             )
         case _:
@@ -773,13 +773,13 @@ async def _id_or_path_to_parent_id_and_id(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID]:
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
         root_file_id=root_file_id,
-        working_dir_id=working_dir_id,
+        working_file_id=working_file_id,
         connection=connection,
     )
     if id_ is None:
@@ -816,11 +816,11 @@ async def _path_to_id(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_file_id=root_file_id, working_dir_id=working_dir_id
+        path, root_file_id=root_file_id, working_file_id=working_file_id
     )
 
     id_ = await _ancestor_id_and_descendant_path_to_id_or_none(
@@ -852,11 +852,11 @@ async def _path_to_parent_id(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_file_id=root_file_id, working_dir_id=working_dir_id
+        path, root_file_id=root_file_id, working_file_id=working_file_id
     )
 
     match len(descendant_path.parts):
@@ -882,11 +882,11 @@ async def _path_to_parent_id_and_id_or_none(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID | None]:
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_file_id=root_file_id, working_dir_id=working_dir_id
+        path, root_file_id=root_file_id, working_file_id=working_file_id
     )
 
     parent_id: UUID
@@ -923,13 +923,13 @@ def _path_to_ancestor_id_and_descendant_path(
     /,
     *,
     root_file_id: UUID,
-    working_dir_id: UUID,
+    working_file_id: UUID,
 ) -> tuple[UUID, FilePath]:
     if path.is_absolute():
         ancestor_id = root_file_id
         descendant_path = path.relative_to("/")
     else:
-        ancestor_id = working_dir_id
+        ancestor_id = working_file_id
         descendant_path = path
 
     return ancestor_id, descendant_path
