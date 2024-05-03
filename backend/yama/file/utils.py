@@ -32,7 +32,7 @@ from yama.user.models import UserAncestorUserDescendantDb
 
 
 async def read_file(
-    id_or_path: UUID | FilePath,
+    path: FilePath,
     /,
     *,
     max_depth: int | None,
@@ -41,8 +41,8 @@ async def read_file(
     settings: Settings,
     connection: AsyncConnection,
 ) -> File:
-    id_ = await _id_or_path_to_id(
-        id_or_path,
+    id_ = await _path_to_id(
+        path,
         root_file_id=settings.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
@@ -66,7 +66,7 @@ async def read_file(
 
 async def write_file(
     file_write: FileWrite,
-    id_or_path: UUID | FilePath,
+    path: FilePath,
     /,
     *,
     exist_ok: bool = True,
@@ -76,8 +76,8 @@ async def write_file(
     connection: AsyncConnection,
     driver: Driver,
 ) -> File:
-    parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
-        id_or_path,
+    parent_id, id_ = await _path_to_parent_id_and_id_or_none(
+        path,
         root_file_id=settings.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
@@ -109,7 +109,7 @@ async def write_file(
                 case _:
                     assert_never(file.type)
     else:
-        name = _id_or_path_to_name_or_raise(id_or_path)
+        name = _path_to_name_or_raise(path)
 
         file, connection_to_commit = await _add_file(
             parent_id,
@@ -139,7 +139,7 @@ async def write_file(
 
 
 async def remove_file(
-    id_or_path: UUID | FilePath,
+    path: FilePath,
     /,
     *,
     user_id: UUID,
@@ -148,8 +148,8 @@ async def remove_file(
     connection: AsyncConnection,
     driver: Driver,
 ) -> File:
-    id_ = await _id_or_path_to_id(
-        id_or_path,
+    id_ = await _path_to_id(
+        path,
         root_file_id=settings.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
@@ -184,7 +184,7 @@ async def remove_file(
 
 
 async def move_file(
-    src_id_or_path: UUID | FilePath,
+    src_path: FilePath,
     dst_path: FilePath,
     /,
     *,
@@ -193,8 +193,8 @@ async def move_file(
     settings: Settings,
     connection: AsyncConnection,
 ) -> File:
-    src_parent_id, src_id = await _id_or_path_to_parent_id_and_id(
-        src_id_or_path,
+    src_parent_id, src_id = await _path_to_parent_id_and_id(
+        src_path,
         root_file_id=settings.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
@@ -773,28 +773,22 @@ async def _id_or_path_to_parent_id_and_id_or_none(
     return parent_id, id_
 
 
-async def _id_or_path_to_parent_id_and_id(
-    id_or_path: UUID | FilePath,
+async def _path_to_parent_id_and_id(
+    path: FilePath,
     /,
     *,
     root_file_id: UUID,
     working_file_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID]:
-    parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
-        id_or_path,
+    parent_id, id_ = await _path_to_parent_id_and_id_or_none(
+        path,
         root_file_id=root_file_id,
         working_file_id=working_file_id,
         connection=connection,
     )
     if id_ is None:
-        match id_or_path:
-            case UUID():
-                raise FilesFileNotFoundError(id_or_path)
-            case PurePosixPath():  # HACK: Type alias FilePath cannot be used with match
-                raise FilesFileNotFoundError(parent_id, PurePosixPath(id_or_path.name))
-            case _:
-                assert_never(id_or_path)
+        raise FilesFileNotFoundError(parent_id, PurePosixPath(path.name))
 
     return parent_id, id_
 
