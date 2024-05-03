@@ -121,7 +121,12 @@ async def write_file(
 
     match file_write:
         case RegularWrite(content=content):
-            _ = await driver.write_regular_content(content.upload_file, file.id)
+            _ = await driver.write_regular_content(
+                content.stream,
+                file.id,
+                chunk_size=settings.chunk_size,
+                max_file_size=settings.max_file_size,
+            )
         case DirectoryWrite():
             ...
         case _:
