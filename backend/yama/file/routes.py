@@ -92,7 +92,7 @@ async def read_file(
             case Directory():
                 raise HTTPException(
                     400,
-                    "content query parameter with true value is not allowed for directories.",
+                    "regular_content query parameter with true value is not allowed for directories.",
                 )
             case _:
                 assert_never(file)
