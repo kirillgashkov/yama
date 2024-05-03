@@ -33,6 +33,7 @@ from yama.file.models import (
     FileOut,
     FilePath,
     FileType,
+    FileWrite,
     Regular,
     RegularContentOut,
     RegularContentWrite,
@@ -122,6 +123,7 @@ async def create_or_update_file(
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
+    file_write: FileWrite
     match type:
         case FileType.REGULAR:
             if content is None:
