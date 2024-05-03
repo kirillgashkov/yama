@@ -48,8 +48,8 @@ class FileSystemDriver(Driver):
         try:
             async with aiofiles.open(path, "rb") as f:
                 yield f
-        except FileNotFoundError:
-            raise DriverFileNotFound(id_)
+        except FileNotFoundError as e:
+            raise DriverFileNotFound(id_) from e
 
     @override
     async def write_regular_content(
@@ -91,8 +91,8 @@ class FileSystemDriver(Driver):
 
         try:
             await aiofiles.os.remove(path)
-        except FileNotFoundError:
-            raise DriverFileNotFound(id_)
+        except FileNotFoundError as e:
+            raise DriverFileNotFound(id_) from e
 
 
 def _id_to_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
