@@ -19,8 +19,8 @@ async def get_current_user(
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> UserOut:
-    statement = select(User.id, User.username).where(User.id == current_user_id)
-    row = (await connection.execute(statement)).mappings().one()
+    query = select(User.id, User.username).where(User.id == current_user_id)
+    row = (await connection.execute(query)).mappings().one()
     return UserOut(**row)
 
 
@@ -28,8 +28,8 @@ async def get_current_user(
 async def get_users(
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> list[UserOut]:
-    statement = select(User.id, User.username)
-    rows = (await connection.execute(statement)).mappings()
+    query = select(User.id, User.username)
+    rows = (await connection.execute(query)).mappings()
     return [UserOut(**row) for row in rows]
 
 
@@ -46,12 +46,12 @@ async def create_user(
 
     password_hash = hash_password(user_in.password)
 
-    statement = (
+    query = (
         insert(User)
         .values(username=user_in.username, password_hash=password_hash)
         .returning(User.id, User.username)
     )
-    row = (await connection.execute(statement)).mappings().one()
+    row = (await connection.execute(query)).mappings().one()
     await connection.commit()
 
     return UserOut(**row)
