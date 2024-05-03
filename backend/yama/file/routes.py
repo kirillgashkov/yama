@@ -5,7 +5,6 @@ from fastapi import (
     APIRouter,
     Depends,
     File,
-    Form,
     Query,
     UploadFile,
 )
@@ -17,7 +16,6 @@ from yama.file.dependencies import get_settings
 from yama.file.models import (
     FileOut,
     FilePath,
-    FileType,
 )
 from yama.file.settings import Settings
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
@@ -37,7 +35,6 @@ async def read_file(
     *,
     path: FilePath,
     content: Annotated[bool, Query()] = False,
-    type: Annotated[FileType | None, Query()] = None,
     working_dir_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -50,7 +47,6 @@ async def read_file(
 async def create_or_update_file(
     *,
     path: FilePath,
-    type: Annotated[FileType, Form()],
     content: Annotated[UploadFile | None, File()] = None,
     working_dir_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID, Depends(get_current_user_id)],
@@ -63,7 +59,6 @@ async def create_or_update_file(
 async def delete_file(
     *,
     path: FilePath,
-    type: Annotated[FileType | None, Query()] = None,
     working_dir_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     settings: Annotated[Settings, Depends(get_settings)],
