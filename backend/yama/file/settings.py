@@ -21,5 +21,6 @@ class Settings(BaseSettings):
 
     chunk_size: int = 1024 * 1024 * 10  # 10 MiB
     driver: DriverSettings
+    files_base_url: str
     max_file_size: int = 1024 * 1024 * 512  # 512 MiB
     root_file_id: UUID
