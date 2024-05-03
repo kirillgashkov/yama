@@ -117,8 +117,7 @@ class DirectoryContentFileOut(ModelBase):
 
 
 class DirectoryContentOut(ModelBase):
-    count: int
-    items: list[DirectoryContentFileOut]
+    files: list[DirectoryContentFileOut]
 
 
 class DirectoryOut(ModelBase):
