@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama.database.dependencies import get_connection
 from yama.file import utils
 from yama.file.dependencies import get_settings
+from yama.file.driver.dependencies import get_driver
 from yama.file.driver.utils import Driver
 from yama.file.models import (
     Directory,
