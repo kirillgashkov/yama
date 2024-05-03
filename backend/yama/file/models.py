@@ -3,7 +3,6 @@ from pathlib import PurePosixPath
 from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
 from uuid import UUID
 
-from fastapi import UploadFile
 from pydantic import (
     AfterValidator,
     TypeAdapter,
@@ -14,6 +13,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
+from yama.file.driver.utils import AsyncReadable
 from yama.file.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
 from yama.model.models import ModelBase
 
@@ -130,7 +130,7 @@ FileOut: TypeAlias = RegularOut | DirectoryOut
 
 
 class RegularContentWrite(NamedTuple):
-    upload_file: UploadFile
+    stream: AsyncReadable
 
 
 class RegularWrite(NamedTuple):
