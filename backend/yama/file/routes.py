@@ -161,8 +161,20 @@ async def delete_file(
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     settings: Annotated[Settings, Depends(get_settings)],
+    user_settings: Annotated[UserSettings, Depends(get_user_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
-) -> FileOut: ...
+    driver: Annotated[Driver, Depends(get_driver)],
+) -> FileOut:
+    file = await utils.remove_file(
+        path,
+        user_id=user_id or user_settings.public_user_id,
+        working_file_id=working_file_id or settings.root_file_id,
+        settings=settings,
+        connection=connection,
+        driver=driver,
+    )
+    file_out = _make_file_out(file, files_base_url=settings.files_base_url)
+    return file_out
 
 
 def _make_file_out(
