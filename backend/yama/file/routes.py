@@ -22,7 +22,7 @@ from yama.database.dependencies import get_connection
 from yama.file import utils
 from yama.file.dependencies import get_settings
 from yama.file.driver.dependencies import get_driver
-from yama.file.driver.utils import AsyncReadable, Driver
+from yama.file.driver.utils import Driver
 from yama.file.models import (
     Directory,
     DirectoryContentFileOut,
@@ -77,18 +77,18 @@ async def read_file(
         match file:
             case Regular(id=id_):
 
-                async def content_stream(f: AsyncReadable, /) -> AsyncIterator[bytes]:
-                    file_size = 0
-                    while chunk := await f.read(
-                        min(settings.chunk_size, settings.max_file_size - file_size)
-                    ):
-                        yield chunk
-                        file_size += len(chunk)
-                        if file_size >= settings.max_file_size:
-                            break
+                async def content_stream() -> AsyncIterator[bytes]:
+                    async with driver.read_regular_content(id_) as f:
+                        file_size = 0
+                        while chunk := await f.read(
+                            min(settings.chunk_size, settings.max_file_size - file_size)
+                        ):
+                            yield chunk
+                            file_size += len(chunk)
+                            if file_size >= settings.max_file_size:
+                                break
 
-                async with driver.read_regular_content(id_) as f:
-                    return StreamingResponse(content_stream(f))
+                return StreamingResponse(content_stream())
             case Directory():
                 raise HTTPException(
                     400,
