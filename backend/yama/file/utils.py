@@ -109,7 +109,7 @@ async def write_file(
                 case _:
                     assert_never(file.type)
     else:
-        name = _path_to_name_or_raise(path)
+        name = _path_to_some_name(path)
 
         file, connection_to_commit = await _add_file(
             parent_id,
@@ -205,7 +205,7 @@ async def move_file(
         working_file_id=working_file_id,
         connection=connection,
     )
-    dst_name = _path_to_name_or_raise(dst_path)
+    dst_name = _path_to_some_name(dst_path)
 
     await _check_share_for_file_and_user(
         allowed_types=[
@@ -849,7 +849,7 @@ async def _path_to_parent_id_and_id(
     return parent_id, id_
 
 
-def _path_to_name_or_raise(path: FilePath, /) -> FileName:
+def _path_to_some_name(path: FilePath, /) -> FileName:
     name = path.name
     if not name:
         raise ValueError("Cannot get file name from path without names")
