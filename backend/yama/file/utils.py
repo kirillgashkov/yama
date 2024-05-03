@@ -722,34 +722,6 @@ async def _check_share_for_file_and_user(
         raise FilesPermissionError(file_id)
 
 
-async def _path_to_parent_id_and_id(
-    path: FilePath,
-    /,
-    *,
-    root_file_id: UUID,
-    working_file_id: UUID,
-    connection: AsyncConnection,
-) -> tuple[UUID, UUID]:
-    parent_id, id_ = await _path_to_parent_id_and_id_or_none(
-        path,
-        root_file_id=root_file_id,
-        working_file_id=working_file_id,
-        connection=connection,
-    )
-    if id_ is None:
-        raise FilesFileNotFoundError(parent_id, PurePosixPath(path.name))
-
-    return parent_id, id_
-
-
-def _path_to_name_or_raise(path: FilePath, /) -> FileName:
-    name = path.name
-    if not name:
-        raise ValueError("Cannot get file name from path without names")
-
-    return name
-
-
 async def _path_to_id(
     path: FilePath,
     /,
@@ -855,6 +827,34 @@ async def _path_to_parent_id_and_id_or_none(
             id_ = descendant_path_to_id.get(descendant_path)
 
     return parent_id, id_
+
+
+async def _path_to_parent_id_and_id(
+    path: FilePath,
+    /,
+    *,
+    root_file_id: UUID,
+    working_file_id: UUID,
+    connection: AsyncConnection,
+) -> tuple[UUID, UUID]:
+    parent_id, id_ = await _path_to_parent_id_and_id_or_none(
+        path,
+        root_file_id=root_file_id,
+        working_file_id=working_file_id,
+        connection=connection,
+    )
+    if id_ is None:
+        raise FilesFileNotFoundError(parent_id, PurePosixPath(path.name))
+
+    return parent_id, id_
+
+
+def _path_to_name_or_raise(path: FilePath, /) -> FileName:
+    name = path.name
+    if not name:
+        raise ValueError("Cannot get file name from path without names")
+
+    return name
 
 
 def _path_to_ancestor_id_and_descendant_path(
