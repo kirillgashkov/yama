@@ -113,4 +113,4 @@ class DriverFileNotFound(Exception):
 
     @override
     def __str__(self) -> str:
-        return f"'{self.id_}'"
+        return f"{self.id_}"
