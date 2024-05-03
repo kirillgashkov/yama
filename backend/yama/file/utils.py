@@ -722,57 +722,6 @@ async def _check_share_for_file_and_user(
         raise FilesPermissionError(file_id)
 
 
-async def _id_or_path_to_id(
-    id_or_path: UUID | FilePath,
-    /,
-    *,
-    root_file_id: UUID,
-    working_file_id: UUID,
-    connection: AsyncConnection,
-) -> UUID:
-    match id_or_path:
-        case UUID():
-            id_ = id_or_path
-        case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
-            id_ = await _path_to_id(
-                id_or_path,
-                root_file_id=root_file_id,
-                working_file_id=working_file_id,
-                connection=connection,
-            )
-        case _:
-            assert_never(id_or_path)
-
-    return id_
-
-
-async def _id_or_path_to_parent_id_and_id_or_none(
-    id_or_path: UUID | FilePath,
-    /,
-    *,
-    root_file_id: UUID,
-    working_file_id: UUID,
-    connection: AsyncConnection,
-) -> tuple[UUID, UUID | None]:
-    parent_id: UUID
-    id_: UUID | None
-    match id_or_path:
-        case UUID():
-            parent_id = await _id_to_parent_id(id_or_path, connection=connection)
-            id_ = id_or_path
-        case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
-            parent_id, id_ = await _path_to_parent_id_and_id_or_none(
-                id_or_path,
-                root_file_id=root_file_id,
-                working_file_id=working_file_id,
-                connection=connection,
-            )
-        case _:
-            assert_never(id_or_path)
-
-    return parent_id, id_
-
-
 async def _path_to_parent_id_and_id(
     path: FilePath,
     /,
@@ -797,15 +746,6 @@ def _path_to_name_or_raise(path: FilePath, /) -> FileName:
     name = path.name
     if not name:
         raise ValueError("Cannot get file name from path without names")
-
-    return name
-
-
-def _id_or_path_to_name_or_raise(id_or_path: UUID | FilePath, /) -> FileName:
-    if isinstance(id_or_path, UUID):
-        raise ValueError("Cannot get file name from UUID")
-
-    name = _path_to_name_or_raise(id_or_path)
 
     return name
 
