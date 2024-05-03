@@ -8,20 +8,21 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama.database.dependencies import get_connection
 from yama.security.models import Token
 from yama.security.utils import create_access_token, is_password_valid
-from yama.user._models import User
+from yama.user.models import UserDb
 
 router = APIRouter()
 
 
 @router.post("/security/tokens")
 async def create_token(
+    *,
     password_grant_form: Annotated[OAuth2PasswordRequestFormStrict, Depends()],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> Token:
-    statement = select(User.id, User.password_hash).where(
-        func.lower(User.username) == func.lower(password_grant_form.username)
+    query = select(UserDb.id, UserDb.password_hash).where(
+        func.lower(UserDb.handle) == func.lower(password_grant_form.username)
     )
-    row = (await connection.execute(statement)).mappings().one_or_none()
+    row = (await connection.execute(query)).mappings().one_or_none()
 
     if row is None or not is_password_valid(
         password_grant_form.password, row["password_hash"]
