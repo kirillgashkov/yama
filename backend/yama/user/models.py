@@ -5,11 +5,24 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
+from yama.model.models import ModelBase
 
 
 class UserType(str, Enum):
     USER = "user"
     GROUP = "group"
+
+
+class UserOut(ModelBase):
+    id: UUID
+    type: UserType
+    handle: str
+
+
+class UserCreateIn(ModelBase):
+    type: UserType
+    handle: str
+    password: str
 
 
 class UserTypeDb(TableBase):
