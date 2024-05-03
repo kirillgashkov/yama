@@ -2,13 +2,13 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import insert, select
+from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
 from yama.security.dependencies import get_current_user_id
 from yama.security.utils import hash_password
-from yama.user.models import UserCreateIn, UserDb, UserOut, UserType
+from yama.user.models import Handle, UserCreateIn, UserDb, UserOut, UserType
 from yama.user.utils import user_exists
 
 router = APIRouter()
@@ -56,13 +56,13 @@ async def read_current_user(
     return _user_db_to_user_out(user_db)
 
 
-@router.get("/users/{id}")
+@router.get("/users/{handle}")
 async def read_user(
     *,
-    id: UUID,
+    handle: Handle,
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> UserOut:
-    query = select(UserDb).where(UserDb.id == id)
+    query = select(UserDb).where(func.lower(UserDb.handle) == func.lower(handle))
     row = (await connection.execute(query)).mappings().one_or_none()
     if row is None:
         raise HTTPException(400, "User not found.")
