@@ -43,14 +43,14 @@ router = APIRouter()
 
 @router.get(
     "/files/{path:path}",
-    description="Read file's model or content depending on the content query parameter.",
+    description="Read file's model or content depending on the regular_content query parameter.",
     response_model=FileOut,
     responses={200: {"content": {"*/*": {}}}},
 )
 async def read_file(
     *,
     path: FilePath,
-    content: Annotated[bool, Query()] = False,
+    regular_content: Annotated[bool, Query()] = False,
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -58,7 +58,7 @@ async def read_file(
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut | StreamingResponse:
-    if content:
+    if regular_content:
         file = await utils.read_file(
             path,
             max_depth=0,
@@ -169,5 +169,5 @@ def _make_regular_content_url(
 ) -> str:
     scheme, netloc, files_base_path, _, _ = urlsplit(files_base_url)
     path = str(PurePosixPath(files_base_path) / ".")
-    query = urlencode({"content": True, "working_file_id": str(id_)})
+    query = urlencode({"regular_content": True, "working_file_id": str(id_)})
     return urlunsplit((scheme, netloc, path, query, ""))
