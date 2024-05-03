@@ -10,12 +10,13 @@ from fastapi import (
     Form,
     HTTPException,
     Query,
+    Request,
     UploadFile,
 )
 from fastapi import (
     File as FastAPIFile,
 )
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
@@ -41,6 +42,7 @@ from yama.file.models import (
     RegularWrite,
 )
 from yama.file.settings import Settings
+from yama.file.utils import FilesFileError
 from yama.security.dependencies import get_current_user_id, get_current_user_id_or_none
 from yama.user.dependencies import get_settings as get_user_settings
 from yama.user.settings import Settings as UserSettings
@@ -177,6 +179,10 @@ async def delete_file(
     )
     file_out = _make_file_out(file, files_base_url=settings.files_base_url)
     return file_out
+
+
+def files_file_error_handler(request: Request, exc: FilesFileError, /) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"detail": exc.detail})
 
 
 def _make_file_out(

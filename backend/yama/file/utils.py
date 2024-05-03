@@ -945,17 +945,41 @@ class FilesFileError(Exception):
     def __str__(self) -> str:
         return f"'{self.descendant_path}' relative to {self.ancestor_id}"
 
-
-class FilesFileExistsError(FilesFileError): ...
-
-
-class FilesFileNotFoundError(FilesFileError): ...
+    @property
+    def detail(self) -> str:
+        return f'Error with file at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesIsADirectoryError(FilesFileError): ...
+class FilesFileExistsError(FilesFileError):
+    @property
+    @override
+    def detail(self) -> str:
+        return f'File already exists at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesNotADirectoryError(FilesFileError): ...
+class FilesFileNotFoundError(FilesFileError):
+    @property
+    @override
+    def detail(self) -> str:
+        return f'File not found at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesPermissionError(FilesFileError): ...
+class FilesIsADirectoryError(FilesFileError):
+    @property
+    @override
+    def detail(self) -> str:
+        return f'File is a directory at path "{self.descendant_path}" relative to {self.ancestor_id}.'
+
+
+class FilesNotADirectoryError(FilesFileError):
+    @property
+    @override
+    def detail(self) -> str:
+        return f'File is not a directory at path "{self.descendant_path}" relative to {self.ancestor_id}.'
+
+
+class FilesPermissionError(FilesFileError):
+    @property
+    @override
+    def detail(self) -> str:
+        return f'Permission denied for file at path "{self.descendant_path}" relative to {self.ancestor_id}.'
