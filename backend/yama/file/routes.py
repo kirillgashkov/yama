@@ -57,7 +57,7 @@ router = APIRouter()
 async def read_file(
     *,
     path: FilePath,
-    regular_content: Annotated[bool, Query()] = False,
+    content: Annotated[bool, Query()] = False,
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Settings, Depends(get_settings)],
@@ -65,7 +65,7 @@ async def read_file(
     connection: Annotated[AsyncConnection, Depends(get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut | StreamingResponse:
-    if regular_content:
+    if content:
         file = await utils.read_file(
             path,
             max_depth=0,
@@ -92,7 +92,7 @@ async def read_file(
             case Directory():
                 raise HTTPException(
                     400,
-                    "regular_content query parameter with true value is not allowed for directories.",
+                    "content query parameter with true value is not allowed for directories.",
                 )
             case _:
                 assert_never(file)
@@ -128,7 +128,7 @@ async def create_or_update_file(
         case FileType.REGULAR:
             if content is None:
                 raise HTTPException(
-                    400, "content query parameter must be provided for regular files."
+                    400, "content form parameter must be provided for regular files."
                 )
             file_write = RegularWrite(
                 type=type, content=RegularContentWrite(stream=content)
@@ -136,7 +136,7 @@ async def create_or_update_file(
         case FileType.DIRECTORY:
             if content is not None:
                 raise HTTPException(
-                    400, "content query parameter cannot be provided for directories."
+                    400, "content form parameter cannot be provided for directories."
                 )
             file_write = DirectoryWrite(type=type)
         case _:
