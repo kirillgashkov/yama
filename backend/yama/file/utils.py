@@ -43,7 +43,7 @@ async def read_file(
 ) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
-        root_dir_id=settings.root_dir_id,
+        root_file_id=settings.root_file_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
@@ -78,7 +78,7 @@ async def write_file(
 ) -> File:
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
-        root_dir_id=settings.root_dir_id,
+        root_file_id=settings.root_file_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
@@ -145,7 +145,7 @@ async def remove_file(
 ) -> File:
     id_ = await _id_or_path_to_id(
         id_or_path,
-        root_dir_id=settings.root_dir_id,
+        root_file_id=settings.root_file_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
@@ -190,13 +190,13 @@ async def move_file(
 ) -> File:
     src_parent_id, src_id = await _id_or_path_to_parent_id_and_id(
         src_id_or_path,
-        root_dir_id=settings.root_dir_id,
+        root_file_id=settings.root_file_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
     dst_parent_id = await _path_to_parent_id(
         dst_path,
-        root_dir_id=settings.root_dir_id,
+        root_file_id=settings.root_file_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
@@ -721,7 +721,7 @@ async def _id_or_path_to_id(
     id_or_path: UUID | FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
@@ -731,7 +731,7 @@ async def _id_or_path_to_id(
         case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
             id_ = await _path_to_id(
                 id_or_path,
-                root_dir_id=root_dir_id,
+                root_file_id=root_file_id,
                 working_dir_id=working_dir_id,
                 connection=connection,
             )
@@ -745,7 +745,7 @@ async def _id_or_path_to_parent_id_and_id_or_none(
     id_or_path: UUID | FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID | None]:
@@ -758,7 +758,7 @@ async def _id_or_path_to_parent_id_and_id_or_none(
         case PurePosixPath():  # HACK: Type alias 'FilePath' cannot be used with 'match'
             parent_id, id_ = await _path_to_parent_id_and_id_or_none(
                 id_or_path,
-                root_dir_id=root_dir_id,
+                root_file_id=root_file_id,
                 working_dir_id=working_dir_id,
                 connection=connection,
             )
@@ -772,13 +772,13 @@ async def _id_or_path_to_parent_id_and_id(
     id_or_path: UUID | FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID]:
     parent_id, id_ = await _id_or_path_to_parent_id_and_id_or_none(
         id_or_path,
-        root_dir_id=root_dir_id,
+        root_file_id=root_file_id,
         working_dir_id=working_dir_id,
         connection=connection,
     )
@@ -815,12 +815,12 @@ async def _path_to_id(
     path: FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
+        path, root_file_id=root_file_id, working_dir_id=working_dir_id
     )
 
     id_ = await _ancestor_id_and_descendant_path_to_id_or_none(
@@ -851,12 +851,12 @@ async def _path_to_parent_id(
     path: FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
 ) -> UUID:
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
+        path, root_file_id=root_file_id, working_dir_id=working_dir_id
     )
 
     match len(descendant_path.parts):
@@ -881,12 +881,12 @@ async def _path_to_parent_id_and_id_or_none(
     path: FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
     connection: AsyncConnection,
 ) -> tuple[UUID, UUID | None]:
     ancestor_id, descendant_path = _path_to_ancestor_id_and_descendant_path(
-        path, root_dir_id=root_dir_id, working_dir_id=working_dir_id
+        path, root_file_id=root_file_id, working_dir_id=working_dir_id
     )
 
     parent_id: UUID
@@ -922,11 +922,11 @@ def _path_to_ancestor_id_and_descendant_path(
     path: FilePath,
     /,
     *,
-    root_dir_id: UUID,
+    root_file_id: UUID,
     working_dir_id: UUID,
 ) -> tuple[UUID, FilePath]:
     if path.is_absolute():
-        ancestor_id = root_dir_id
+        ancestor_id = root_file_id
         descendant_path = path.relative_to("/")
     else:
         ancestor_id = working_dir_id
