@@ -320,7 +320,12 @@ async def _add_file(
         _FileParentIdAndName(
             parent_id=file_db_with_parent_id_and_name_row["parent_id"],
             name=file_db_with_parent_id_and_name_row["name"],
-        ),
+        )
+        if (
+            file_db_with_parent_id_and_name_row["parent_id"] is not None
+            and file_db_with_parent_id_and_name_row["name"] is not None
+        )
+        else None,
     )
     (file,) = _make_files((file_db_with_parent_id_and_name,))
 
@@ -373,7 +378,9 @@ async def _get_file(
     descendant_files_db_with_parent_id_and_name = [
         (
             FileDb(id=row["id"], type=FileType(row["type"])),
-            _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"]),
+            _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"])
+            if row["parent_id"] is not None and row["name"] is not None
+            else None,
         )
         for row in descendant_files_db_with_parent_id_and_name_rows
     ]
@@ -461,7 +468,12 @@ async def _move_file(
         _FileParentIdAndName(
             parent_id=file_db_with_parent_id_and_name_row["parent_id"],
             name=file_db_with_parent_id_and_name_row["name"],
-        ),
+        )
+        if (
+            file_db_with_parent_id_and_name_row["parent_id"] is not None
+            and file_db_with_parent_id_and_name_row["name"] is not None
+        )
+        else None,
     )
     (file,) = _make_files((file_db_with_parent_id_and_name,))
 
@@ -537,7 +549,9 @@ async def _remove_file(
     descendant_files_db_with_parent_id_and_name = [
         (
             FileDb(id=row["id"], type=FileType(row["type"])),
-            _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"]),
+            _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"])
+            if row["parent_id"] is not None and row["name"] is not None
+            else None,
         )
         for row in descendant_files_db_with_parent_id_and_name_rows
     ]
