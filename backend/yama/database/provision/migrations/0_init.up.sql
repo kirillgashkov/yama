@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS user_types (
     type varchar NOT NULL,
     PRIMARY KEY (type)
 );
-INSERT INTO user_types (type) VALUES ('user'), ('group');
+INSERT INTO user_types (type) VALUES ('regular'), ('group');
 
 CREATE TABLE IF NOT EXISTS users (
     id uuid NOT NULL DEFAULT uuid_generate_v4(),

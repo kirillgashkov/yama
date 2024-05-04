@@ -24,7 +24,7 @@ Handle: TypeAlias = Annotated[str, AfterValidator(_check_handle)]
 
 
 class UserType(str, Enum):
-    USER = "user"
+    REGULAR = "regular"
     GROUP = "group"
 
 
@@ -35,7 +35,7 @@ class UserOut(ModelBase):
 
 
 class UserCreateIn(ModelBase):
-    type: Literal[UserType.USER]
+    type: Literal[UserType.REGULAR]
     handle: Handle
     password: str
 
