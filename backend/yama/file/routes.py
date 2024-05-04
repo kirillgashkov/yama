@@ -239,5 +239,5 @@ def _make_regular_content_url(
 ) -> str:
     scheme, netloc, files_base_path, _, _ = urlsplit(files_base_url)
     path = str(PurePosixPath(files_base_path)) + "/."
-    query = urlencode({"regular_content": True, "working_file_id": str(id_)})
+    query = urlencode({"content": True, "working_file_id": str(id_)})
     return urlunsplit((scheme, netloc, path, query, ""))
