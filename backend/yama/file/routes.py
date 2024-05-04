@@ -107,7 +107,9 @@ async def read_file(
         settings=settings,
         connection=connection,
     )
-    file_out = _file_to_file_out(file, files_base_url=settings.files_base_url)
+    file_out = _file_to_file_out(
+        file, max_depth=1, files_base_url=settings.files_base_url
+    )
     return file_out
 
 
@@ -154,7 +156,9 @@ async def create_or_update_file(
         connection=connection,
         driver=driver,
     )
-    file_out = _file_to_file_out(file, files_base_url=settings.files_base_url)
+    file_out = _file_to_file_out(
+        file, max_depth=0, files_base_url=settings.files_base_url
+    )
     return file_out
 
 
@@ -177,7 +181,9 @@ async def delete_file(
         connection=connection,
         driver=driver,
     )
-    file_out = _file_to_file_out(file, files_base_url=settings.files_base_url)
+    file_out = _file_to_file_out(
+        file, max_depth=0, files_base_url=settings.files_base_url
+    )
     return file_out
 
 
@@ -186,7 +192,7 @@ def files_file_error_handler(request: Request, exc: FilesFileError, /) -> JSONRe
 
 
 def _file_to_file_out(
-    file: File, /, *, with_content: bool = True, files_base_url: str
+    file: File, /, *, max_depth: int | None, files_base_url: str
 ) -> FileOut:
     match file:
         case Regular(id=id_, type=type_):
@@ -195,27 +201,31 @@ def _file_to_file_out(
                 type=type_,
                 content=RegularContentOut(
                     url=_make_regular_content_url(id_, files_base_url=files_base_url)
-                )
-                if with_content
-                else None,
+                ),
             )
         case Directory(id=id_, type=type_, content=content):
             return DirectoryOut(
                 id=id_,
                 type=type_,
-                content=DirectoryContentOut(
-                    files=[
-                        DirectoryContentFileOut(
-                            name=content_file.name,
-                            file=_file_to_file_out(
-                                content_file.file, files_base_url=files_base_url
-                            ),
-                        )
-                        for content_file in content.files
-                    ]
-                )
-                if with_content
-                else None,
+                content=(
+                    DirectoryContentOut(
+                        files=[
+                            DirectoryContentFileOut(
+                                name=content_file.name,
+                                file=_file_to_file_out(
+                                    content_file.file,
+                                    max_depth=(
+                                        max_depth - 1 if max_depth is not None else None
+                                    ),
+                                    files_base_url=files_base_url,
+                                ),
+                            )
+                            for content_file in content.files
+                        ]
+                    )
+                    if max_depth is None or max_depth > 0
+                    else None
+                ),
             )
         case _:
             assert_never(file)
