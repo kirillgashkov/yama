@@ -296,7 +296,7 @@ async def _add_file(
             literal(None).label("name"),
         )
         .select_from(insert_ancestors_db_cte)
-        .outerjoin(insert_file_db_cte, insert_ancestors_db_cte.c.ancestor_id == insert_file_db_cte.c.id)
+        .join(insert_file_db_cte, insert_ancestors_db_cte.c.ancestor_id == insert_file_db_cte.c.id)
         .add_cte(insert_file_db_cte)
         .add_cte(insert_share_db_cte)
         .add_cte(insert_ancestors_db_cte)
