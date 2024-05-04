@@ -17,10 +17,13 @@ dependencies = [
     "aiofiles",
 ]
 optional-dependencies.dev = [
-    "ruff",
+    "anyio",
+    "httpx",
     "mypy",
     "pytest",
+    "ruff",
     "types-aiofiles",
+    "typing-extensions",
 ]
 dynamic = ["version"]
 

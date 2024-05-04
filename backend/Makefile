@@ -11,7 +11,7 @@ check:
 
 .PHONY: test
 test:
-	pytest .
+	pytest -v .
 
 .PHONY: pip-compile
 pip-compile:

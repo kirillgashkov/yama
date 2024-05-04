@@ -1,5 +1,4 @@
 from sqlalchemy.orm import DeclarativeBase
 
 
-class TableBase(DeclarativeBase):
-    ...
+class TableBase(DeclarativeBase): ...

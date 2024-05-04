@@ -11,8 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama.database import provision
 
 
-class DatabaseProvisionError(Exception):
-    ...
+class DatabaseProvisionError(Exception): ...
 
 
 def _quoted_identifier(identifier: str, dialect: Dialect) -> str:
