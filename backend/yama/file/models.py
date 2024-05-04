@@ -56,14 +56,12 @@ def _normalize_file_path_root(path: PurePosixPath) -> PurePosixPath:
     return path
 
 
-FileName: TypeAlias = Annotated[
-    str, AfterValidator(_check_file_name)
-]  # FIXME: Use typing.NewType
+FileName: TypeAlias = Annotated[str, AfterValidator(_check_file_name)]
 FilePath: TypeAlias = Annotated[
     PurePosixPath,
     AfterValidator(_normalize_file_path_root),
     WrapValidator(_check_file_path),
-]  # FIXME: Use typing.NewType
+]
 FilePathAdapter: TypeAdapter[FilePath] = TypeAdapter(FilePath)
 
 
