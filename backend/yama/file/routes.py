@@ -107,7 +107,7 @@ async def read_file(
         settings=settings,
         connection=connection,
     )
-    file_out = _make_file_out(file, files_base_url=settings.files_base_url)
+    file_out = _file_to_file_out(file, files_base_url=settings.files_base_url)
     return file_out
 
 
@@ -154,7 +154,7 @@ async def create_or_update_file(
         connection=connection,
         driver=driver,
     )
-    file_out = _make_file_out(file, files_base_url=settings.files_base_url)
+    file_out = _file_to_file_out(file, files_base_url=settings.files_base_url)
     return file_out
 
 
@@ -177,7 +177,7 @@ async def delete_file(
         connection=connection,
         driver=driver,
     )
-    file_out = _make_file_out(file, files_base_url=settings.files_base_url)
+    file_out = _file_to_file_out(file, files_base_url=settings.files_base_url)
     return file_out
 
 
@@ -185,7 +185,7 @@ def files_file_error_handler(request: Request, exc: FilesFileError, /) -> JSONRe
     return JSONResponse(status_code=400, content={"detail": exc.detail})
 
 
-def _make_file_out(
+def _file_to_file_out(
     file: File, /, *, with_content: bool = True, files_base_url: str
 ) -> FileOut:
     match file:
@@ -207,7 +207,7 @@ def _make_file_out(
                     files=[
                         DirectoryContentFileOut(
                             name=content_file.name,
-                            file=_make_file_out(
+                            file=_file_to_file_out(
                                 content_file.file, files_base_url=files_base_url
                             ),
                         )
