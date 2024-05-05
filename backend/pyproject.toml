@@ -16,6 +16,7 @@ dependencies = [
     "python-multipart",
     "aiofiles",
     "argon2-cffi",
+    "python-jose[cryptography]",
 ]
 optional-dependencies.dev = [
     "anyio",
