@@ -15,9 +15,9 @@ async def get_settings(request: Request) -> Settings:
     return request.state.user_settings  # type: ignore[no-any-return]
 
 
-get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/security/tokens")
+get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/auth/token")
 get_oauth2_token_or_none = OAuth2PasswordBearer(
-    tokenUrl="/security/tokens", auto_error=False
+    tokenUrl="/auth/token", auto_error=False
 )
 
 
