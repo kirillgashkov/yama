@@ -2,14 +2,20 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordRequestFormStrict
 from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
+from starlette import status
 
 from yama.database.dependencies import get_connection
-from yama.security.dependencies import get_current_user_id
-from yama.security.utils import hash_password
-from yama.user.models import Handle, UserCreateIn, UserDb, UserOut, UserType
-from yama.user.utils import user_exists
+from yama.user.dependencies import get_current_user_id
+from yama.user.models import Handle, Token, UserCreateIn, UserDb, UserOut, UserType
+from yama.user.utils import (
+    create_access_token,
+    hash_password,
+    is_password_valid,
+    user_exists,
+)
 
 router = APIRouter()
 
@@ -84,3 +90,29 @@ async def read_users(
 
 def _user_db_to_user_out(u: UserDb, /) -> UserOut:
     return UserOut(id=u.id, type=UserType(u.type), handle=u.handle)
+
+
+security_router = APIRouter()
+
+
+@security_router.post("/security/tokens")
+async def create_token(
+    *,
+    password_grant_form: Annotated[OAuth2PasswordRequestFormStrict, Depends()],
+    connection: Annotated[AsyncConnection, Depends(get_connection)],
+) -> Token:
+    query = select(UserDb.id, UserDb.password_hash).where(
+        func.lower(UserDb.handle) == func.lower(password_grant_form.username)
+    )
+    row = (await connection.execute(query)).mappings().one_or_none()
+
+    if row is None or not is_password_valid(
+        password_grant_form.password, row["password_hash"]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
+
+    access_token = create_access_token(row["id"])
+    return Token(access_token=access_token, token_type="bearer")
