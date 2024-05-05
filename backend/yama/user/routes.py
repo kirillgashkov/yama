@@ -92,10 +92,7 @@ def _user_db_to_user_out(u: UserDb, /) -> UserOut:
     return UserOut(id=u.id, type=UserType(u.type), handle=u.handle)
 
 
-security_router = APIRouter()
-
-
-@security_router.post("/security/tokens")
+@router.post("/security/tokens")
 async def create_token(
     *,
     password_grant_form: Annotated[OAuth2PasswordRequestFormStrict, Depends()],
