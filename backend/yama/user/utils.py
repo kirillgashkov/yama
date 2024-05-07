@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from sqlalchemy import exists, func, select
@@ -29,18 +27,3 @@ def should_rehash_password_with_hash(password_hash: str, /) -> bool:
 
 def hash_password(password: str, /) -> str:
     return _password_hasher.hash(password)
-
-
-def create_access_token(user_id: UUID) -> str:
-    # FIXME: Use JWT
-    return f"access_token({user_id})"
-
-
-def is_access_token_valid(access_token: str) -> bool:
-    # FIXME: Use JWT
-    return access_token.startswith("access_token(") and access_token.endswith(")")
-
-
-def get_user_id_from_access_token(access_token: str) -> UUID:
-    # FIXME: Use JWT
-    return UUID(access_token.removeprefix("access_token(").removesuffix(")"))
