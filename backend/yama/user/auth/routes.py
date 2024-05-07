@@ -6,12 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama.database.dependencies import get_connection
 from yama.user.auth.dependencies import get_grant_in
 from yama.user.auth.models import (
+    INVALID_TOKEN_EXCEPTION,
+    INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
     GrantIn,
     PasswordGrantIn,
     RefreshTokenGrantIn,
     TokenOut,
 )
 from yama.user.auth.utils import (
+    InvalidTokenError,
+    InvalidUsernameOrPasswordError,
     password_grant_in_to_token_out,
     refresh_token_grant_in_to_token_out,
 )
@@ -30,13 +34,19 @@ async def authorize(
 ) -> TokenOut:
     match grant_in:
         case PasswordGrantIn():
-            return await password_grant_in_to_token_out(
-                grant_in, settings=settings, connection=connection
-            )
+            try:
+                return await password_grant_in_to_token_out(
+                    grant_in, settings=settings, connection=connection
+                )
+            except InvalidUsernameOrPasswordError:
+                raise INVALID_USERNAME_OR_PASSWORD_EXCEPTION
         case RefreshTokenGrantIn():
-            return await refresh_token_grant_in_to_token_out(
-                grant_in, settings=settings, connection=connection
-            )
+            try:
+                return await refresh_token_grant_in_to_token_out(
+                    grant_in, settings=settings, connection=connection
+                )
+            except InvalidTokenError:
+                raise INVALID_TOKEN_EXCEPTION
         case _:
             assert_never(grant_in)
 

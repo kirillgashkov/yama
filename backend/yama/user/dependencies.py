@@ -1,12 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordBearer
-from starlette import status
 
+from yama.user.auth.models import INVALID_TOKEN_EXCEPTION
+from yama.user.auth.utils import InvalidTokenError, access_token_to_user_id
 from yama.user.settings import Settings
-from yama.user.utils import get_user_id_from_access_token, is_access_token_valid
 
 
 # get_settings is a lifetime dependency that provides Settings created by the lifespan.
@@ -18,21 +18,25 @@ _get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/auth")
 _get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=False)
 
 
-def get_current_user_id(*, token: Annotated[str, Depends(_get_oauth2_token)]) -> UUID:
-    if not is_access_token_valid(token):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token",
-        )
-
-    return get_user_id_from_access_token(token)
+def get_current_user_id(
+    *,
+    token: Annotated[str, Depends(_get_oauth2_token)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> UUID:
+    try:
+        return access_token_to_user_id(token, settings=settings)
+    except InvalidTokenError:
+        raise INVALID_TOKEN_EXCEPTION
 
 
 def get_current_user_id_or_none(
     *,
     token: Annotated[str | None, Depends(_get_oauth2_token_or_none)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> UUID | None:
-    if token is None or not is_access_token_valid(token):
+    if token is None:
         return None
-
-    return get_user_id_from_access_token(token)
+    try:
+        return access_token_to_user_id(token, settings=settings)
+    except InvalidTokenError:
+        return None

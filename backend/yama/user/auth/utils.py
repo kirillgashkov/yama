@@ -1,12 +1,10 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
-from fastapi import HTTPException
 from jose import JWTError, jwt
 from sqlalchemy import exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
-from starlette.status import HTTP_401_UNAUTHORIZED
 
 from yama.user.auth.models import (
     PasswordGrantIn,
@@ -37,9 +35,7 @@ async def password_grant_in_to_token_out(
         or user_db.password_hash is None
         or not is_password_valid(password_grant_in.password, user_db.password_hash)
     ):
-        raise HTTPException(
-            status_code=HTTP_401_UNAUTHORIZED, detail="Invalid username or password."
-        )
+        raise InvalidUsernameOrPasswordError()
 
     access_token, expires_in = make_access_token_and_expires_in(
         user_db.id, settings=settings
@@ -60,17 +56,14 @@ async def refresh_token_grant_in_to_token_out(
     settings: Settings,
     connection: AsyncConnection,
 ) -> TokenOut:
-    try:
-        refresh_token_id, user_id, refresh_token_expires_at = (
-            refresh_token_to_id_and_user_id_and_expires_at(
-                refresh_token_grant_in.refresh_token, settings=settings
-            )
+    refresh_token_id, user_id, refresh_token_expires_at = (
+        refresh_token_to_id_and_user_id_and_expires_at(
+            refresh_token_grant_in.refresh_token, settings=settings
         )
-        await check_refresh_token_is_not_revoked_by_id(
-            refresh_token_id, connection=connection
-        )
-    except InvalidTokenError:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid token.")
+    )
+    await check_refresh_token_is_not_revoked_by_id(
+        refresh_token_id, connection=connection
+    )
 
     access_token, expires_in = make_access_token_and_expires_in(
         user_id, settings=settings
@@ -193,6 +186,9 @@ async def ensure_refresh_token_is_revoked_by_id(
     )
     await connection.execute(query)
     await connection.commit()
+
+
+class InvalidUsernameOrPasswordError(Exception): ...
 
 
 class InvalidTokenError(Exception): ...
