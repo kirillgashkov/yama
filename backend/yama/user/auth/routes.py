@@ -5,12 +5,14 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, Form, HTTPException
 from jose import JWTError, jwt
 from pydantic import TypeAdapter
-from sqlalchemy import func, select
+from sqlalchemy import exists, func, select
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from yama.database.dependencies import get_connection
 from yama.model.models import ModelBase
+from yama.user.auth.models import RevokedRefreshTokenDb
 from yama.user.auth.utils import InvalidTokenError
 from yama.user.dependencies import get_settings
 from yama.user.models import UserDb
@@ -126,9 +128,9 @@ def access_token_to_user_id(token: str, /, *, settings: Settings) -> UUID:
     return UUID(claims["sub"])
 
 
-def refresh_token_to_id_and_user_id(
+def refresh_token_to_id_and_user_id_and_expires_at(
     token: str, /, *, settings: Settings
-) -> tuple[UUID, UUID]:
+) -> tuple[UUID, UUID, datetime]:
     try:
         claims = jwt.decode(
             token,
@@ -138,7 +140,11 @@ def refresh_token_to_id_and_user_id(
     except JWTError:
         raise InvalidTokenError()
 
-    return UUID(claims["jti"]), UUID(claims["sub"])
+    return (
+        UUID(claims["jti"]),
+        UUID(claims["sub"]),
+        datetime.fromtimestamp(claims["exp"], UTC),
+    )
 
 
 async def password_grant_in_to_token_out(
@@ -175,12 +181,49 @@ async def password_grant_in_to_token_out(
     )
 
 
+async def check_refresh_token_is_not_revoked_by_id(
+    id_: UUID,
+    /,
+    *,
+    connection: AsyncConnection,
+) -> None:
+    query = select(exists().where(RevokedRefreshTokenDb.id == id_))
+    is_revoked = (await connection.execute(query)).scalar_one()
+    if is_revoked:
+        raise InvalidTokenError()
+
+
+async def ensure_refresh_token_is_revoked_by_id(
+    id_: UUID,
+    /,
+    *,
+    expires_at: datetime,
+    connection: AsyncConnection,
+) -> None:
+    query = (
+        insert(RevokedRefreshTokenDb)
+        .values(id=id_, expires_at=expires_at)
+        .on_conflict_do_nothing(index_elements=["id"])
+    )
+    await connection.execute(query)
+    await connection.commit()
+
+
 async def refresh_token_grant_in_to_token_out(
-    refresh_token_grant_in: RefreshTokenGrantIn, /, *, settings: Settings
+    refresh_token_grant_in: RefreshTokenGrantIn,
+    /,
+    *,
+    settings: Settings,
+    connection: AsyncConnection,
 ) -> TokenOut:
     try:
-        refresh_token_id, user_id = refresh_token_to_id_and_user_id(
-            refresh_token_grant_in.refresh_token, settings=settings
+        refresh_token_id, user_id, refresh_token_expires_at = (
+            refresh_token_to_id_and_user_id_and_expires_at(
+                refresh_token_grant_in.refresh_token, settings=settings
+            )
+        )
+        await check_refresh_token_is_not_revoked_by_id(
+            refresh_token_id, connection=connection
         )
     except InvalidTokenError:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail="Invalid token.")
@@ -188,9 +231,18 @@ async def refresh_token_grant_in_to_token_out(
     access_token, expires_in = make_access_token_and_expires_in(
         user_id, settings=settings
     )
-    return TokenOut(
-        access_token=access_token, token_type="bearer", expires_in=expires_in
+    new_refresh_token = make_refresh_token(user_id, settings=settings)
+    token_out = TokenOut(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=expires_in,
+        refresh_token=new_refresh_token,
     )
+
+    await ensure_refresh_token_is_revoked_by_id(
+        refresh_token_id, expires_at=refresh_token_expires_at, connection=connection
+    )
+    return token_out
 
 
 @router.post("/auth")
@@ -207,7 +259,7 @@ async def authorize(
             )
         case RefreshTokenGrantIn():
             return await refresh_token_grant_in_to_token_out(
-                grant_in, settings=settings
+                grant_in, settings=settings, connection=connection
             )
         case _:
             assert_never(grant_in)

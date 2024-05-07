@@ -27,6 +27,12 @@ CREATE TABLE IF NOT EXISTS user_ancestors_user_descendants (
     FOREIGN KEY (descendant_id) REFERENCES users (id)
 );
 
+CREATE TABLE IF NOT EXISTS revoked_refresh_tokens (
+    id uuid NOT NULL,
+    expires_at timestamp with time zone NOT NULL,
+    PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS file_types (
     type varchar NOT NULL,
     PRIMARY KEY (type)
