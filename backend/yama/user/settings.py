@@ -13,12 +13,16 @@ class TokenSettings(BaseSettings):
 
 
 class AuthSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_nested_delimiter="__")
+
     access_token: TokenSettings
     refresh_token: TokenSettings
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="yama_user__")
+    model_config = SettingsConfigDict(
+        env_prefix="yama_user__", env_nested_delimiter="__"
+    )
 
     public_user_id: UUID
     auth: AuthSettings
