@@ -11,7 +11,7 @@ from yama.file.routes import files_file_error_handler
 from yama.file.routes import router as file_router
 from yama.file.settings import Settings as FileSettings
 from yama.file.utils import FilesFileError
-from yama.security.routes import router as security_router
+from yama.user.auth.routes import router as user_auth_router
 from yama.user.routes import router as user_router
 from yama.user.settings import Settings as UserSettings
 
@@ -40,7 +40,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(file_router)
-app.include_router(security_router)
+app.include_router(user_auth_router)
 app.include_router(user_router)
 
 app.add_exception_handler(FilesFileError, files_file_error_handler)  # type: ignore  # https://github.com/encode/starlette/discussions/2391 and https://github.com/encode/starlette/pull/2403

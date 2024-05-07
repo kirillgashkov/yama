@@ -10,6 +10,8 @@ DROP TABLE IF EXISTS files;
 
 DROP TABLE IF EXISTS file_types;
 
+DROP TABLE IF EXISTS revoked_refresh_tokens;
+
 DROP TABLE IF EXISTS user_ancestors_user_descendants;
 
 DROP TABLE IF EXISTS users;

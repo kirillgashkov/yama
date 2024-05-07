@@ -6,10 +6,12 @@ from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
-from yama.security.dependencies import get_current_user_id
-from yama.security.utils import hash_password
+from yama.user.dependencies import get_current_user_id
 from yama.user.models import Handle, UserCreateIn, UserDb, UserOut, UserType
-from yama.user.utils import user_exists
+from yama.user.utils import (
+    hash_password,
+    user_exists,
+)
 
 router = APIRouter()
 
