@@ -4,6 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException
 from pydantic import TypeAdapter
+from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from starlette.status import HTTP_401_UNAUTHORIZED
 
@@ -51,4 +52,4 @@ class RevokedRefreshTokenDb(TableBase):
     __tablename__ = "revoked_refresh_tokens"
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
-    expires_at: Mapped[datetime]
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
