@@ -26,6 +26,7 @@ optional-dependencies.dev = [
     "ruff",
     "types-aiofiles",
     "typing-extensions",
+    "types-python-jose",
 ]
 dynamic = ["version"]
 
