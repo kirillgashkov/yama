@@ -1,6 +1,6 @@
 from typing import Annotated, assert_never
 
-from fastapi import APIRouter, Body, Depends
+from fastapi import APIRouter, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
@@ -16,6 +16,7 @@ from yama.user.auth.models import (
 from yama.user.auth.utils import (
     InvalidTokenError,
     InvalidUsernameOrPasswordError,
+    check_refresh_token_is_not_revoked_by_id,
     ensure_refresh_token_is_revoked_by_id,
     password_grant_in_to_token_out,
     refresh_token_grant_in_to_token_out,
@@ -56,13 +57,18 @@ async def authorize(
 @router.post("/unauth")
 async def unauthorize(
     *,
-    refresh_token: Annotated[str, Body()],
+    refresh_token: Annotated[str, Form()],
     settings: Annotated[Settings, Depends(get_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> None:
-    id_, _, expires_at = refresh_token_to_id_and_user_id_and_expires_at(
-        refresh_token, settings=settings
-    )
+    try:
+        id_, _, expires_at = refresh_token_to_id_and_user_id_and_expires_at(
+            refresh_token, settings=settings
+        )
+        await check_refresh_token_is_not_revoked_by_id(id_, connection=connection)
+    except InvalidTokenError:
+        raise INVALID_TOKEN_EXCEPTION
+
     await ensure_refresh_token_is_revoked_by_id(
         id_, expires_at=expires_at, connection=connection
     )
