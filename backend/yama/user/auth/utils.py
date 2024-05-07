@@ -56,13 +56,12 @@ async def refresh_token_grant_in_to_token_out(
     settings: Settings,
     connection: AsyncConnection,
 ) -> TokenOut:
-    refresh_token_id, user_id, refresh_token_expires_at = (
-        refresh_token_to_id_and_user_id_and_expires_at(
-            refresh_token_grant_in.refresh_token, settings=settings
-        )
-    )
-    await check_refresh_token_is_not_revoked_by_id(
-        refresh_token_id, connection=connection
+    (
+        refresh_token_id,
+        user_id,
+        refresh_token_expires_at,
+    ) = await refresh_token_to_id_and_user_id_and_expires_at(
+        refresh_token_grant_in.refresh_token, settings=settings, connection=connection
     )
 
     access_token, expires_in = make_access_token_and_expires_in(
@@ -141,8 +140,8 @@ def access_token_to_user_id(token: str, /, *, settings: Settings) -> UUID:
     return UUID(claims["sub"])
 
 
-def refresh_token_to_id_and_user_id_and_expires_at(
-    token: str, /, *, settings: Settings
+async def refresh_token_to_id_and_user_id_and_expires_at(
+    token: str, /, *, settings: Settings, connection: AsyncConnection
 ) -> tuple[UUID, UUID, datetime]:
     try:
         claims = jwt.decode(
@@ -153,23 +152,23 @@ def refresh_token_to_id_and_user_id_and_expires_at(
     except JWTError:
         raise InvalidTokenError()
 
-    return (
-        UUID(claims["jti"]),
-        UUID(claims["sub"]),
-        datetime.fromtimestamp(claims["exp"], UTC),
-    )
+    id_ = UUID(claims["jti"])
+    user_id = UUID(claims["sub"])
+    expires_at = datetime.fromtimestamp(claims["exp"], UTC)
+    if await _is_refresh_token_revoked_by_id(id_, connection=connection):
+        raise InvalidTokenError()
+
+    return id_, user_id, expires_at
 
 
-async def check_refresh_token_is_not_revoked_by_id(
+async def _is_refresh_token_revoked_by_id(
     id_: UUID,
     /,
     *,
     connection: AsyncConnection,
-) -> None:
+) -> bool:
     query = select(exists().where(RevokedRefreshTokenDb.id == id_))
-    is_revoked = (await connection.execute(query)).scalar_one()
-    if is_revoked:
-        raise InvalidTokenError()
+    return (await connection.execute(query)).scalar_one()
 
 
 async def ensure_refresh_token_is_revoked_by_id(

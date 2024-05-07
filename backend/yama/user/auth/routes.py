@@ -16,7 +16,6 @@ from yama.user.auth.models import (
 from yama.user.auth.utils import (
     InvalidTokenError,
     InvalidUsernameOrPasswordError,
-    check_refresh_token_is_not_revoked_by_id,
     ensure_refresh_token_is_revoked_by_id,
     password_grant_in_to_token_out,
     refresh_token_grant_in_to_token_out,
@@ -62,10 +61,9 @@ async def unauthorize(
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> None:
     try:
-        id_, _, expires_at = refresh_token_to_id_and_user_id_and_expires_at(
-            refresh_token, settings=settings
+        id_, _, expires_at = await refresh_token_to_id_and_user_id_and_expires_at(
+            refresh_token, settings=settings, connection=connection
         )
-        await check_refresh_token_is_not_revoked_by_id(id_, connection=connection)
     except InvalidTokenError:
         raise INVALID_TOKEN_EXCEPTION
 
