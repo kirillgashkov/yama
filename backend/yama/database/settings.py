@@ -1,13 +1,4 @@
-from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class ProvisionSettings(BaseSettings):
-    database: str
-    username: str
-    password: str
-    migrate_executable: Path
 
 
 class Settings(BaseSettings):
@@ -20,4 +11,3 @@ class Settings(BaseSettings):
     database: str
     username: str
     password: str
-    provision: ProvisionSettings | None = None
