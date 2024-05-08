@@ -34,7 +34,7 @@ Noteworthy modules:
 
 - [`database/provision`](yama/database/provision) provisions the Postgres database.
 
-  It uses [`golang-migrate`](https://github.com/golang-migrate/migrate) for database migrations.
+  It uses [golang-migrate](https://github.com/golang-migrate/migrate) for database migrations.
 
 - [`user`](yama/user) manages users.
 
