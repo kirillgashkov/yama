@@ -8,7 +8,3 @@ design.
 
 This repository is a monorepo that contains the [backend](backend) server and
 the [frontend](frontend) web application.
-
-## Status
-
-Currently, Yama is in the early stages of development.
