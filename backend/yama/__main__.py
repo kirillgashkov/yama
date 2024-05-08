@@ -4,9 +4,9 @@ import uvicorn
 from typer import Typer
 
 from yama.api.settings import Settings as APISettings
-from yama.database.utils import sqlalchemy_async_connection
-from yama.database.provision.databases import setup_database, teardown_database
+from yama.database.provision.utils import setup_database, teardown_database
 from yama.database.settings import Settings as DatabaseSettings
+from yama.database.utils import sqlalchemy_async_connection
 
 app = Typer()
 database_app = Typer()
