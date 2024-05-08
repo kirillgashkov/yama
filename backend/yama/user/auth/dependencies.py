@@ -1,9 +1,14 @@
 from typing import Annotated, Literal
+from uuid import UUID
 
-from fastapi import Form, HTTPException
+from fastapi import Depends, Form, HTTPException
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 
-from yama.user.auth.models import GrantIn, GrantInAdapter
+from yama.user.auth.models import INVALID_TOKEN_EXCEPTION, GrantIn, GrantInAdapter
+from yama.user.auth.utils import InvalidTokenError, access_token_to_user_id
+from yama.user.dependencies import get_settings
+from yama.user.settings import Settings
 
 
 def get_grant_in(
@@ -26,3 +31,31 @@ def get_grant_in(
         )
     except ValidationError:
         raise HTTPException(400, "Invalid grant.")
+
+
+_get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/auth")
+_get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=False)
+
+
+def get_current_user_id(
+    *,
+    token: Annotated[str, Depends(_get_oauth2_token)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> UUID:
+    try:
+        return access_token_to_user_id(token, settings=settings)
+    except InvalidTokenError:
+        raise INVALID_TOKEN_EXCEPTION
+
+
+def get_current_user_id_or_none(
+    *,
+    token: Annotated[str | None, Depends(_get_oauth2_token_or_none)],
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> UUID | None:
+    if token is None:
+        return None
+    try:
+        return access_token_to_user_id(token, settings=settings)
+    except InvalidTokenError:
+        return None

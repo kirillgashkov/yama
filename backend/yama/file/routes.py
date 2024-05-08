@@ -43,7 +43,7 @@ from yama.file.models import (
 )
 from yama.file.settings import Settings
 from yama.file.utils import FilesFileError
-from yama.user.dependencies import get_current_user_id, get_current_user_id_or_none
+from yama.user.auth.dependencies import get_current_user_id, get_current_user_id_or_none
 from yama.user.dependencies import get_settings as get_user_settings
 from yama.user.settings import Settings as UserSettings
 
