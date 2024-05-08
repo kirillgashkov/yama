@@ -5,7 +5,7 @@ from typing import Any, Literal
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from yama.database.connections import sqlalchemy_async_engine
+from yama.database.utils import sqlalchemy_async_engine
 from yama.database.settings import Settings as DatabaseSettings
 from yama.file.routes import files_file_error_handler
 from yama.file.routes import router as file_router
