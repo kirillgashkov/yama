@@ -4,9 +4,10 @@ import uvicorn
 from typer import Typer
 
 from yama.api.settings import Settings as APISettings
-from yama.database.connections import sqlalchemy_async_connection
-from yama.database.provision.databases import setup_database, teardown_database
+from yama.database.provision.settings import Settings as DatabaseProvisionSettings
+from yama.database.provision.utils import setup_database, teardown_database
 from yama.database.settings import Settings as DatabaseSettings
+from yama.database.utils import sqlalchemy_async_connection
 
 app = Typer()
 database_app = Typer()
@@ -28,24 +29,22 @@ def api() -> None:
 @database_app.command()
 def up() -> None:
     async def f() -> None:
-        settings = DatabaseSettings()
-
-        if settings.provision is None:
-            raise ValueError("Provision settings are required")
+        database_settings = DatabaseSettings()
+        database_provision_settings = DatabaseProvisionSettings()
 
         async with sqlalchemy_async_connection(
-            host=settings.host,
-            port=settings.port,
-            username=settings.provision.username,
-            password=settings.provision.password,
-            database=settings.provision.database,
+            host=database_settings.host,
+            port=database_settings.port,
+            username=database_provision_settings.username,
+            password=database_provision_settings.password,
+            database=database_provision_settings.database,
         ) as conn:
             autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
 
             await setup_database(
                 autocommit_conn,
-                database=settings.database,
-                migrate_executable=settings.provision.migrate_executable,
+                database=database_settings.database,
+                migrate_executable=database_provision_settings.migrate_executable,
             )
 
     asyncio.run(f())
@@ -54,21 +53,21 @@ def up() -> None:
 @database_app.command()
 def down() -> None:
     async def f() -> None:
-        settings = DatabaseSettings()
-
-        if settings.provision is None:
-            raise ValueError("Provision settings are required")
+        database_settings = DatabaseSettings()
+        database_provision_settings = DatabaseProvisionSettings()
 
         async with sqlalchemy_async_connection(
-            host=settings.host,
-            port=settings.port,
-            username=settings.provision.username,
-            password=settings.provision.password,
-            database=settings.provision.database,
+            host=database_settings.host,
+            port=database_settings.port,
+            username=database_provision_settings.username,
+            password=database_provision_settings.password,
+            database=database_provision_settings.database,
         ) as conn:
             autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
 
-            await teardown_database(autocommit_conn, database=settings.database)
+            await teardown_database(
+                autocommit_conn, database=database_settings.database
+            )
 
     asyncio.run(f())
 
