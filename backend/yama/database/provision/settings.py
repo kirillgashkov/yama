@@ -1,9 +1,13 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class ProvisionSettings(BaseSettings):
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="yama__database__provision__",
+    )
+
     database: str
     username: str
     password: str
