@@ -11,7 +11,7 @@ def get_settings(*, request: Request) -> Settings:
     return request.state.file_driver_settings  # type: ignore[no-any-return]
 
 
-async def get_driver(*, settings: Annotated[Settings, Depends(get_settings)]) -> Driver:
+def get_driver(*, settings: Annotated[Settings, Depends(get_settings)]) -> Driver:
     match settings.type:
         case "file-system":
             return FileSystemDriver(file_system_dir=settings.file_system_dir)
