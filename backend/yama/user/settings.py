@@ -21,7 +21,7 @@ class AuthSettings(BaseSettings):
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="yama_user__", env_nested_delimiter="__"
+        env_prefix="yama__user__", env_nested_delimiter="__"
     )
 
     public_user_id: UUID

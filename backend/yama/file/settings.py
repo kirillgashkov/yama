@@ -18,7 +18,7 @@ DriverSettings: TypeAlias = FileSystemDriverSettings
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="yama_file__", env_nested_delimiter="__"
+        env_prefix="yama__file__", env_nested_delimiter="__"
     )
 
     chunk_size: int = 1024 * 1024 * 10  # 10 MiB
