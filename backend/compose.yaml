@@ -1,13 +1,43 @@
 services:
   database:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file: example.env
     ports:
       - "5432:5432"
     volumes:
       - database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U", "$POSTGRES_USER", "-d", "$POSTGRES_DB"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+  database-up:
+    build: .
+    command: database up
+    env_file: example.env
+    environment:
+      YAMA__DATABASE__HOST: database
+    depends_on:
+      database:
+        condition: service_healthy
+  api:
+    build: .
+    command: api
+    env_file: example.env
+    environment:
+      YAMA__DATABASE__HOST: database
+      YAMA__API__HOST: 0.0.0.0
+      YAMA__API__PORT: 8000
+      YAMA__API__RELOAD: false
+      YAMA__FILE__FILES_BASE_URL: "http://api:8000/files"
+      YAMA__FILE__DRIVER__FILE_SYSTEM_DIR: /var/lib/yama/file-system
+    ports:
+      - "8000:8000"
+    volumes:
+      - yama-file-data:/var/lib/yama/file-system
+    depends_on:
+      database-up:
+        condition: service_completed_successfully
 volumes:
   database-data:
+  yama-file-data:
