@@ -1,6 +1,7 @@
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 from uuid import UUID
 
 from pydantic import (
@@ -76,21 +77,25 @@ class FileShareType(str, Enum):
     SHARE = "share"
 
 
-class Regular(NamedTuple):
+@dataclass(frozen=True)
+class Regular:
     id: UUID
     type: Literal[FileType.REGULAR]
 
 
-class DirectoryContentFile(NamedTuple):
+@dataclass(frozen=True)
+class DirectoryContentFile:
     name: FileName
     file: "File"
 
 
-class DirectoryContent(NamedTuple):
+@dataclass(frozen=True)
+class DirectoryContent:
     files: list[DirectoryContentFile]
 
 
-class Directory(NamedTuple):
+@dataclass(frozen=True)
+class Directory:
     id: UUID
     type: Literal[FileType.DIRECTORY]
     content: DirectoryContent
@@ -127,16 +132,19 @@ class DirectoryOut(ModelBase):
 FileOut: TypeAlias = RegularOut | DirectoryOut
 
 
-class RegularContentWrite(NamedTuple):
+@dataclass(frozen=True)
+class RegularContentWrite:
     stream: AsyncReadable
 
 
-class RegularWrite(NamedTuple):
+@dataclass(frozen=True)
+class RegularWrite:
     type: Literal[FileType.REGULAR]
     content: RegularContentWrite
 
 
-class DirectoryWrite(NamedTuple):
+@dataclass(frozen=True)
+class DirectoryWrite:
     type: Literal[FileType.DIRECTORY]
 
 

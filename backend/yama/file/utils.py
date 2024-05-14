@@ -1,7 +1,8 @@
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Iterable
+from dataclasses import astuple, dataclass
 from pathlib import PurePosixPath
-from typing import NamedTuple, assert_never
+from typing import assert_never
 from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
@@ -560,7 +561,8 @@ async def _remove_file(
     return file, connection
 
 
-class _FileParentIdAndName(NamedTuple):
+@dataclass(frozen=True)
+class _FileParentIdAndName:
     parent_id: UUID
     name: FileName
 
@@ -586,7 +588,7 @@ def _make_files(
 
     for file_db, parent_id_and_name in files_db_with_parent_id_and_name:
         if parent_id_and_name:
-            parent_id, name = parent_id_and_name
+            parent_id, name = astuple(parent_id_and_name)
             parent_id_to_children[parent_id].append((name, file_db.id))
             child_ids.add(file_db.id)
             ids[parent_id] = True
