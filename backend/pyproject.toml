@@ -17,6 +17,7 @@ dependencies = [
     "aiofiles",
     "argon2-cffi",
     "python-jose[cryptography]",
+    "aiohttp[speedups]",
 ]
 optional-dependencies.dev = [
     "anyio",
