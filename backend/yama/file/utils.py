@@ -28,7 +28,7 @@ from yama.file.models import (
     Regular,
     RegularWrite,
 )
-from yama.file.settings import Settings
+from yama.file.config import Config
 from yama.user.models import UserAncestorUserDescendantDb
 
 
@@ -39,7 +39,7 @@ async def read_file(
     max_depth: int | None,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Settings,
+    settings: Config,
     connection: AsyncConnection,
 ) -> File:
     id_ = await _path_to_id(
@@ -73,7 +73,7 @@ async def write_file(
     exist_ok: bool = True,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Settings,
+    settings: Config,
     connection: AsyncConnection,
     driver: Driver,
 ) -> File:
@@ -145,7 +145,7 @@ async def remove_file(
     *,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Settings,
+    settings: Config,
     connection: AsyncConnection,
     driver: Driver,
 ) -> File:
@@ -191,7 +191,7 @@ async def move_file(
     *,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Settings,
+    settings: Config,
     connection: AsyncConnection,
 ) -> File:
     src_parent_id, src_id = await _path_to_parent_id_and_id(

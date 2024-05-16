@@ -7,10 +7,10 @@ from pydantic import BaseModel
 
 from yama.database.config import Config as DatabaseSettings
 from yama.database.utils import sqlalchemy_async_engine
-from yama.file.driver.settings import Settings as FileDriverSettings
+from yama.file.driver.config import Config as FileDriverSettings
 from yama.file.routes import files_file_error_handler
 from yama.file.routes import router as file_router
-from yama.file.settings import Settings as FileSettings
+from yama.file.config import Config as FileSettings
 from yama.file.utils import FilesFileError
 from yama.user.auth.routes import router as user_auth_router
 from yama.user.routes import router as user_router

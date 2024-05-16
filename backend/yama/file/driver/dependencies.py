@@ -2,16 +2,16 @@ from typing import Annotated, assert_never
 
 from fastapi import Depends, Request
 
-from yama.file.driver.settings import Settings
+from yama.file.driver.config import Config
 from yama.file.driver.utils import Driver, FileSystemDriver
 
 
 # get_settings is a lifetime dependency that provides Settings created by the lifespan.
-def get_settings(*, request: Request) -> Settings:
+def get_settings(*, request: Request) -> Config:
     return request.state.file_driver_settings  # type: ignore[no-any-return]
 
 
-def get_driver(*, settings: Annotated[Settings, Depends(get_settings)]) -> Driver:
+def get_driver(*, settings: Annotated[Config, Depends(get_settings)]) -> Driver:
     match settings.type:
         case "file-system":
             return FileSystemDriver(file_system_dir=settings.file_system_dir)

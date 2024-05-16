@@ -6,7 +6,7 @@ MAX_FILE_NAME_LENGTH = 255
 MAX_FILE_PATH_LENGTH = 4095
 
 
-class Settings(BaseSettings):
+class Config(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="yama__file__", env_nested_delimiter="__"
     )
