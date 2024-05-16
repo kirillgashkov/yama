@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import PurePosixPath
+from pathlib import Path
 from typing import Protocol, TypeAlias
+
+from yama import function
 
 
 class AsyncReadable(Protocol):
@@ -15,13 +17,13 @@ class AsyncWritable(Protocol):
 
 @dataclass
 class InputFile:
-    path: PurePosixPath
+    path: Path
     content_reader: AsyncReadable
 
 
 @dataclass
 class OutputFile:
-    path: PurePosixPath
+    path: Path
     content_writer: AsyncWritable
 
 
@@ -46,14 +48,15 @@ Process: TypeAlias = StartedProcess | StoppedProcess
 
 class Driver(ABC):
     @abstractmethod
-    def execute(
+    async def execute(
         self,
         command: list[str],
         /,
         *,
         input_files: list[InputFile],
         output_files: list[OutputFile],
+        function_config: function.Config,
     ) -> StartedProcess: ...
 
     @abstractmethod
-    def wait(self, process: StartedProcess, /) -> StoppedProcess: ...
+    async def wait(self, process: StartedProcess, /) -> StoppedProcess: ...
