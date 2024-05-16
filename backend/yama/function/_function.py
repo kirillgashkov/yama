@@ -1,19 +1,19 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from yama.model.models import ModelBase
+from pydantic import BaseModel
 
 
-class FileInout(ModelBase):
+class FileInout(BaseModel):
     path: Path
     content: bytes
 
 
-class FunctionIn(ModelBase):
+class FunctionIn(BaseModel):
     files: list[FileInout]
 
 
-class FunctionOut(ModelBase):
+class FunctionOut(BaseModel):
     files: list[FileInout]
 
 

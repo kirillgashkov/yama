@@ -2,12 +2,11 @@ from enum import Enum
 from typing import Annotated, Literal, TypeAlias
 from uuid import UUID
 
-from pydantic import AfterValidator
+from pydantic import AfterValidator, BaseModel
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import TableBase
-from yama.model.models import ModelBase
 from yama.user.settings import MAX_HANDLE_LENGTH, MIN_HANDLE_LENGTH
 
 
@@ -28,13 +27,13 @@ class UserType(str, Enum):
     GROUP = "group"
 
 
-class UserOut(ModelBase):
+class UserOut(BaseModel):
     id: UUID
     type: UserType
     handle: Handle
 
 
-class UserCreateIn(ModelBase):
+class UserCreateIn(BaseModel):
     type: Literal[UserType.REGULAR]
     handle: Handle
     password: str

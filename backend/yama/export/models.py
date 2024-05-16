@@ -3,10 +3,9 @@ from enum import Enum
 from types import UnionType
 from typing import Any, Self, assert_never
 
-from pydantic import Field, TypeAdapter, model_validator
+from pydantic import BaseModel, Field, TypeAdapter, model_validator
 
 from yama.file.models import FilePath, FilePathAdapter
-from yama.model.models import ModelBase
 
 
 class ExportParameterType(str, Enum):
@@ -29,7 +28,7 @@ class ExportFilterType(str, Enum):
     LUA = "lua"
 
 
-class ExportParameter(ModelBase):
+class ExportParameter(BaseModel):
     name: str
     type: list[ExportParameterType] = Field(min_length=1)
     default: Any = None
@@ -42,23 +41,23 @@ class ExportParameter(ModelBase):
         return self
 
 
-class ExportReader(ModelBase):
+class ExportReader(BaseModel):
     name: FilePath = FilePathAdapter.validate_python("commonmark")
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
-class ExportFilter(ModelBase):
+class ExportFilter(BaseModel):
     name: FilePath
     type: ExportFilterType
 
 
-class ExportWriter(ModelBase):
+class ExportWriter(BaseModel):
     name: FilePath = FilePathAdapter.validate_python("latex")
     template: FilePath | None = None
     variables: dict[str, str] = Field(default_factory=dict)
 
 
-class ExportConfig(ModelBase):
+class ExportConfig(BaseModel):
     parameters: list[ExportParameter] = Field(default_factory=list)
     reader: ExportReader = ExportReader()
     filters: list[ExportFilter] = Field(default_factory=list)

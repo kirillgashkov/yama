@@ -6,6 +6,7 @@ from uuid import UUID
 
 from pydantic import (
     AfterValidator,
+    BaseModel,
     TypeAdapter,
     ValidatorFunctionWrapHandler,
     WrapValidator,
@@ -16,7 +17,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from yama.database.models import TableBase
 from yama.file.driver.utils import AsyncReadable
 from yama.file.settings import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
-from yama.model.models import ModelBase
 
 
 def _check_file_name(name: str) -> str:
@@ -104,26 +104,26 @@ class Directory:
 File: TypeAlias = Regular | Directory
 
 
-class RegularContentOut(ModelBase):
+class RegularContentOut(BaseModel):
     url: str
 
 
-class RegularOut(ModelBase):
+class RegularOut(BaseModel):
     id: UUID
     type: Literal[FileType.REGULAR]
     content: RegularContentOut | None = None
 
 
-class DirectoryContentFileOut(ModelBase):
+class DirectoryContentFileOut(BaseModel):
     name: FileName
     file: "FileOut"
 
 
-class DirectoryContentOut(ModelBase):
+class DirectoryContentOut(BaseModel):
     files: list[DirectoryContentFileOut]
 
 
-class DirectoryOut(ModelBase):
+class DirectoryOut(BaseModel):
     id: UUID
     type: Literal[FileType.DIRECTORY]
     content: DirectoryContentOut | None = None

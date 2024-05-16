@@ -3,13 +3,12 @@ from typing import Literal, TypeAlias
 from uuid import UUID
 
 from fastapi import HTTPException
-from pydantic import TypeAdapter
+from pydantic import BaseModel, TypeAdapter
 from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from starlette.status import HTTP_401_UNAUTHORIZED
 
 from yama.database.models import TableBase
-from yama.model.models import ModelBase
 
 INVALID_USERNAME_OR_PASSWORD_EXCEPTION = HTTPException(
     status_code=HTTP_401_UNAUTHORIZED, detail="Invalid username or password."
@@ -21,7 +20,7 @@ INVALID_TOKEN_EXCEPTION = HTTPException(
 
 
 # https://datatracker.ietf.org/doc/html/rfc6749#section-4.3
-class PasswordGrantIn(ModelBase):
+class PasswordGrantIn(BaseModel):
     grant_type: Literal["password"]
     username: str
     password: str
@@ -29,7 +28,7 @@ class PasswordGrantIn(ModelBase):
 
 
 # https://datatracker.ietf.org/doc/html/rfc6749#section-6
-class RefreshTokenGrantIn(ModelBase):
+class RefreshTokenGrantIn(BaseModel):
     grant_type: Literal["refresh_token"]
     refresh_token: str
     scope: Literal[None] = None
@@ -40,7 +39,7 @@ GrantInAdapter: TypeAdapter[GrantIn] = TypeAdapter(GrantIn)
 
 
 # https://datatracker.ietf.org/doc/html/rfc6749#section-5.1
-class TokenOut(ModelBase):
+class TokenOut(BaseModel):
     access_token: str
     token_type: Literal["bearer"]
     expires_in: int
