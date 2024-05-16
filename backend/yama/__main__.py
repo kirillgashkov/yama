@@ -8,7 +8,7 @@ from yama import function
 from yama.api.config import Config as APISettings
 from yama.database.provision.settings import Settings as DatabaseProvisionSettings
 from yama.database.provision.utils import setup_database, teardown_database
-from yama.database.settings import Settings as DatabaseSettings
+from yama.database.config import Config as DatabaseSettings
 from yama.database.utils import sqlalchemy_async_connection
 
 app = Typer()
