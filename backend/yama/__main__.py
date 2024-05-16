@@ -6,7 +6,6 @@ from typer import Typer
 
 from yama import api, database, function
 from yama.database import provision
-from yama.database.utils import make_sqlalchemy_async_connection
 
 app = Typer()
 database_app = Typer()
@@ -28,7 +27,7 @@ def handle_database_up() -> None:
         database_settings = database.Config()  # pyright: ignore[reportCallIssue]
         database_provision_settings = provision.Config()  # pyright: ignore[reportCallIssue]
 
-        async with make_sqlalchemy_async_connection(
+        async with database.make_connection(
             host=database_settings.host,
             port=database_settings.port,
             username=database_provision_settings.username,
@@ -52,7 +51,7 @@ def handle_database_down() -> None:
         database_settings = database.Config()  # pyright: ignore[reportCallIssue]
         database_provision_settings = provision.Config()  # pyright: ignore[reportCallIssue]
 
-        async with make_sqlalchemy_async_connection(
+        async with database.make_connection(
             host=database_settings.host,
             port=database_settings.port,
             username=database_provision_settings.username,

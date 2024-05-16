@@ -14,7 +14,7 @@ from pydantic import (
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from yama.database.models import BaseTable
+from yama import database
 from yama.file.driver.utils import AsyncReadable
 
 from ._config import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
@@ -152,13 +152,13 @@ class DirectoryWrite:
 FileWrite: TypeAlias = RegularWrite | DirectoryWrite
 
 
-class FileTypeDb(BaseTable):
+class FileTypeDb(database.BaseTable):
     __tablename__ = "file_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class FileDb(BaseTable):
+class FileDb(database.BaseTable):
     __tablename__ = "files"
 
     id: Mapped[UUID] = mapped_column(
@@ -167,7 +167,7 @@ class FileDb(BaseTable):
     type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
 
 
-class FileAncestorFileDescendantDb(BaseTable):
+class FileAncestorFileDescendantDb(database.BaseTable):
     __tablename__ = "file_ancestors_file_descendants"
 
     id: Mapped[UUID] = mapped_column(
@@ -179,13 +179,13 @@ class FileAncestorFileDescendantDb(BaseTable):
     descendant_depth: Mapped[int]
 
 
-class FileShareTypeDb(BaseTable):
+class FileShareTypeDb(database.BaseTable):
     __tablename__ = "file_share_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class FileShareDb(BaseTable):
+class FileShareDb(database.BaseTable):
     __tablename__ = "file_shares"
 
     id: Mapped[UUID] = mapped_column(

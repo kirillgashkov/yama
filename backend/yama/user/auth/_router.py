@@ -3,7 +3,7 @@ from typing import Annotated, assert_never
 from fastapi import APIRouter, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.database.dependencies import get_connection
+from yama import database
 from yama.user.auth.dependencies import get_grant_in, get_settings
 from yama.user.auth.models import (
     INVALID_TOKEN_EXCEPTION,
@@ -32,7 +32,7 @@ async def authorize(
     *,
     grant_in: Annotated[GrantIn, Depends(get_grant_in)],
     settings: Annotated[Config, Depends(get_settings)],
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> TokenOut:
     match grant_in:
         case PasswordGrantIn():
@@ -58,7 +58,7 @@ async def unauthorize(
     *,
     refresh_token: Annotated[str, Form()],
     settings: Annotated[Config, Depends(get_settings)],
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> None:
     try:
         id_, _, expires_at = await refresh_token_to_id_and_user_id_and_expires_at(

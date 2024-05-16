@@ -18,8 +18,7 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama import user
-from yama.database.dependencies import get_connection
+from yama import database, user
 from yama.file import utils
 from yama.file.dependencies import get_settings
 from yama.file.driver.dependencies import get_driver
@@ -63,7 +62,7 @@ async def read_file(
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Config, Depends(get_settings)],
     user_settings: Annotated[user.Config, Depends(get_user_settings)],
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut | StreamingResponse:
     if content:
@@ -123,7 +122,7 @@ async def create_or_update_file(
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
     settings: Annotated[Config, Depends(get_settings)],
     user_settings: Annotated[user.Config, Depends(get_user_settings)],
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
     file_write: FileWrite
@@ -169,7 +168,7 @@ async def delete_file(
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     settings: Annotated[Config, Depends(get_settings)],
     user_settings: Annotated[user.Config, Depends(get_user_settings)],
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
     file = await utils.remove_file(

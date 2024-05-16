@@ -6,7 +6,7 @@ from pydantic import AfterValidator, BaseModel
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from yama.database.models import BaseTable
+from yama import database
 
 from ._config import MAX_HANDLE_LENGTH, MIN_HANDLE_LENGTH
 
@@ -40,13 +40,13 @@ class UserCreateIn(BaseModel):
     password: str
 
 
-class UserTypeDb(BaseTable):
+class UserTypeDb(database.BaseTable):
     __tablename__ = "user_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class UserDb(BaseTable):
+class UserDb(database.BaseTable):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(
@@ -57,7 +57,7 @@ class UserDb(BaseTable):
     password_hash: Mapped[str | None]
 
 
-class UserAncestorUserDescendantDb(BaseTable):
+class UserAncestorUserDescendantDb(database.BaseTable):
     __tablename__ = "user_ancestors_user_descendants"
 
     id: Mapped[UUID] = mapped_column(

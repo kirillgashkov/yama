@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.database.dependencies import get_connection
+from yama import database
 from yama.user.auth.dependencies import get_current_user_id
 from yama.user.models import Handle, UserCreateIn, UserDb, UserOut, UserType
 from yama.user.utils import (
@@ -20,7 +20,7 @@ router = APIRouter()
 async def create_user(
     *,
     user_create_in: UserCreateIn,
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> UserOut:
     if await user_exists(handle=user_create_in.handle, connection=connection):
         raise HTTPException(status_code=400, detail="User already exists.")
@@ -47,7 +47,7 @@ async def create_user(
 async def read_current_user(
     *,
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> UserOut:
     query = select(UserDb).where(UserDb.id == current_user_id)
     row = (await connection.execute(query)).mappings().one_or_none()
@@ -62,7 +62,7 @@ async def read_current_user(
 async def read_user(
     *,
     handle: Handle,
-    connection: Annotated[AsyncConnection, Depends(get_connection)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> UserOut:
     query = select(UserDb).where(func.lower(UserDb.handle) == func.lower(handle))
     row = (await connection.execute(query)).mappings().one_or_none()
@@ -75,7 +75,7 @@ async def read_user(
 
 @router.get("/users")
 async def read_users(
-    *, connection: Annotated[AsyncConnection, Depends(get_connection)]
+    *, connection: Annotated[AsyncConnection, Depends(database.get_connection)]
 ) -> list[UserOut]:
     query = select(UserDb)
     rows = (await connection.execute(query)).mappings()

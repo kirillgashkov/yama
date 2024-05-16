@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 from yama import database, file, user
-from yama.database.utils import make_sqlalchemy_async_engine
 from yama.file import driver as file_driver
 from yama.user import auth
 
@@ -19,7 +18,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
     user_settings = user.Config()  # pyright: ignore[reportCallIssue]
     user_auth_settings = auth.Config()  # pyright: ignore[reportCallIssue]
 
-    async with make_sqlalchemy_async_engine(
+    async with database.make_engine(
         host=database_settings.host,
         port=database_settings.port,
         username=database_settings.username,
