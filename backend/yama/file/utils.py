@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 from typing_extensions import override
 
+from yama.file.config import Config
 from yama.file.driver.utils import Driver
 from yama.file.models import (
     Directory,
@@ -28,7 +29,6 @@ from yama.file.models import (
     Regular,
     RegularWrite,
 )
-from yama.file.config import Config
 from yama.user.models import UserAncestorUserDescendantDb
 
 

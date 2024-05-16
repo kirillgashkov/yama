@@ -7,14 +7,15 @@ from pydantic import BaseModel
 
 from yama.database.config import Config as DatabaseSettings
 from yama.database.utils import sqlalchemy_async_engine
+from yama.file.config import Config as FileSettings
 from yama.file.driver.config import Config as FileDriverSettings
 from yama.file.routes import files_file_error_handler
 from yama.file.routes import router as file_router
-from yama.file.config import Config as FileSettings
 from yama.file.utils import FilesFileError
+from yama.user.auth.config import Config as UserAuthSettings
 from yama.user.auth.routes import router as user_auth_router
-from yama.user.routes import router as user_router
 from yama.user.config import Config as UserSettings
+from yama.user.routes import router as user_router
 
 
 @asynccontextmanager
@@ -23,6 +24,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
     file_settings = FileSettings()  # pyright: ignore[reportCallIssue]
     file_driver_settings = FileDriverSettings()  # pyright: ignore[reportCallIssue]
     user_settings = UserSettings()  # pyright: ignore[reportCallIssue]
+    user_auth_settings = UserAuthSettings()  # pyright: ignore[reportCallIssue]
 
     async with sqlalchemy_async_engine(
         host=database_settings.host,
@@ -38,6 +40,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
             "file_settings": file_settings,
             "file_driver_settings": file_driver_settings,
             "user_settings": user_settings,
+            "user_auth_settings": user_auth_settings,
         }
 
 

@@ -15,8 +15,8 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import BaseTable
-from yama.file.driver.utils import AsyncReadable
 from yama.file.config import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from yama.file.driver.utils import AsyncReadable
 
 
 def _check_file_name(name: str) -> str:

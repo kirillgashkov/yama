@@ -6,6 +6,7 @@ from sqlalchemy import exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
+from yama.user.auth.config import Config
 from yama.user.auth.models import (
     PasswordGrantIn,
     RefreshTokenGrantIn,
@@ -13,7 +14,6 @@ from yama.user.auth.models import (
     TokenOut,
 )
 from yama.user.models import UserDb
-from yama.user.config import Config
 from yama.user.utils import is_password_valid
 
 
@@ -88,7 +88,7 @@ def make_access_token_and_expires_in(
     settings: Config,
 ) -> tuple[str, int]:
     now = datetime.now(UTC)
-    expire_seconds = settings.auth.access_token.expire_seconds
+    expire_seconds = settings.access_token.expire_seconds
 
     claims = {
         "sub": str(user_id),
@@ -98,8 +98,8 @@ def make_access_token_and_expires_in(
 
     token = jwt.encode(
         claims,
-        key=settings.auth.access_token.key,
-        algorithm=settings.auth.access_token.algorithm,
+        key=settings.access_token.key,
+        algorithm=settings.access_token.algorithm,
     )
     return token, expire_seconds
 
@@ -111,7 +111,7 @@ def make_refresh_token(
     settings: Config,
 ) -> str:
     now = datetime.now(UTC)
-    expire_seconds = settings.auth.refresh_token.expire_seconds
+    expire_seconds = settings.refresh_token.expire_seconds
 
     claims = {
         "sub": str(user_id),
@@ -122,8 +122,8 @@ def make_refresh_token(
 
     return jwt.encode(
         claims,
-        key=settings.auth.refresh_token.key,
-        algorithm=settings.auth.refresh_token.algorithm,
+        key=settings.refresh_token.key,
+        algorithm=settings.refresh_token.algorithm,
     )
 
 
@@ -131,8 +131,8 @@ def access_token_to_user_id(token: str, /, *, settings: Config) -> UUID:
     try:
         claims = jwt.decode(
             token,
-            key=settings.auth.access_token.key,
-            algorithms=[settings.auth.access_token.algorithm],
+            key=settings.access_token.key,
+            algorithms=[settings.access_token.algorithm],
         )
     except JWTError:
         raise InvalidTokenError()
@@ -146,8 +146,8 @@ async def refresh_token_to_id_and_user_id_and_expires_at(
     try:
         claims = jwt.decode(
             token,
-            key=settings.auth.refresh_token.key,
-            algorithms=[settings.auth.refresh_token.algorithm],
+            key=settings.refresh_token.key,
+            algorithms=[settings.refresh_token.algorithm],
         )
     except JWTError:
         raise InvalidTokenError()
