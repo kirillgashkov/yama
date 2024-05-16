@@ -76,11 +76,14 @@ def handle_database_down() -> None:
 
 @app.command(name="function")
 def handle_function(*, command: list[str]) -> None:
-    function_in = function.FunctionIn.model_validate_json(sys.stdin.read())
+    async def f() -> None:
+        function_in = function.FunctionIn.model_validate_json(sys.stdin.read())
 
-    function_out = function.execute(command, function_in=function_in)
+        function_out = await function.execute(command, function_in=function_in)
 
-    sys.stdout.write(function_out.model_dump_json())
+        sys.stdout.write(function_out.model_dump_json())
+
+    asyncio.run(f())
 
 
 if __name__ == "__main__":
