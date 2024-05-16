@@ -4,8 +4,7 @@ import sys
 import uvicorn
 from typer import Typer
 
-from yama import database, function
-from yama.api.config import Config as APISettings
+from yama import api, database, function
 from yama.database import provision
 from yama.database.provision.utils import setup_database, teardown_database
 from yama.database.utils import sqlalchemy_async_connection
@@ -17,21 +16,18 @@ app.add_typer(database_app, name="database")
 
 @app.command(name="api")
 def handle_api() -> None:
-    settings = APISettings()
+    settings = api.Config()
 
     uvicorn.run(
-        "yama.api.routes:app",
-        host=settings.host,
-        port=settings.port,
-        reload=settings.reload,
+        "yama.api:app", host=settings.host, port=settings.port, reload=settings.reload
     )
 
 
 @database_app.command(name="up")
 def handle_database_up() -> None:
     async def f() -> None:
-        database_settings = database.Config()
-        database_provision_settings = provision.Config()
+        database_settings = database.Config()  # pyright: ignore[reportCallIssue]
+        database_provision_settings = provision.Config()  # pyright: ignore[reportCallIssue]
 
         async with sqlalchemy_async_connection(
             host=database_settings.host,
@@ -54,8 +50,8 @@ def handle_database_up() -> None:
 @database_app.command(name="down")
 def handle_database_down() -> None:
     async def f() -> None:
-        database_settings = database.Config()
-        database_provision_settings = provision.Config()
+        database_settings = database.Config()  # pyright: ignore[reportCallIssue]
+        database_provision_settings = provision.Config()  # pyright: ignore[reportCallIssue]
 
         async with sqlalchemy_async_connection(
             host=database_settings.host,
