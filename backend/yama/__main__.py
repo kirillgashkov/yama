@@ -5,7 +5,7 @@ import uvicorn
 from typer import Typer
 
 from yama import function
-from yama.api.settings import Settings as APISettings
+from yama.api.config import Config as APISettings
 from yama.database.provision.settings import Settings as DatabaseProvisionSettings
 from yama.database.provision.utils import setup_database, teardown_database
 from yama.database.settings import Settings as DatabaseSettings
