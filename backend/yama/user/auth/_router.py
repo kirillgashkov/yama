@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends, Form
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama.database.dependencies import get_connection
-from yama.user.auth.config import Config
 from yama.user.auth.dependencies import get_grant_in, get_settings
 from yama.user.auth.models import (
     INVALID_TOKEN_EXCEPTION,
@@ -22,6 +21,8 @@ from yama.user.auth.utils import (
     refresh_token_grant_in_to_token_out,
     refresh_token_to_id_and_user_id_and_expires_at,
 )
+
+from ._config import Config
 
 router = APIRouter()
 

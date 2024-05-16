@@ -5,23 +5,19 @@ from typing import Any, Literal
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from yama import file, user
-from yama.database.config import Config as DatabaseSettings
+from yama import database, file, user
 from yama.database.utils import sqlalchemy_async_engine
-from yama.file.config import Config as FileSettings
-from yama.file.driver.config import Config as FileDriverSettings
+from yama.file import driver as file_driver
 from yama.user import auth
-from yama.user.auth.config import Config as UserAuthSettings
-from yama.user.config import Config as UserSettings
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
-    database_settings = DatabaseSettings()  # pyright: ignore[reportCallIssue]
-    file_settings = FileSettings()  # pyright: ignore[reportCallIssue]
-    file_driver_settings = FileDriverSettings()  # pyright: ignore[reportCallIssue]
-    user_settings = UserSettings()  # pyright: ignore[reportCallIssue]
-    user_auth_settings = UserAuthSettings()  # pyright: ignore[reportCallIssue]
+    database_settings = database.Config()  # pyright: ignore[reportCallIssue]
+    file_settings = file.Config()  # pyright: ignore[reportCallIssue]
+    file_driver_settings = file_driver.Config()  # pyright: ignore[reportCallIssue]
+    user_settings = user.Config()  # pyright: ignore[reportCallIssue]
+    user_auth_settings = auth.Config()  # pyright: ignore[reportCallIssue]
 
     async with sqlalchemy_async_engine(
         host=database_settings.host,

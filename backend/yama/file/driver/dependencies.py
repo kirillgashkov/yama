@@ -2,8 +2,9 @@ from typing import Annotated, assert_never
 
 from fastapi import Depends, Request
 
-from yama.file.driver.config import Config
 from yama.file.driver.utils import Driver, FileSystemDriver
+
+from ._config import Config
 
 
 # get_settings is a lifetime dependency that provides Settings created by the lifespan.

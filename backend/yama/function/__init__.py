@@ -1,4 +1,4 @@
-from ._function import Config as Config
+from ._config import Config as Config
 from ._function import FileInout as FileInout
 from ._function import FunctionIn as FunctionIn
 from ._function import FunctionOut as FunctionOut

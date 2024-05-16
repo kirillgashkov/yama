@@ -5,9 +5,10 @@ from fastapi import Depends, Form, HTTPException, Request
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 
-from yama.user.auth.config import Config
 from yama.user.auth.models import INVALID_TOKEN_EXCEPTION, GrantIn, GrantInAdapter
 from yama.user.auth.utils import InvalidTokenError, access_token_to_user_id
+
+from ._config import Config
 
 
 # get_settings is a lifetime dependency that provides Settings created by the lifespan.

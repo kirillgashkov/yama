@@ -6,7 +6,6 @@ from sqlalchemy import exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.user.auth.config import Config
 from yama.user.auth.models import (
     PasswordGrantIn,
     RefreshTokenGrantIn,
@@ -15,6 +14,8 @@ from yama.user.auth.models import (
 )
 from yama.user.models import UserDb
 from yama.user.utils import is_password_valid
+
+from ._config import Config
 
 
 async def password_grant_in_to_token_out(

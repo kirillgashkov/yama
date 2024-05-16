@@ -7,7 +7,8 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama.database.models import BaseTable
-from yama.user.config import MAX_HANDLE_LENGTH, MIN_HANDLE_LENGTH
+
+from ._config import MAX_HANDLE_LENGTH, MIN_HANDLE_LENGTH
 
 
 def _check_handle(handle: str, /) -> str:
