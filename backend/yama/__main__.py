@@ -14,8 +14,8 @@ database_app = Typer()
 app.add_typer(database_app, name="database")
 
 
-@app.command()
-def api() -> None:
+@app.command(name="api")
+def handle_api() -> None:
     settings = APISettings()
 
     uvicorn.run(
@@ -26,8 +26,8 @@ def api() -> None:
     )
 
 
-@database_app.command()
-def up() -> None:
+@database_app.command(name="up")
+def handle_database_up() -> None:
     async def f() -> None:
         database_settings = DatabaseSettings()
         database_provision_settings = DatabaseProvisionSettings()
@@ -50,8 +50,8 @@ def up() -> None:
     asyncio.run(f())
 
 
-@database_app.command()
-def down() -> None:
+@database_app.command(name="down")
+def handle_database_down() -> None:
     async def f() -> None:
         database_settings = DatabaseSettings()
         database_provision_settings = DatabaseProvisionSettings()
