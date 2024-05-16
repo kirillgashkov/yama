@@ -45,7 +45,7 @@ from yama.file.config import Config
 from yama.file.utils import FilesFileError
 from yama.user.auth.dependencies import get_current_user_id, get_current_user_id_or_none
 from yama.user.dependencies import get_settings as get_user_settings
-from yama.user.settings import Settings as UserSettings
+from yama.user.config import Config as UserSettings
 
 router = APIRouter()
 

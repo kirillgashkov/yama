@@ -22,7 +22,7 @@ from yama.user.auth.utils import (
     refresh_token_to_id_and_user_id_and_expires_at,
 )
 from yama.user.dependencies import get_settings
-from yama.user.settings import Settings
+from yama.user.config import Config
 
 router = APIRouter()
 
@@ -31,7 +31,7 @@ router = APIRouter()
 async def authorize(
     *,
     grant_in: Annotated[GrantIn, Depends(get_grant_in)],
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> TokenOut:
     match grant_in:
@@ -57,7 +57,7 @@ async def authorize(
 async def unauthorize(
     *,
     refresh_token: Annotated[str, Form()],
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_settings)],
     connection: Annotated[AsyncConnection, Depends(get_connection)],
 ) -> None:
     try:

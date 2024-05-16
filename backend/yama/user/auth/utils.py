@@ -13,7 +13,7 @@ from yama.user.auth.models import (
     TokenOut,
 )
 from yama.user.models import UserDb
-from yama.user.settings import Settings
+from yama.user.config import Config
 from yama.user.utils import is_password_valid
 
 
@@ -21,7 +21,7 @@ async def password_grant_in_to_token_out(
     password_grant_in: PasswordGrantIn,
     /,
     *,
-    settings: Settings,
+    settings: Config,
     connection: AsyncConnection,
 ) -> TokenOut:
     query = select(UserDb).where(
@@ -53,7 +53,7 @@ async def refresh_token_grant_in_to_token_out(
     refresh_token_grant_in: RefreshTokenGrantIn,
     /,
     *,
-    settings: Settings,
+    settings: Config,
     connection: AsyncConnection,
 ) -> TokenOut:
     (
@@ -85,7 +85,7 @@ def make_access_token_and_expires_in(
     user_id: UUID,
     /,
     *,
-    settings: Settings,
+    settings: Config,
 ) -> tuple[str, int]:
     now = datetime.now(UTC)
     expire_seconds = settings.auth.access_token.expire_seconds
@@ -108,7 +108,7 @@ def make_refresh_token(
     user_id: UUID,
     /,
     *,
-    settings: Settings,
+    settings: Config,
 ) -> str:
     now = datetime.now(UTC)
     expire_seconds = settings.auth.refresh_token.expire_seconds
@@ -127,7 +127,7 @@ def make_refresh_token(
     )
 
 
-def access_token_to_user_id(token: str, /, *, settings: Settings) -> UUID:
+def access_token_to_user_id(token: str, /, *, settings: Config) -> UUID:
     try:
         claims = jwt.decode(
             token,
@@ -141,7 +141,7 @@ def access_token_to_user_id(token: str, /, *, settings: Settings) -> UUID:
 
 
 async def refresh_token_to_id_and_user_id_and_expires_at(
-    token: str, /, *, settings: Settings, connection: AsyncConnection
+    token: str, /, *, settings: Config, connection: AsyncConnection
 ) -> tuple[UUID, UUID, datetime]:
     try:
         claims = jwt.decode(

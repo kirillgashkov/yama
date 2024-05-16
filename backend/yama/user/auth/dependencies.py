@@ -8,7 +8,7 @@ from pydantic import ValidationError
 from yama.user.auth.models import INVALID_TOKEN_EXCEPTION, GrantIn, GrantInAdapter
 from yama.user.auth.utils import InvalidTokenError, access_token_to_user_id
 from yama.user.dependencies import get_settings
-from yama.user.settings import Settings
+from yama.user.config import Config
 
 
 def get_grant_in(
@@ -40,7 +40,7 @@ _get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=Fa
 def get_current_user_id(
     *,
     token: Annotated[str, Depends(_get_oauth2_token)],
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_settings)],
 ) -> UUID:
     try:
         return access_token_to_user_id(token, settings=settings)
@@ -51,7 +51,7 @@ def get_current_user_id(
 def get_current_user_id_or_none(
     *,
     token: Annotated[str | None, Depends(_get_oauth2_token_or_none)],
-    settings: Annotated[Settings, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_settings)],
 ) -> UUID | None:
     if token is None:
         return None

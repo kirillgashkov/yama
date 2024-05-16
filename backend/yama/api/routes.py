@@ -14,7 +14,7 @@ from yama.file.config import Config as FileSettings
 from yama.file.utils import FilesFileError
 from yama.user.auth.routes import router as user_auth_router
 from yama.user.routes import router as user_router
-from yama.user.settings import Settings as UserSettings
+from yama.user.config import Config as UserSettings
 
 
 @asynccontextmanager

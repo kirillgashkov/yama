@@ -19,7 +19,7 @@ class AuthSettings(BaseSettings):
     refresh_token: TokenSettings
 
 
-class Settings(BaseSettings):
+class Config(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="yama__user__", env_nested_delimiter="__"
     )
