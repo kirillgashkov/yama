@@ -1,17 +1,18 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import Any, Literal
+from typing import Any
 
 from fastapi import FastAPI
-from pydantic import BaseModel
 
 from yama import database, file, user
 from yama.file import driver as file_driver
 from yama.user import auth
 
+from ._router import router
+
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
+async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
     database_settings = database.Config()  # pyright: ignore[reportCallIssue]
     file_settings = file.Config()  # pyright: ignore[reportCallIssue]
     file_driver_settings = file_driver.Config()  # pyright: ignore[reportCallIssue]
@@ -36,20 +37,12 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
         }
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=_lifespan)
 
+app.include_router(router)
 app.include_router(auth.router)
 app.include_router(file.router)
 app.include_router(user.router)
 
 for exception, handler in file.exception_handlers:
     app.add_exception_handler(exception, handler)  # type: ignore[arg-type]  # https://github.com/encode/starlette/discussions/2391, https://github.com/encode/starlette/pull/2403
-
-
-class Health(BaseModel):
-    status: Literal["ok"]
-
-
-@app.get("/health")
-async def get_health() -> Health:
-    return Health(status="ok")
