@@ -6,7 +6,7 @@ from typer import Typer
 
 from yama import api, database, function
 from yama.database import provision
-from yama.database.provision.utils import setup_database, teardown_database
+from yama.database.provision import setup_database, teardown_database
 from yama.database.utils import sqlalchemy_async_connection
 
 app = Typer()
@@ -39,9 +39,9 @@ def handle_database_up() -> None:
             autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
 
             await setup_database(
-                autocommit_conn,
-                database=database_settings.database,
+                database_settings.database,
                 migrate_executable=database_provision_settings.migrate_executable,
+                connection=autocommit_conn,
             )
 
     asyncio.run(f())
@@ -63,7 +63,7 @@ def handle_database_down() -> None:
             autocommit_conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
 
             await teardown_database(
-                autocommit_conn, database=database_settings.database
+                database_settings.database, connection=autocommit_conn
             )
 
     asyncio.run(f())
