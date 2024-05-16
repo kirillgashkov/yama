@@ -9,7 +9,6 @@ from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 
-from yama.file.driver.utils import Driver
 from yama.file.models import (
     Directory,
     DirectoryContent,
@@ -37,6 +36,7 @@ from ._exception import (
     FilesNotADirectoryError,
     FilesPermissionError,
 )
+from .driver._driver import Driver
 
 
 async def read_file(

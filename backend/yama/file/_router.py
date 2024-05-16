@@ -21,8 +21,6 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama import database, user
 from yama.file import utils
 from yama.file.dependencies import get_settings
-from yama.file.driver.dependencies import get_driver
-from yama.file.driver.utils import Driver
 from yama.file.models import (
     Directory,
     DirectoryContentFileOut,
@@ -44,6 +42,8 @@ from yama.user.auth.dependencies import get_current_user_id, get_current_user_id
 from yama.user.dependencies import get_settings as get_user_settings
 
 from ._config import Config
+from .driver._dependency import get_driver
+from .driver._driver import Driver
 
 router = APIRouter()
 

@@ -15,9 +15,8 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama import database
-from yama.file.driver.utils import AsyncReadable
 
-from ._config import MAX_FILE_NAME_LENGTH, MAX_FILE_PATH_LENGTH
+from .driver._driver import AsyncReadable
 
 
 def _check_file_name(name: str) -> str:
@@ -195,3 +194,7 @@ class FileShareDb(database.BaseTable):
     file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
+
+
+MAX_FILE_NAME_LENGTH = 255
+MAX_FILE_PATH_LENGTH = 4095

@@ -1,38 +1,17 @@
-from abc import ABC, abstractmethod
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Protocol
+from typing import AsyncIterator
 from uuid import UUID
 
-import aiofiles
 import aiofiles.os
 from typing_extensions import override
 
-
-# Satisfied by fastapi.UploadFile and aiofiles's files
-class AsyncReadable(Protocol):
-    async def read(self, size: int = ..., /) -> bytes: ...
-
-
-class Driver(ABC):
-    @abstractmethod
-    @asynccontextmanager
-    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]: ...
-
-    @abstractmethod
-    async def write_regular_content(
-        self,
-        content_stream: AsyncReadable,
-        id_: UUID,
-        /,
-        *,
-        chunk_size: int,
-        max_file_size: int,
-    ) -> int: ...
-
-    @abstractmethod
-    async def remove_regular_content(self, id_: UUID, /) -> None: ...
+from yama.file.driver._driver import (
+    AsyncReadable,
+    Driver,
+    DriverFileNotFoundError,
+    DriverFileTooLargeError,
+)
 
 
 class FileSystemDriver(Driver):
@@ -49,7 +28,7 @@ class FileSystemDriver(Driver):
             async with aiofiles.open(path, "rb") as f:
                 yield f
         except FileNotFoundError as e:
-            raise DriverFileNotFound(id_) from e
+            raise DriverFileNotFoundError(id_) from e
 
     @override
     async def write_regular_content(
@@ -92,7 +71,7 @@ class FileSystemDriver(Driver):
         try:
             await aiofiles.os.remove(path)
         except FileNotFoundError as e:
-            raise DriverFileNotFound(id_) from e
+            raise DriverFileNotFoundError(id_) from e
 
 
 def _id_to_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
@@ -101,16 +80,3 @@ def _id_to_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
 
 def _id_to_incomplete_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
     return file_system_dir / (id_.hex + ".incomplete")
-
-
-class DriverFileTooLargeError(Exception): ...
-
-
-class DriverFileNotFound(Exception):
-    def __init__(self, id_: UUID, /) -> None:
-        super().__init__()
-        self.id_ = id_
-
-    @override
-    def __str__(self) -> str:
-        return f"{self.id_}"

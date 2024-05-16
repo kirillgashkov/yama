@@ -4,11 +4,8 @@ from uuid import UUID
 import aiofiles
 import pytest
 
-from yama.file.driver.utils import (
-    DriverFileNotFound,
-    DriverFileTooLargeError,
-    FileSystemDriver,
-)
+from yama.file.driver._driver import DriverFileNotFoundError, DriverFileTooLargeError
+from yama.file.driver._file_system import FileSystemDriver
 
 
 async def test_file_system_driver_read_regular_content(*, tmp_path: Path) -> None:
@@ -16,7 +13,7 @@ async def test_file_system_driver_read_regular_content(*, tmp_path: Path) -> Non
     file_system_dir = tmp_path / "file-system"
     driver = FileSystemDriver(file_system_dir=file_system_dir)
 
-    # Case about reading an existing file
+    # Case about reading an existing file.
 
     file_system_dir.mkdir()
     async with aiofiles.open(
@@ -31,9 +28,9 @@ async def test_file_system_driver_read_regular_content(*, tmp_path: Path) -> Non
 
     assert content == b"# Foo\n\nBar.\n"
 
-    # Case about reading a missing file
+    # Case about reading a missing file.
 
-    with pytest.raises(DriverFileNotFound):
+    with pytest.raises(DriverFileNotFoundError):
         async with driver.read_regular_content(
             UUID("00bd9c32-1c96-485f-af69-b48536bc3c4a")
         ) as _:
@@ -45,7 +42,7 @@ async def test_file_system_driver_write_regular_content(*, tmp_path: Path) -> No
     file_system_dir = tmp_path / "file-system"
     driver = FileSystemDriver(file_system_dir=file_system_dir)
 
-    # Case about writing a file
+    # Case about writing a file.
 
     content_file = tmp_path / "some-file.md"
     async with aiofiles.open(content_file, "wb") as f:
@@ -65,7 +62,7 @@ async def test_file_system_driver_write_regular_content(*, tmp_path: Path) -> No
         content = await f.read()
     assert content == b"# Foo\n\nBar.\n"
 
-    # Case about writing a file that is too large
+    # Case about writing a file that is too large.
 
     too_large_content_file = tmp_path / "some-too-large-file.md"
     async with aiofiles.open(too_large_content_file, "wb") as f:
@@ -86,7 +83,7 @@ async def test_file_system_driver_remove_regular_content(*, tmp_path: Path) -> N
     file_system_dir = tmp_path / "file-system"
     driver = FileSystemDriver(file_system_dir=file_system_dir)
 
-    # Case about removing an existing file
+    # Case about removing an existing file.
 
     file_system_dir.mkdir()
     async with aiofiles.open(
@@ -98,9 +95,9 @@ async def test_file_system_driver_remove_regular_content(*, tmp_path: Path) -> N
 
     assert not (file_system_dir / "42bd9c321c96485faf69b48536bc3c4a").exists()
 
-    # Case about removing a missing file
+    # Case about removing a missing file.
 
-    with pytest.raises(DriverFileNotFound):
+    with pytest.raises(DriverFileNotFoundError):
         await driver.remove_regular_content(
             UUID("00bd9c32-1c96-485f-af69-b48536bc3c4a")
         )

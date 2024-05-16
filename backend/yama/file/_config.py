@@ -2,9 +2,6 @@ from uuid import UUID
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-MAX_FILE_NAME_LENGTH = 255
-MAX_FILE_PATH_LENGTH = 4095
-
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
