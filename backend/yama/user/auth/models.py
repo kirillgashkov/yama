@@ -8,7 +8,7 @@ from sqlalchemy import DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from yama.database.models import TableBase
+from yama.database.models import BaseTable
 
 INVALID_USERNAME_OR_PASSWORD_EXCEPTION = HTTPException(
     status_code=HTTP_401_UNAUTHORIZED, detail="Invalid username or password."
@@ -47,7 +47,7 @@ class TokenOut(BaseModel):
     scope: Literal[None] = None
 
 
-class RevokedRefreshTokenDb(TableBase):
+class RevokedRefreshTokenDb(BaseTable):
     __tablename__ = "revoked_refresh_tokens"
 
     id: Mapped[UUID] = mapped_column(primary_key=True)
