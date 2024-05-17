@@ -9,6 +9,15 @@ from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 
+from yama.file import (
+    Config,
+    FileFileExistsError,
+    FileFileNotFoundError,
+    FileIsADirectoryError,
+    FileNotADirectoryError,
+    FilePermissionError,
+)
+from yama.file.driver import Driver
 from yama.file.models import (
     Directory,
     DirectoryContent,
@@ -27,16 +36,6 @@ from yama.file.models import (
     RegularWrite,
 )
 from yama.user.models import UserAncestorUserDescendantDb
-
-from ._config import Config
-from ._exception import (
-    FilesFileExistsError,
-    FilesFileNotFoundError,
-    FilesIsADirectoryError,
-    FilesNotADirectoryError,
-    FilesPermissionError,
-)
-from .driver._driver import Driver
 
 
 async def read_file(
@@ -106,14 +105,14 @@ async def write_file(
         file = await _get_file(id_, max_depth=0, connection=connection)
 
         if not exist_ok:
-            raise FilesFileExistsError(id_)
+            raise FileFileExistsError(id_)
 
         if file.type != file_write.type:
             match file.type:
                 case FileType.REGULAR:
-                    raise FilesNotADirectoryError(file.id)
+                    raise FileNotADirectoryError(file.id)
                 case FileType.DIRECTORY:
-                    raise FilesIsADirectoryError(file.id)
+                    raise FileIsADirectoryError(file.id)
                 case _:
                     assert_never(file.type)
     else:
@@ -318,7 +317,7 @@ async def _add_file(
         .one_or_none()
     )
     if file_db_with_parent_id_and_name_row is None:
-        raise FilesFileNotFoundError(parent_id)
+        raise FileFileNotFoundError(parent_id)
 
     file_db_with_parent_id_and_name = (
         FileDb(
@@ -381,7 +380,7 @@ async def _get_file(
         (await connection.execute(query)).mappings().all()
     )
     if not descendant_files_db_with_parent_id_and_name_rows:
-        raise FilesFileNotFoundError(id_)
+        raise FileFileNotFoundError(id_)
 
     descendant_files_db_with_parent_id_and_name = [
         (
@@ -466,7 +465,7 @@ async def _move_file(
         .one_or_none()
     )
     if file_db_with_parent_id_and_name_row is None:
-        raise FilesFileNotFoundError(id_)
+        raise FileFileNotFoundError(id_)
 
     file_db_with_parent_id_and_name = (
         FileDb(
@@ -552,7 +551,7 @@ async def _remove_file(
         .all()
     )  # fmt: skip
     if not descendant_files_db_with_parent_id_and_name_rows:
-        raise FilesFileNotFoundError(id_)
+        raise FileFileNotFoundError(id_)
 
     descendant_files_db_with_parent_id_and_name = [
         (
@@ -742,7 +741,7 @@ async def _check_share_for_file_and_user(
         (await connection.execute(share_id_query)).scalars().one_or_none()
     )  # TODO: Log
     if share_id is None:
-        raise FilesPermissionError(file_id)
+        raise FilePermissionError(file_id)
 
 
 async def _path_to_id(
@@ -761,7 +760,7 @@ async def _path_to_id(
         ancestor_id, descendant_path, connection=connection
     )
     if id_ is None:
-        raise FilesFileNotFoundError(ancestor_id, descendant_path)
+        raise FileFileNotFoundError(ancestor_id, descendant_path)
 
     return id_
 
@@ -776,7 +775,7 @@ async def _id_to_parent_id(id_: UUID, /, *, connection: AsyncConnection) -> UUID
     if parent_id is None:
         # Ideally descendant_path should be '..' but since FilePath
         # doesn't support it, '.' (the default) will do.
-        raise FilesFileNotFoundError(id_)
+        raise FileFileNotFoundError(id_)
 
     return id_
 
@@ -805,7 +804,7 @@ async def _path_to_parent_id(
                 parent_ancestor_id, parent_descendant_path, connection=connection
             )
             if parent_id_or_none is None:
-                raise FilesFileNotFoundError(parent_ancestor_id, parent_descendant_path)
+                raise FileFileNotFoundError(parent_ancestor_id, parent_descendant_path)
             parent_id = parent_id_or_none
 
     return parent_id
@@ -845,7 +844,7 @@ async def _path_to_parent_id_and_id_or_none(
 
             parent_id_or_none = descendant_path_to_id.get(parent_descendant_path)
             if parent_id_or_none is None:
-                raise FilesFileNotFoundError(ancestor_id, parent_descendant_path)
+                raise FileFileNotFoundError(ancestor_id, parent_descendant_path)
             parent_id = parent_id_or_none
             id_ = descendant_path_to_id.get(descendant_path)
 
@@ -867,7 +866,7 @@ async def _path_to_parent_id_and_id(
         connection=connection,
     )
     if id_ is None:
-        raise FilesFileNotFoundError(parent_id, PurePosixPath(path.name))
+        raise FileFileNotFoundError(parent_id, PurePosixPath(path.name))
 
     return parent_id, id_
 

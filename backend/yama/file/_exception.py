@@ -8,7 +8,7 @@ from typing_extensions import override
 from yama.file.models import FilePath
 
 
-class FilesFileError(Exception):
+class FileFileError(Exception):
     def __init__(
         self, ancestor_id: UUID, descendant_path: FilePath | None = None, /
     ) -> None:
@@ -27,43 +27,43 @@ class FilesFileError(Exception):
         return f'Error with file at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesFileExistsError(FilesFileError):
+class FileFileExistsError(FileFileError):
     @property
     @override
     def detail(self) -> str:
         return f'File already exists at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesFileNotFoundError(FilesFileError):
+class FileFileNotFoundError(FileFileError):
     @property
     @override
     def detail(self) -> str:
         return f'File not found at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesIsADirectoryError(FilesFileError):
+class FileIsADirectoryError(FileFileError):
     @property
     @override
     def detail(self) -> str:
         return f'File is a directory at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesNotADirectoryError(FilesFileError):
+class FileNotADirectoryError(FileFileError):
     @property
     @override
     def detail(self) -> str:
         return f'File is not a directory at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-class FilesPermissionError(FilesFileError):
+class FilePermissionError(FileFileError):
     @property
     @override
     def detail(self) -> str:
         return f'Permission denied for file at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
-def _handle_files_file_error(_: Request, exc: FilesFileError, /) -> JSONResponse:
+def _handle_file_file_error(_: Request, exc: FileFileError, /) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": exc.detail})
 
 
-exception_handlers = [(FilesFileError, _handle_files_file_error)]
+exception_handlers = [(FileFileError, _handle_file_file_error)]

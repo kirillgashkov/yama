@@ -15,12 +15,14 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama import database
+from yama.file.driver._driver import _AsyncReadable
 
-from .driver._driver import AsyncReadable
+_MAX_FILE_NAME_LENGTH = 255
+_MAX_FILE_PATH_LENGTH = 4095
 
 
 def _check_file_name(name: str) -> str:
-    assert len(name.encode()) <= MAX_FILE_NAME_LENGTH, "File name is too long"
+    assert len(name.encode()) <= _MAX_FILE_NAME_LENGTH, "File name is too long"
     assert name.isprintable(), "File name contains non-printable characters"
     assert "/" not in name, "File name contains '/'"
     assert name != "..", "File name '..' is not supported"
@@ -31,7 +33,7 @@ def _check_file_path(
     path_data: Any, handler: ValidatorFunctionWrapHandler
 ) -> PurePosixPath:
     assert isinstance(path_data, str), "File path is not a string"
-    assert len(path_data.encode()) <= MAX_FILE_PATH_LENGTH, "File path is too long"
+    assert len(path_data.encode()) <= _MAX_FILE_PATH_LENGTH, "File path is too long"
 
     path = handler(path_data)
     if not isinstance(path, PurePosixPath):
@@ -134,7 +136,7 @@ FileOut: TypeAlias = RegularOut | DirectoryOut
 
 @dataclass(frozen=True)
 class RegularContentWrite:
-    stream: AsyncReadable
+    stream: _AsyncReadable
 
 
 @dataclass(frozen=True)
@@ -194,7 +196,3 @@ class FileShareDb(database.BaseTable):
     file_id: Mapped[UUID] = mapped_column(ForeignKey("files.id"))
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-
-
-MAX_FILE_NAME_LENGTH = 255
-MAX_FILE_PATH_LENGTH = 4095

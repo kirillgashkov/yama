@@ -6,10 +6,13 @@ from uuid import UUID
 from typing_extensions import override
 
 
-class DriverFileTooLargeError(Exception): ...
+class DriverFileError(Exception): ...
 
 
-class DriverFileNotFoundError(Exception):
+class DriverFileTooLargeError(DriverFileError): ...
+
+
+class DriverFileNotFoundError(DriverFileError):
     def __init__(self, id_: UUID, /) -> None:
         super().__init__()
         self.id_ = id_
@@ -19,19 +22,19 @@ class DriverFileNotFoundError(Exception):
         return f"{self.id_}"
 
 
-class AsyncReadable(Protocol):
+class _AsyncReadable(Protocol):
     async def read(self, size: int = ..., /) -> bytes: ...
 
 
 class Driver(ABC):
     @abstractmethod
     @asynccontextmanager
-    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]: ...
+    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[_AsyncReadable]: ...
 
     @abstractmethod
     async def write_regular_content(
         self,
-        content_stream: AsyncReadable,
+        content_stream: _AsyncReadable,
         id_: UUID,
         /,
         *,

@@ -6,11 +6,11 @@ from uuid import UUID
 import aiofiles.os
 from typing_extensions import override
 
-from yama.file.driver._driver import (
-    AsyncReadable,
+from ._driver import (
     Driver,
     DriverFileNotFoundError,
     DriverFileTooLargeError,
+    _AsyncReadable,
 )
 
 
@@ -21,7 +21,7 @@ class FileSystemDriver(Driver):
 
     @override
     @asynccontextmanager
-    async def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]:
+    async def read_regular_content(self, id_: UUID, /) -> AsyncIterator[_AsyncReadable]:
         path = _id_to_path(id_, file_system_dir=self.file_system_dir)
 
         try:
@@ -33,7 +33,7 @@ class FileSystemDriver(Driver):
     @override
     async def write_regular_content(
         self,
-        content_stream: AsyncReadable,
+        content_stream: _AsyncReadable,
         id_: UUID,
         /,
         *,

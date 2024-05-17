@@ -20,7 +20,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database, user
 from yama.file import utils
-from yama.file.dependencies import get_settings
+from yama.file.dependencies import get_config
+from yama.file.driver import Driver, get_driver
 from yama.file.models import (
     Directory,
     DirectoryContentFileOut,
@@ -42,8 +43,6 @@ from yama.user.auth.dependencies import get_current_user_id, get_current_user_id
 from yama.user.dependencies import get_settings as get_user_settings
 
 from ._config import Config
-from .driver._dependency import get_driver
-from .driver._driver import Driver
 
 router = APIRouter()
 
@@ -60,7 +59,7 @@ async def read_file(
     content: Annotated[bool, Query()] = False,
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
-    settings: Annotated[Config, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_config)],
     user_settings: Annotated[user.Config, Depends(get_user_settings)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
@@ -120,7 +119,7 @@ async def create_or_update_file(
     type: Annotated[FileType, Form()],
     content: Annotated[UploadFile | None, FastAPIFile()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
-    settings: Annotated[Config, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_config)],
     user_settings: Annotated[user.Config, Depends(get_user_settings)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
@@ -166,7 +165,7 @@ async def delete_file(
     path: FilePath,
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID, Depends(get_current_user_id)],
-    settings: Annotated[Config, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_config)],
     user_settings: Annotated[user.Config, Depends(get_user_settings)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],

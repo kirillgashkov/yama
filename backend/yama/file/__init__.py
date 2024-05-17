@@ -1,3 +1,9 @@
 from ._config import Config as Config
+from ._exception import FileFileError as FileFileError
+from ._exception import FileFileExistsError as FileFileExistsError
+from ._exception import FileFileNotFoundError as FileFileNotFoundError
+from ._exception import FileIsADirectoryError as FileIsADirectoryError
+from ._exception import FileNotADirectoryError as FileNotADirectoryError
+from ._exception import FilePermissionError as FilePermissionError
 from ._exception import exception_handlers as exception_handlers
 from ._router import router as router
