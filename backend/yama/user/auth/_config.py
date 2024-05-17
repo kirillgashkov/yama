@@ -9,7 +9,7 @@ class TokenConfig(BaseSettings):
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="yama__user__auth", env_nested_delimiter="__"
+        env_prefix="yama__user__auth__", env_nested_delimiter="__"
     )
 
     access_token: TokenConfig
