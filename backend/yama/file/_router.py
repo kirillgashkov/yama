@@ -39,9 +39,9 @@ from yama.file.models import (
     RegularOut,
     RegularWrite,
 )
-from yama.user.auth.dependencies import get_current_user_id, get_current_user_id_or_none
 from yama.user.dependencies import get_settings as get_user_settings
 
+from ..user.auth._dependency import get_current_user_id, get_current_user_id_or_none
 from ._config import Config
 
 router = APIRouter()

@@ -1,39 +1,90 @@
-from typing import Annotated, assert_never
+from typing import Annotated, Literal, TypeAlias, assert_never
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends, Form, HTTPException
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database
-from yama.user.auth.dependencies import get_grant_in, get_settings
-from yama.user.auth.models import (
-    INVALID_TOKEN_EXCEPTION,
-    INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
-    GrantIn,
-    PasswordGrantIn,
-    RefreshTokenGrantIn,
-    TokenOut,
-)
-from yama.user.auth.utils import (
-    InvalidTokenError,
-    InvalidUsernameOrPasswordError,
-    ensure_refresh_token_is_revoked_by_id,
-    password_grant_in_to_token_out,
-    refresh_token_grant_in_to_token_out,
-    refresh_token_to_id_and_user_id_and_expires_at,
-)
 
 from ._config import Config
+from ._dependency import get_config
+from ._exception import (
+    INVALID_TOKEN_EXCEPTION,
+    INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
+    InvalidTokenError,
+    InvalidUsernameOrPasswordError,
+)
+from ._password import password_grant_in_to_token_out
+from ._refresh_token import (
+    make_token_out_from_refresh_token_grant_in,
+    parse_refresh_token,
+    revoke_refresh_token,
+)
 
 router = APIRouter()
 
 
-@router.post("/auth")
-async def authorize(
+class PasswordGrantIn(BaseModel):
+    """https://datatracker.ietf.org/doc/html/rfc6749#section-4.3."""
+
+    grant_type: Literal["password"]
+    username: str
+    password: str
+    scope: Literal[None] = None
+
+
+class RefreshTokenGrantIn(BaseModel):
+    """https://datatracker.ietf.org/doc/html/rfc6749#section-6."""
+
+    grant_type: Literal["refresh_token"]
+    refresh_token: str
+    scope: Literal[None] = None
+
+
+_GrantIn: TypeAlias = PasswordGrantIn | RefreshTokenGrantIn
+_GrantInAdapter: TypeAdapter[_GrantIn] = TypeAdapter(_GrantIn)
+
+
+class _TokenOut(BaseModel):
+    """https://datatracker.ietf.org/doc/html/rfc6749#section-5.1."""
+
+    access_token: str
+    token_type: Literal["bearer"]
+    expires_in: int
+    refresh_token: str | None = None
+    scope: Literal[None] = None
+
+
+def _get_grant_in(
     *,
-    grant_in: Annotated[GrantIn, Depends(get_grant_in)],
-    settings: Annotated[Config, Depends(get_settings)],
+    grant_type: Annotated[Literal["password"] | Literal["refresh_token"], Form()],
+    username: Annotated[str | None, Form()] = None,
+    password: Annotated[str | None, Form()] = None,
+    refresh_token: Annotated[str | None, Form()] = None,
+    scope: Annotated[Literal[None], Form()] = None,
+) -> _GrantIn:
+    """A dependency."""
+    try:
+        return _GrantInAdapter.validate_python(
+            {
+                "grant_type": grant_type,
+                "username": username,
+                "password": password,
+                "refresh_token": refresh_token,
+                "scope": scope,
+            }
+        )
+    except ValidationError:
+        raise HTTPException(400, "Invalid grant.")
+
+
+@router.post("/auth")
+async def _authorize(
+    *,
+    grant_in: Annotated[_GrantIn, Depends(_get_grant_in)],
+    settings: Annotated[Config, Depends(get_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
-) -> TokenOut:
+) -> _TokenOut:
     match grant_in:
         case PasswordGrantIn():
             try:
@@ -44,7 +95,7 @@ async def authorize(
                 raise INVALID_USERNAME_OR_PASSWORD_EXCEPTION
         case RefreshTokenGrantIn():
             try:
-                return await refresh_token_grant_in_to_token_out(
+                return await make_token_out_from_refresh_token_grant_in(
                     grant_in, settings=settings, connection=connection
                 )
             except InvalidTokenError:
@@ -54,19 +105,17 @@ async def authorize(
 
 
 @router.post("/unauth")
-async def unauthorize(
+async def _unauthorize(
     *,
     refresh_token: Annotated[str, Form()],
-    settings: Annotated[Config, Depends(get_settings)],
+    settings: Annotated[Config, Depends(get_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> None:
     try:
-        id_, _, expires_at = await refresh_token_to_id_and_user_id_and_expires_at(
+        t = await parse_refresh_token(
             refresh_token, settings=settings, connection=connection
         )
     except InvalidTokenError:
         raise INVALID_TOKEN_EXCEPTION
 
-    await ensure_refresh_token_is_revoked_by_id(
-        id_, expires_at=expires_at, connection=connection
-    )
+    await revoke_refresh_token(t, connection=connection)
