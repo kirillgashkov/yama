@@ -7,7 +7,13 @@ from fastapi import Depends
 from starlette.requests import Request
 from typing_extensions import override
 
-from yama.file.driver import Config, FileSystemDriver
+from ._config import Config
+from ._service_file_system import FileSystemDriver
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.file_driver_settings  # type: ignore[no-any-return]
 
 
 class DriverFileError(Exception): ...
@@ -26,19 +32,19 @@ class DriverFileNotFoundError(DriverFileError):
         return f"{self.id_}"
 
 
-class _AsyncReadable(Protocol):
+class AsyncReadable(Protocol):
     async def read(self, size: int = ..., /) -> bytes: ...
 
 
 class Driver(ABC):
     @abstractmethod
     @asynccontextmanager
-    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[_AsyncReadable]: ...
+    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]: ...
 
     @abstractmethod
     async def write_regular_content(
         self,
-        content_stream: _AsyncReadable,
+        content_stream: AsyncReadable,
         id_: UUID,
         /,
         *,
@@ -48,11 +54,6 @@ class Driver(ABC):
 
     @abstractmethod
     async def remove_regular_content(self, id_: UUID, /) -> None: ...
-
-
-def get_config(*, request: Request) -> Config:
-    """A lifetime dependency."""
-    return request.state.file_driver_settings  # type: ignore[no-any-return]
 
 
 def get_driver(*, settings: Annotated[Config, Depends(get_config)]) -> Driver:

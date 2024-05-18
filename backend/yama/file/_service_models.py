@@ -20,7 +20,7 @@ _MAX_FILE_NAME_LENGTH = 255
 _MAX_FILE_PATH_LENGTH = 4095
 
 
-class _AsyncReadable(Protocol):
+class AsyncReadable(Protocol):
     async def read(self, size: int = ..., /) -> bytes: ...
 
 
@@ -139,7 +139,7 @@ FileOut: TypeAlias = RegularOut | DirectoryOut
 
 @dataclass(frozen=True)
 class RegularContentWrite:
-    stream: _AsyncReadable
+    stream: AsyncReadable
 
 
 @dataclass(frozen=True)
@@ -156,13 +156,13 @@ class DirectoryWrite:
 FileWrite: TypeAlias = RegularWrite | DirectoryWrite
 
 
-class FileTypeDb(database.BaseTable):
+class _FileTypeDb(database.BaseTable):
     __tablename__ = "file_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class FileDb(database.BaseTable):
+class _FileDb(database.BaseTable):
     __tablename__ = "files"
 
     id: Mapped[UUID] = mapped_column(
@@ -171,7 +171,7 @@ class FileDb(database.BaseTable):
     type: Mapped[str] = mapped_column(ForeignKey("file_types.type"))
 
 
-class FileAncestorFileDescendantDb(database.BaseTable):
+class _FileAncestorFileDescendantDb(database.BaseTable):
     __tablename__ = "file_ancestors_file_descendants"
 
     id: Mapped[UUID] = mapped_column(
@@ -183,13 +183,13 @@ class FileAncestorFileDescendantDb(database.BaseTable):
     descendant_depth: Mapped[int]
 
 
-class FileShareTypeDb(database.BaseTable):
+class _FileShareTypeDb(database.BaseTable):
     __tablename__ = "file_share_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class FileShareDb(database.BaseTable):
+class _FileShareDb(database.BaseTable):
     __tablename__ = "file_shares"
 
     id: Mapped[UUID] = mapped_column(

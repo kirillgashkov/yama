@@ -18,25 +18,31 @@ from yama.file import (
     FileNotADirectoryError,
     FilePermissionError,
 )
-from yama.file._service_models import (
+from yama.file.driver import Driver
+from yama.user import UserAncestorUserDescendantDb
+
+from ._service_models import (
     Directory,
     DirectoryContent,
     DirectoryContentFile,
     DirectoryWrite,
     File,
-    FileAncestorFileDescendantDb,
-    FileDb,
     FileName,
     FilePath,
-    FileShareDb,
     FileShareType,
     FileType,
     FileWrite,
     Regular,
     RegularWrite,
+    _FileAncestorFileDescendantDb,
+    _FileDb,
+    _FileShareDb,
 )
-from yama.file.driver import Driver
-from yama.user._service import UserAncestorUserDescendantDb
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.file_settings  # type: ignore[no-any-return]
 
 
 async def read_file(
@@ -255,9 +261,11 @@ async def _add_file(
     """
     Returns the added file and a connection with uncommitted transaction.
     """
-    insert_file_db_cte = insert(FileDb).values(type=type_.value).returning(FileDb).cte()
+    insert_file_db_cte = (
+        insert(_FileDb).values(type=type_.value).returning(_FileDb).cte()
+    )
     insert_share_db_cte = (
-        insert(FileShareDb)
+        insert(_FileShareDb)
         .from_select(
             ["type", "file_id", "user_id", "created_by"],
             select(
@@ -270,7 +278,7 @@ async def _add_file(
         .cte()
     )
     insert_ancestors_db_cte = (
-        insert(FileAncestorFileDescendantDb)
+        insert(_FileAncestorFileDescendantDb)
         .from_select(
             ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
             union(
@@ -281,19 +289,19 @@ async def _add_file(
                     literal(0).label("descendant_depth"),
                 ),
                 select(
-                    FileAncestorFileDescendantDb.ancestor_id,
+                    _FileAncestorFileDescendantDb.ancestor_id,
                     insert_file_db_cte.c.id.label("descendant_id"),
                     case(
-                        (FileAncestorFileDescendantDb.descendant_path == ".", name),
-                        else_=(FileAncestorFileDescendantDb.descendant_path + "/" + name),
+                        (_FileAncestorFileDescendantDb.descendant_path == ".", name),
+                        else_=(_FileAncestorFileDescendantDb.descendant_path + "/" + name),
                     ).label("descendant_path"),
-                    (FileAncestorFileDescendantDb.descendant_depth + 1).label("descendant_depth"),
+                    (_FileAncestorFileDescendantDb.descendant_depth + 1).label("descendant_depth"),
                 ).select_from(
-                    FileAncestorFileDescendantDb, insert_file_db_cte
-                ).where(FileAncestorFileDescendantDb.descendant_id == parent_id),
+                    _FileAncestorFileDescendantDb, insert_file_db_cte
+                ).where(_FileAncestorFileDescendantDb.descendant_id == parent_id),
             ),
         )
-        .returning(FileAncestorFileDescendantDb)
+        .returning(_FileAncestorFileDescendantDb)
         .cte()
     )  # fmt: skip
     select_file_db_with_parent_id_and_name_query = (
@@ -321,7 +329,7 @@ async def _add_file(
         raise FileFileNotFoundError(parent_id)
 
     file_db_with_parent_id_and_name = (
-        FileDb(
+        _FileDb(
             id=file_db_with_parent_id_and_name_row["id"],
             type=FileType(file_db_with_parent_id_and_name_row["type"]),
         ),
@@ -343,9 +351,9 @@ async def _add_file(
 async def _get_file(
     id_: UUID, *, max_depth: int | None, connection: AsyncConnection
 ) -> File:
-    descendant_alias = aliased(FileAncestorFileDescendantDb)
-    descendant_file_alias = aliased(FileDb)
-    descendant_parent_alias = aliased(FileAncestorFileDescendantDb)
+    descendant_alias = aliased(_FileAncestorFileDescendantDb)
+    descendant_file_alias = aliased(_FileDb)
+    descendant_parent_alias = aliased(_FileAncestorFileDescendantDb)
 
     if max_depth is not None and max_depth >= 0 and max_depth <= 1:
         query = (
@@ -385,7 +393,7 @@ async def _get_file(
 
     descendant_files_db_with_parent_id_and_name = [
         (
-            FileDb(id=row["id"], type=FileType(row["type"])),
+            _FileDb(id=row["id"], type=FileType(row["type"])),
             _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"])
             if row["parent_id"] is not None and row["name"] is not None
             else None,
@@ -410,49 +418,49 @@ async def _move_file(
     """
     select_descendants_db_cte = (
         select(
-            FileAncestorFileDescendantDb.descendant_id,
-            FileAncestorFileDescendantDb.descendant_path,
-            FileAncestorFileDescendantDb.descendant_depth,
+            _FileAncestorFileDescendantDb.descendant_id,
+            _FileAncestorFileDescendantDb.descendant_path,
+            _FileAncestorFileDescendantDb.descendant_depth,
         )
-        .where(FileAncestorFileDescendantDb.ancestor_id == id_)
+        .where(_FileAncestorFileDescendantDb.ancestor_id == id_)
         .cte()
     )
     delete_old_descendant_ancestors_db_cte = (
-        delete(FileAncestorFileDescendantDb)
-        .where(FileAncestorFileDescendantDb.descendant_id == select_descendants_db_cte.c.descendant_id)
-        .where(FileAncestorFileDescendantDb.descendant_depth > select_descendants_db_cte.c.descendant_depth)
+        delete(_FileAncestorFileDescendantDb)
+        .where(_FileAncestorFileDescendantDb.descendant_id == select_descendants_db_cte.c.descendant_id)
+        .where(_FileAncestorFileDescendantDb.descendant_depth > select_descendants_db_cte.c.descendant_depth)
         .cte()
     )  # fmt: skip
     insert_new_descendant_ancestors_db_cte = (
-        insert(FileAncestorFileDescendantDb)
+        insert(_FileAncestorFileDescendantDb)
         .from_select(
             ["ancestor_id", "descendant_id", "descendant_path", "descendant_depth"],
             select(
-                FileAncestorFileDescendantDb.ancestor_id,
+                _FileAncestorFileDescendantDb.ancestor_id,
                 select_descendants_db_cte.c.descendant_id,
                 case(
-                    (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path == "."), new_name),
-                    (and_(FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path != "."), literal(new_name) + "/" + select_descendants_db_cte.c.descendant_path),
-                    (and_(FileAncestorFileDescendantDb.descendant_path != ".", select_descendants_db_cte.c.descendant_path == "."), FileAncestorFileDescendantDb.descendant_path + "/" + new_name),
-                    else_=(FileAncestorFileDescendantDb.descendant_path + "/" + new_name + "/" + select_descendants_db_cte.c.descendant_path),
+                    (and_(_FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path == "."), new_name),
+                    (and_(_FileAncestorFileDescendantDb.descendant_path == ".", select_descendants_db_cte.c.descendant_path != "."), literal(new_name) + "/" + select_descendants_db_cte.c.descendant_path),
+                    (and_(_FileAncestorFileDescendantDb.descendant_path != ".", select_descendants_db_cte.c.descendant_path == "."), _FileAncestorFileDescendantDb.descendant_path + "/" + new_name),
+                    else_=(_FileAncestorFileDescendantDb.descendant_path + "/" + new_name + "/" + select_descendants_db_cte.c.descendant_path),
                 ).label("descendant_path"),
-                (FileAncestorFileDescendantDb.descendant_depth + select_descendants_db_cte.c.descendant_depth + 1).label("descendant_depth"),
+                (_FileAncestorFileDescendantDb.descendant_depth + select_descendants_db_cte.c.descendant_depth + 1).label("descendant_depth"),
             )
-            .select_from(select_descendants_db_cte, FileAncestorFileDescendantDb)
-            .where(FileAncestorFileDescendantDb.descendant_id == new_parent_id)
+            .select_from(select_descendants_db_cte, _FileAncestorFileDescendantDb)
+            .where(_FileAncestorFileDescendantDb.descendant_id == new_parent_id)
         )
         .cte()
     )  # fmt: skip
     select_file_db_with_parent_id_and_name_query = (
         select(
             select_descendants_db_cte.c.descendant_id.label("id"),
-            FileDb.type,
+            _FileDb.type,
             literal(None).label("parent_id"),
             literal(None).label("name"),
         )
         .select_from(select_descendants_db_cte)
         .where(select_descendants_db_cte.c.descendant_id == id_)
-        .outerjoin(FileDb, select_descendants_db_cte.c.descendant_id == FileDb.id)
+        .outerjoin(_FileDb, select_descendants_db_cte.c.descendant_id == _FileDb.id)
         .add_cte(select_descendants_db_cte)
         .add_cte(delete_old_descendant_ancestors_db_cte)
         .add_cte(insert_new_descendant_ancestors_db_cte)
@@ -469,7 +477,7 @@ async def _move_file(
         raise FileFileNotFoundError(id_)
 
     file_db_with_parent_id_and_name = (
-        FileDb(
+        _FileDb(
             id=file_db_with_parent_id_and_name_row["id"],
             type=FileType(file_db_with_parent_id_and_name_row["type"]),
         ),
@@ -494,12 +502,12 @@ async def _remove_file(
     """
     Returns the removed file and a connection with uncommitted transaction.
     """
-    fafd1 = aliased(FileAncestorFileDescendantDb)
-    fafd2 = aliased(FileAncestorFileDescendantDb)
+    fafd1 = aliased(_FileAncestorFileDescendantDb)
+    fafd2 = aliased(_FileAncestorFileDescendantDb)
     select_descendant_files_db_with_parent_id_and_name_cte = (
         select(
-            FileDb.id,
-            FileDb.type,
+            _FileDb.id,
+            _FileDb.type,
             case((fafd1.descendant_depth > 0, fafd2.ancestor_id), else_=literal(None)).label("parent_id"),
             case((fafd1.descendant_depth > 0, fafd2.descendant_path), else_=literal(None)).label("name"),
         )
@@ -507,30 +515,32 @@ async def _remove_file(
         .select_from(fafd1)
         .where(fafd1.ancestor_id == id_)
         # Select file for each descendant (should exist)
-        .outerjoin(FileDb, fafd1.descendant_id == FileDb.id)
+        .outerjoin(_FileDb, fafd1.descendant_id == _FileDb.id)
         # Select parent ID and name for each descendant if exists
         .outerjoin(fafd2, (fafd1.descendant_id == fafd2.descendant_id) & (fafd2.descendant_depth == 1))
         .cte()
     )  # fmt: skip
     delete_descendant_ancestors_db_cte = (
-        delete(FileAncestorFileDescendantDb)
+        delete(_FileAncestorFileDescendantDb)
         .where(
-            FileAncestorFileDescendantDb.descendant_id
+            _FileAncestorFileDescendantDb.descendant_id
             == select_descendant_files_db_with_parent_id_and_name_cte.c.id
         )
         .cte()
     )
     delete_descendant_shares_db_cte = (
-        delete(FileShareDb)
+        delete(_FileShareDb)
         .where(
-            FileShareDb.file_id
+            _FileShareDb.file_id
             == select_descendant_files_db_with_parent_id_and_name_cte.c.id
         )
         .cte()
     )
     delete_descendant_files_db_cte = (
-        delete(FileDb)
-        .where(FileDb.id == select_descendant_files_db_with_parent_id_and_name_cte.c.id)
+        delete(_FileDb)
+        .where(
+            _FileDb.id == select_descendant_files_db_with_parent_id_and_name_cte.c.id
+        )
         .cte()
     )
     select_descendant_files_db_with_parent_id_and_name_query = (
@@ -556,7 +566,7 @@ async def _remove_file(
 
     descendant_files_db_with_parent_id_and_name = [
         (
-            FileDb(id=row["id"], type=FileType(row["type"])),
+            _FileDb(id=row["id"], type=FileType(row["type"])),
             _FileParentIdAndName(parent_id=row["parent_id"], name=row["name"])
             if row["parent_id"] is not None and row["name"] is not None
             else None,
@@ -576,7 +586,7 @@ class _FileParentIdAndName:
 
 def _make_files(
     files_db_with_parent_id_and_name: Iterable[
-        tuple[FileDb, _FileParentIdAndName | None]
+        tuple[_FileDb, _FileParentIdAndName | None]
     ],
 ) -> list[File]:
     """
@@ -586,7 +596,7 @@ def _make_files(
     # Prepare maps and sets. ids is an ad hoc ordered set needed to collect all
     # occurring file IDs and respect the original order of files.
 
-    id_to_file_db: dict[UUID, FileDb] = {}
+    id_to_file_db: dict[UUID, _FileDb] = {}
     parent_id_to_children: defaultdict[UUID, list[tuple[FileName, UUID]]] = defaultdict(
         list
     )
@@ -719,8 +729,8 @@ async def _check_share_for_file_and_user(
     connection: AsyncConnection,
 ) -> None:
     ancestor_file_ids_cte = (
-        select(FileAncestorFileDescendantDb.ancestor_id)
-        .where(FileAncestorFileDescendantDb.descendant_id == file_id)
+        select(_FileAncestorFileDescendantDb.ancestor_id)
+        .where(_FileAncestorFileDescendantDb.descendant_id == file_id)
         .cte()
     )
     ancestor_user_ids_cte = (
@@ -729,11 +739,11 @@ async def _check_share_for_file_and_user(
         .cte()
     )
     share_id_query = (
-        select(FileShareDb.id)
-        .select_from(FileShareDb)
-        .join(ancestor_file_ids_cte, FileShareDb.file_id == ancestor_file_ids_cte.c.ancestor_id)
-        .join(ancestor_user_ids_cte, FileShareDb.user_id == ancestor_user_ids_cte.c.ancestor_id)
-        .where(FileShareDb.type.in_([t.value for t in allowed_types]))
+        select(_FileShareDb.id)
+        .select_from(_FileShareDb)
+        .join(ancestor_file_ids_cte, _FileShareDb.file_id == ancestor_file_ids_cte.c.ancestor_id)
+        .join(ancestor_user_ids_cte, _FileShareDb.user_id == ancestor_user_ids_cte.c.ancestor_id)
+        .where(_FileShareDb.type.in_([t.value for t in allowed_types]))
         .limit(1)
         .add_cte(ancestor_file_ids_cte)
         .add_cte(ancestor_user_ids_cte)
@@ -768,9 +778,9 @@ async def _path_to_id(
 
 async def _id_to_parent_id(id_: UUID, /, *, connection: AsyncConnection) -> UUID:
     parent_id_query = (
-        select(FileAncestorFileDescendantDb.ancestor_id)
-        .where(FileAncestorFileDescendantDb.descendant_id == id_)
-        .where(FileAncestorFileDescendantDb.descendant_depth == 1)
+        select(_FileAncestorFileDescendantDb.ancestor_id)
+        .where(_FileAncestorFileDescendantDb.descendant_id == id_)
+        .where(_FileAncestorFileDescendantDb.descendant_depth == 1)
     )
     parent_id = (await connection.execute(parent_id_query)).scalars().one_or_none()
     if parent_id is None:
@@ -919,12 +929,12 @@ async def _ancestor_id_and_descendant_paths_to_ids(
 ) -> dict[FilePath, UUID]:
     descendant_path_to_id_query = (
         select(
-            FileAncestorFileDescendantDb.descendant_path,
-            FileAncestorFileDescendantDb.descendant_id,
+            _FileAncestorFileDescendantDb.descendant_path,
+            _FileAncestorFileDescendantDb.descendant_id,
         )
-        .where(FileAncestorFileDescendantDb.ancestor_id == ancestor_id)
+        .where(_FileAncestorFileDescendantDb.ancestor_id == ancestor_id)
         .where(
-            FileAncestorFileDescendantDb.descendant_path.in_(
+            _FileAncestorFileDescendantDb.descendant_path.in_(
                 str(p) for p in descendant_paths
             )
         )
@@ -938,8 +948,3 @@ async def _ancestor_id_and_descendant_paths_to_ids(
     }  # HACK: Implicit type cast
 
     return descendant_path_to_id
-
-
-def get_config(*, request: Request) -> Config:
-    """A lifetime dependency."""
-    return request.state.file_settings  # type: ignore[no-any-return]

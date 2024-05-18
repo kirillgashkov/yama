@@ -1,4 +1,5 @@
 from ._config import Config as Config
+from ._service import AsyncReadable as AsyncReadable
 from ._service import Driver as Driver
 from ._service import DriverFileError as DriverFileError
 from ._service import DriverFileNotFoundError as DriverFileNotFoundError

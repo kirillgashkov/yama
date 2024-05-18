@@ -9,21 +9,21 @@ from yama import database
 from ._config import Config
 from ._service import get_config
 from ._service_password import (
-    INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
-    InvalidUsernameOrPasswordError,
-    password_grant_in_to_token_out,
+    _INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
+    _InvalidUsernameOrPasswordError,
+    _password_grant_in_to_token_out,
 )
-from ._service_token import INVALID_TOKEN_EXCEPTION, InvalidTokenError
+from ._service_token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError
 from ._service_token_refresh import (
-    make_token_out_from_refresh_token_grant_in,
-    parse_refresh_token,
-    revoke_refresh_token,
+    _make_token_out_from_refresh_token_grant_in,
+    _parse_refresh_token,
+    _revoke_refresh_token,
 )
 
 router = APIRouter()
 
 
-class PasswordGrantIn(BaseModel):
+class _PasswordGrantIn(BaseModel):
     """https://datatracker.ietf.org/doc/html/rfc6749#section-4.3."""
 
     grant_type: Literal["password"]
@@ -32,7 +32,7 @@ class PasswordGrantIn(BaseModel):
     scope: Literal[None] = None
 
 
-class RefreshTokenGrantIn(BaseModel):
+class _RefreshTokenGrantIn(BaseModel):
     """https://datatracker.ietf.org/doc/html/rfc6749#section-6."""
 
     grant_type: Literal["refresh_token"]
@@ -40,7 +40,7 @@ class RefreshTokenGrantIn(BaseModel):
     scope: Literal[None] = None
 
 
-_GrantIn: TypeAlias = PasswordGrantIn | RefreshTokenGrantIn
+_GrantIn: TypeAlias = _PasswordGrantIn | _RefreshTokenGrantIn
 _GrantInAdapter: TypeAdapter[_GrantIn] = TypeAdapter(_GrantIn)
 
 
@@ -85,20 +85,20 @@ async def _authorize(
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> _TokenOut:
     match grant_in:
-        case PasswordGrantIn():
+        case _PasswordGrantIn():
             try:
-                return await password_grant_in_to_token_out(
+                return await _password_grant_in_to_token_out(
                     grant_in, settings=settings, connection=connection
                 )
-            except InvalidUsernameOrPasswordError:
-                raise INVALID_USERNAME_OR_PASSWORD_EXCEPTION
-        case RefreshTokenGrantIn():
+            except _InvalidUsernameOrPasswordError:
+                raise _INVALID_USERNAME_OR_PASSWORD_EXCEPTION
+        case _RefreshTokenGrantIn():
             try:
-                return await make_token_out_from_refresh_token_grant_in(
+                return await _make_token_out_from_refresh_token_grant_in(
                     grant_in, settings=settings, connection=connection
                 )
-            except InvalidTokenError:
-                raise INVALID_TOKEN_EXCEPTION
+            except _InvalidTokenError:
+                raise _INVALID_TOKEN_EXCEPTION
         case _:
             assert_never(grant_in)
 
@@ -111,10 +111,10 @@ async def _unauthorize(
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> None:
     try:
-        t = await parse_refresh_token(
+        t = await _parse_refresh_token(
             refresh_token, settings=settings, connection=connection
         )
-    except InvalidTokenError:
-        raise INVALID_TOKEN_EXCEPTION
+    except _InvalidTokenError:
+        raise _INVALID_TOKEN_EXCEPTION
 
-    await revoke_refresh_token(t, connection=connection)
+    await _revoke_refresh_token(t, connection=connection)

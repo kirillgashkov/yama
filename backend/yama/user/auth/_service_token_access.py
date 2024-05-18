@@ -4,10 +4,10 @@ from uuid import UUID
 from jose import JWTError, jwt
 
 from yama.user.auth import Config
-from yama.user.auth._service_token import InvalidTokenError
+from yama.user.auth._service_token import _InvalidTokenError
 
 
-def make_access_token_and_expires_in(
+def _make_access_token_and_expires_in(
     user_id: UUID,
     /,
     *,
@@ -30,7 +30,7 @@ def make_access_token_and_expires_in(
     return token, expire_seconds
 
 
-def get_user_id_from_access_token(token: str, /, *, settings: Config) -> UUID:
+def _get_user_id_from_access_token(token: str, /, *, settings: Config) -> UUID:
     try:
         claims = jwt.decode(
             token,
@@ -38,6 +38,6 @@ def get_user_id_from_access_token(token: str, /, *, settings: Config) -> UUID:
             algorithms=[settings.access_token.algorithm],
         )
     except JWTError:
-        raise InvalidTokenError()
+        raise _InvalidTokenError()
 
     return UUID(claims["sub"])

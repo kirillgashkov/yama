@@ -8,9 +8,9 @@ from typing import Any, Self, assert_never
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 
-from yama.file._service_models import FilePath, FilePathAdapter
+from yama.file import FilePath, FilePathAdapter
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 class ExportParameterType(str, Enum):
@@ -102,7 +102,7 @@ def export_pdf(
 
     auxiliary_dir.mkdir(parents=True, exist_ok=True)
 
-    logger.info("Converting %s to %s", file, tex_file)
+    _logger.info("Converting %s to %s", file, tex_file)
     with open(pandoc_out, "w") as out, open(pandoc_err, "w") as err:
         subprocess.run(
             [
@@ -127,7 +127,7 @@ def export_pdf(
             check=True,
         )
 
-    logger.info("Compiling %s to %s", tex_file, pdf_file)
+    _logger.info("Compiling %s to %s", tex_file, pdf_file)
     with open(latexmk_out, "w") as out, open(latexmk_err, "w") as err:
         subprocess.run(
             [

@@ -5,7 +5,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from typing_extensions import override
 
-from yama.file._service_models import FilePath
+from ._service_models import FilePath
 
 
 class FileFileError(Exception):

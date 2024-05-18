@@ -6,8 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from starlette.requests import Request
 
 from yama.user.auth import Config
-from yama.user.auth._service_token import INVALID_TOKEN_EXCEPTION, InvalidTokenError
-from yama.user.auth._service_token_access import get_user_id_from_access_token
+from yama.user.auth._service_token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError
+from yama.user.auth._service_token_access import _get_user_id_from_access_token
 
 _get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/auth")
 _get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=False)
@@ -25,9 +25,9 @@ def get_current_user_id(
 ) -> UUID:
     """A dependency."""
     try:
-        return get_user_id_from_access_token(token, settings=settings)
-    except InvalidTokenError:
-        raise INVALID_TOKEN_EXCEPTION
+        return _get_user_id_from_access_token(token, settings=settings)
+    except _InvalidTokenError:
+        raise _INVALID_TOKEN_EXCEPTION
 
 
 def get_current_user_id_or_none(
@@ -39,6 +39,6 @@ def get_current_user_id_or_none(
     if token is None:
         return None
     try:
-        return get_user_id_from_access_token(token, settings=settings)
-    except InvalidTokenError:
+        return _get_user_id_from_access_token(token, settings=settings)
+    except _InvalidTokenError:
         return None

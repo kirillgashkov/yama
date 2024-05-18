@@ -9,10 +9,21 @@ from sqlalchemy.orm import Mapped, mapped_column
 from starlette.requests import Request
 
 from yama import database
-from yama.user import Config
+
+from ._config import Config
 
 _MIN_HANDLE_LENGTH = 1
 _MAX_HANDLE_LENGTH = 255
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.user_settings  # type: ignore[no-any-return]
+
+
+async def user_exists(*, handle: str, connection: AsyncConnection) -> bool:
+    query = select(exists().where(func.lower(_UserDb.handle) == func.lower(handle)))
+    return (await connection.execute(query)).scalar_one()
 
 
 def _check_handle(handle: str, /) -> str:
@@ -24,21 +35,21 @@ def _check_handle(handle: str, /) -> str:
     return handle
 
 
-Handle: TypeAlias = Annotated[str, AfterValidator(_check_handle)]
+_Handle: TypeAlias = Annotated[str, AfterValidator(_check_handle)]
 
 
-class UserType(str, Enum):
+class _UserType(str, Enum):
     REGULAR = "regular"
     GROUP = "group"
 
 
-class UserTypeDb(database.BaseTable):
+class _UserTypeDb(database.BaseTable):
     __tablename__ = "user_types"
 
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class UserDb(database.BaseTable):
+class _UserDb(database.BaseTable):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(
@@ -58,13 +69,3 @@ class UserAncestorUserDescendantDb(database.BaseTable):
     ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     descendant_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
     descendant_depth: Mapped[int]
-
-
-async def user_exists(*, handle: str, connection: AsyncConnection) -> bool:
-    query = select(exists().where(func.lower(UserDb.handle) == func.lower(handle)))
-    return (await connection.execute(query)).scalar_one()
-
-
-def get_config(*, request: Request) -> Config:
-    """A lifetime dependency."""
-    return request.state.user_settings  # type: ignore[no-any-return]
