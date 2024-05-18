@@ -19,10 +19,13 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database, user
-from yama.file import utils
-from yama.file.dependencies import get_config
 from yama.file.driver import Driver, get_driver
-from yama.file.models import (
+from yama.user.auth import get_current_user_id, get_current_user_id_or_none
+from yama.user.dependencies import get_settings as get_user_settings
+
+from ._config import Config
+from ._service import get_config, read_file, remove_file, write_file
+from ._service_models import (
     Directory,
     DirectoryContentFileOut,
     DirectoryContentOut,
@@ -39,10 +42,6 @@ from yama.file.models import (
     RegularOut,
     RegularWrite,
 )
-from yama.user.dependencies import get_settings as get_user_settings
-
-from ..user.auth._dependency import get_current_user_id, get_current_user_id_or_none
-from ._config import Config
 
 router = APIRouter()
 
@@ -53,7 +52,7 @@ router = APIRouter()
     response_model=FileOut,
     responses={200: {"content": {"*/*": {}}}},
 )
-async def read_file(
+async def _read_file(
     *,
     path: FilePath,
     content: Annotated[bool, Query()] = False,
@@ -65,7 +64,7 @@ async def read_file(
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut | StreamingResponse:
     if content:
-        file = await utils.read_file(
+        file = await read_file(
             path,
             max_depth=0,
             user_id=user_id or user_settings.public_user_id,
@@ -96,7 +95,7 @@ async def read_file(
             case _:
                 assert_never(file)
 
-    file = await utils.read_file(
+    file = await read_file(
         path,
         max_depth=1,
         user_id=user_id or user_settings.public_user_id,
@@ -111,7 +110,7 @@ async def read_file(
 
 
 @router.put("/files/{path:path}", description="Create or update file.")
-async def create_or_update_file(
+async def _create_or_update_file(
     *,
     path: FilePath,
     working_file_id: Annotated[UUID | None, Query()] = None,
@@ -143,7 +142,7 @@ async def create_or_update_file(
         case _:
             assert_never(type)
 
-    file = await utils.write_file(
+    file = await write_file(
         file_write,
         path,
         exist_ok=exist_ok,
@@ -160,7 +159,7 @@ async def create_or_update_file(
 
 
 @router.delete("/files/{path:path}", description="Delete file.")
-async def delete_file(
+async def _delete_file(
     *,
     path: FilePath,
     working_file_id: Annotated[UUID | None, Query()] = None,
@@ -170,7 +169,7 @@ async def delete_file(
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
-    file = await utils.remove_file(
+    file = await remove_file(
         path,
         user_id=user_id or user_settings.public_user_id,
         working_file_id=working_file_id or settings.root_file_id,

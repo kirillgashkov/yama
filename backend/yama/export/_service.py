@@ -8,7 +8,7 @@ from typing import Any, Self, assert_never
 
 from pydantic import BaseModel, Field, TypeAdapter, model_validator
 
-from yama.file.models import FilePath, FilePathAdapter
+from yama.file._service_models import FilePath, FilePathAdapter
 
 logger = logging.getLogger(__name__)
 

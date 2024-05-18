@@ -8,6 +8,7 @@ from uuid import UUID
 from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
+from starlette.requests import Request
 
 from yama.file import (
     Config,
@@ -17,8 +18,7 @@ from yama.file import (
     FileNotADirectoryError,
     FilePermissionError,
 )
-from yama.file.driver import Driver
-from yama.file.models import (
+from yama.file._service_models import (
     Directory,
     DirectoryContent,
     DirectoryContentFile,
@@ -35,6 +35,7 @@ from yama.file.models import (
     Regular,
     RegularWrite,
 )
+from yama.file.driver import Driver
 from yama.user.models import UserAncestorUserDescendantDb
 
 
@@ -937,3 +938,8 @@ async def _ancestor_id_and_descendant_paths_to_ids(
     }  # HACK: Implicit type cast
 
     return descendant_path_to_id
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.file_settings  # type: ignore[no-any-return]

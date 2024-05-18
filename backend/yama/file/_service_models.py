@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import PurePosixPath
-from typing import Annotated, Any, Literal, TypeAlias
+from typing import Annotated, Any, Literal, Protocol, TypeAlias
 from uuid import UUID
 
 from pydantic import (
@@ -15,10 +15,13 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama import database
-from yama.file.driver._service import _AsyncReadable
 
 _MAX_FILE_NAME_LENGTH = 255
 _MAX_FILE_PATH_LENGTH = 4095
+
+
+class _AsyncReadable(Protocol):
+    async def read(self, size: int = ..., /) -> bytes: ...
 
 
 def _check_file_name(name: str) -> str:

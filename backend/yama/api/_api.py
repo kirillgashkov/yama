@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
+import yama.file._service_exceptions
 from yama import database, file, user
 from yama.file import driver as file_driver
 from yama.user import auth
@@ -44,5 +45,5 @@ app.include_router(auth.router)
 app.include_router(file.router)
 app.include_router(user.router)
 
-for exception, handler in file.exception_handlers:
+for exception, handler in yama.file._service_exceptions.exception_handlers:
     app.add_exception_handler(exception, handler)  # type: ignore[arg-type]  # https://github.com/encode/starlette/discussions/2391, https://github.com/encode/starlette/pull/2403
