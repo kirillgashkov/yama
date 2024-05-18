@@ -11,9 +11,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 from yama import database
 from yama.user.auth import Config
 
-from ._access_token import make_access_token_and_expires_in
-from ._exception import InvalidTokenError
 from ._router import RefreshTokenGrantIn, _TokenOut
+from ._service_token import InvalidTokenError
+from ._service_token_access import make_access_token_and_expires_in
 
 
 class RevokedRefreshTokenDb(database.BaseTable):

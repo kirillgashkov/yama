@@ -4,7 +4,7 @@ from uuid import UUID
 from jose import JWTError, jwt
 
 from yama.user.auth import Config
-from yama.user.auth._exception import InvalidTokenError
+from yama.user.auth._service_token import InvalidTokenError
 
 
 def make_access_token_and_expires_in(

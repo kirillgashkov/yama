@@ -7,15 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama import database
 
 from ._config import Config
-from ._dependency import get_config
-from ._exception import (
-    INVALID_TOKEN_EXCEPTION,
+from ._service import get_config
+from ._service_password import (
     INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
-    InvalidTokenError,
     InvalidUsernameOrPasswordError,
+    password_grant_in_to_token_out,
 )
-from ._password import password_grant_in_to_token_out
-from ._refresh_token import (
+from ._service_token import INVALID_TOKEN_EXCEPTION, InvalidTokenError
+from ._service_token_refresh import (
     make_token_out_from_refresh_token_grant_in,
     parse_refresh_token,
     revoke_refresh_token,

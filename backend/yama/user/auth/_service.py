@@ -6,8 +6,8 @@ from fastapi.security import OAuth2PasswordBearer
 from starlette.requests import Request
 
 from yama.user.auth import Config
-from yama.user.auth._access_token import get_user_id_from_access_token
-from yama.user.auth._exception import INVALID_TOKEN_EXCEPTION, InvalidTokenError
+from yama.user.auth._service_token import INVALID_TOKEN_EXCEPTION, InvalidTokenError
+from yama.user.auth._service_token_access import get_user_id_from_access_token
 
 _get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/auth")
 _get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=False)
