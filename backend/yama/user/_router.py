@@ -1,19 +1,31 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database
-from yama.user.auth._service import get_current_user_id
-from yama.user.models import Handle, UserCreateIn, UserDb, UserOut, UserType
-from yama.user.utils import (
+from yama.user._service import Handle, UserDb, UserType, user_exists
+from yama.user._service_password import (
     hash_password,
-    user_exists,
 )
+from yama.user.auth._service import get_current_user_id
 
 router = APIRouter()
+
+
+class UserCreateIn(BaseModel):
+    type: Literal[UserType.REGULAR]
+    handle: Handle
+    password: str
+
+
+class UserOut(BaseModel):
+    id: UUID
+    type: UserType
+    handle: Handle
 
 
 @router.post("/users")

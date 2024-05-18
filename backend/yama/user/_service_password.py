@@ -1,16 +1,7 @@
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from sqlalchemy import exists, func, select
-from sqlalchemy.ext.asyncio import AsyncConnection
-
-from yama.user.models import UserDb
 
 _password_hasher = PasswordHasher()
-
-
-async def user_exists(*, handle: str, connection: AsyncConnection) -> bool:
-    query = select(exists().where(func.lower(UserDb.handle) == func.lower(handle)))
-    return (await connection.execute(query)).scalar_one()
 
 
 def is_password_valid(password: str, password_hash: str, /) -> bool:

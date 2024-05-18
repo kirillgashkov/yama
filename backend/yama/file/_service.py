@@ -36,7 +36,7 @@ from yama.file._service_models import (
     RegularWrite,
 )
 from yama.file.driver import Driver
-from yama.user.models import UserAncestorUserDescendantDb
+from yama.user._service import UserAncestorUserDescendantDb
 
 
 async def read_file(

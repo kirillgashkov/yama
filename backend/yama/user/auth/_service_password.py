@@ -3,12 +3,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 from starlette.status import HTTP_401_UNAUTHORIZED
 
+from yama.user._service import UserDb
+from yama.user._service_password import is_password_valid
 from yama.user.auth import Config
 from yama.user.auth._router import PasswordGrantIn, _TokenOut
 from yama.user.auth._service_token_access import make_access_token_and_expires_in
 from yama.user.auth._service_token_refresh import make_refresh_token
-from yama.user.models import UserDb
-from yama.user.utils import is_password_valid
 
 INVALID_USERNAME_OR_PASSWORD_EXCEPTION = HTTPException(
     status_code=HTTP_401_UNAUTHORIZED, detail="Invalid username or password."
