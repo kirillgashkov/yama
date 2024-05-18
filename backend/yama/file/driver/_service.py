@@ -1,9 +1,13 @@
 from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Protocol
+from typing import Annotated, AsyncIterator, Protocol, assert_never
 from uuid import UUID
 
+from fastapi import Depends
+from starlette.requests import Request
 from typing_extensions import override
+
+from yama.file.driver import Config, FileSystemDriver
 
 
 class DriverFileError(Exception): ...
@@ -44,3 +48,17 @@ class Driver(ABC):
 
     @abstractmethod
     async def remove_regular_content(self, id_: UUID, /) -> None: ...
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.file_driver_settings  # type: ignore[no-any-return]
+
+
+def get_driver(*, settings: Annotated[Config, Depends(get_config)]) -> Driver:
+    """A dependency."""
+    match settings.type:
+        case "file-system":
+            return FileSystemDriver(file_system_dir=settings.file_system_dir)
+        case _:
+            assert_never(settings.driver)

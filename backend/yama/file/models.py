@@ -15,7 +15,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from yama import database
-from yama.file.driver._driver import _AsyncReadable
+from yama.file.driver._service import _AsyncReadable
 
 _MAX_FILE_NAME_LENGTH = 255
 _MAX_FILE_PATH_LENGTH = 4095
