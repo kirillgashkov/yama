@@ -8,8 +8,6 @@ from urllib.parse import urlencode, urlunsplit
 from sqlalchemy import URL, Dialect, text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
-from yama.database import provision
-
 
 class ProvisionError(Exception): ...
 
@@ -104,7 +102,7 @@ def _make_migrate_connection_url(
 
 @contextmanager
 def _make_migrate_migrations_dir() -> Iterator[Path]:
-    with as_file(files(provision) / "migrations") as migrations_dir:
+    with as_file(files("yama.database.provision") / "migrations") as migrations_dir:
         yield migrations_dir
 
 
