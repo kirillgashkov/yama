@@ -10,17 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 from starlette.requests import Request
 
-from yama.file import (
-    Config,
+from yama.file.driver import Driver
+from yama.user import UserAncestorUserDescendantDb
+
+from ._config import Config
+from ._service_exceptions import (
     FileFileExistsError,
     FileFileNotFoundError,
     FileIsADirectoryError,
     FileNotADirectoryError,
     FilePermissionError,
 )
-from yama.file.driver import Driver
-from yama.user import UserAncestorUserDescendantDb
-
 from ._service_models import (
     Directory,
     DirectoryContent,
