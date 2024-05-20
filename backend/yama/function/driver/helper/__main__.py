@@ -3,6 +3,7 @@ import pathlib
 import sys
 import typing
 
+import aiofiles
 import typer
 
 from ._service import HelperIn, _execute
@@ -21,7 +22,7 @@ def _handle(
         function_out = await _execute(
             command, helper_in=function_in, output_files=output
         )
-        sys.stdout.write(function_out.model_dump_json())
+        await aiofiles.stdout.write(function_out.model_dump_json())
 
     asyncio.run(f())
 
