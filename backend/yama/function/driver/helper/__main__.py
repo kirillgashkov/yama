@@ -1,18 +1,26 @@
 import asyncio
+import pathlib
 import sys
+import typing
 
-from typer import Typer
+import typer
 
 from ._service import HelperIn, execute
 
-_app = Typer()
+_app = typer.Typer()
 
 
 @_app.command()
-def _handle(*, command: list[str]) -> None:
+def _handle(
+    *,
+    command: list[str],
+    output: typing.Annotated[list[pathlib.Path], typer.Option(default_factory=list)],
+) -> None:
     async def f() -> None:
         function_in = HelperIn.model_validate_json(sys.stdin.read())
-        function_out = await execute(command, helper_in=function_in)
+        function_out = await execute(
+            command, helper_in=function_in, output_files=output
+        )
         sys.stdout.write(function_out.model_dump_json())
 
     asyncio.run(f())
