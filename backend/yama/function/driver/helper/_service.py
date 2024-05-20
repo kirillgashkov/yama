@@ -37,7 +37,7 @@ class HelperOut(pydantic.BaseModel):
     exit_code: int
 
 
-async def execute(
+async def _execute(
     command: list[str], /, *, helper_in: HelperIn, output_files: list[pathlib.Path]
 ) -> HelperOut:
     async with aiofiles.tempfile.TemporaryDirectory() as temp_dir_str:

@@ -5,7 +5,7 @@ import typing
 
 import typer
 
-from ._service import HelperIn, execute
+from ._service import HelperIn, _execute
 
 _app = typer.Typer()
 
@@ -18,7 +18,7 @@ def _handle(
 ) -> None:
     async def f() -> None:
         function_in = HelperIn.model_validate_json(sys.stdin.read())
-        function_out = await execute(
+        function_out = await _execute(
             command, helper_in=function_in, output_files=output
         )
         sys.stdout.write(function_out.model_dump_json())
