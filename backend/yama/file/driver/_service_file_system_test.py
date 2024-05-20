@@ -4,7 +4,7 @@ from uuid import UUID
 import aiofiles
 import pytest
 
-from ._service import DriverFileNotFoundError, DriverFileTooLargeError
+from ._service_base import DriverFileNotFoundError, DriverFileTooLargeError
 from ._service_file_system import FileSystemDriver
 
 
