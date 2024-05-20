@@ -40,7 +40,7 @@ class FileSystemDriver(Driver):
         chunk_size: int,
         max_file_size: int,
     ) -> int:
-        self.file_system_dir.mkdir(parents=True, exist_ok=True)
+        await aiofiles.os.makedirs(self.file_system_dir, exist_ok=True)
 
         incomplete_path = _id_to_incomplete_path(
             id_, file_system_dir=self.file_system_dir
