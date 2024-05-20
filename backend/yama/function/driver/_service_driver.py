@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Protocol, TypeAlias
 
-from yama import function
+from ._config import Config
 
 
 class AsyncReadable(Protocol):
@@ -40,7 +40,7 @@ class StoppedProcess:
     stopped_at: datetime
     stdout: bytes
     stderr: bytes
-    returncode: int
+    exit_code: int
 
 
 Process: TypeAlias = StartedProcess | StoppedProcess
@@ -55,7 +55,7 @@ class Driver(ABC):
         *,
         input_files: list[InputFile],
         output_files: list[OutputFile],
-        function_config: function.Config,
+        config: Config,
     ) -> StartedProcess: ...
 
     @abstractmethod
