@@ -1,10 +1,9 @@
 import asyncio
-import sys
 
 import uvicorn
 from typer import Typer
 
-from yama import api, database, function
+from yama import api, database
 from yama.database import provision
 
 app = Typer()
@@ -14,7 +13,7 @@ app.add_typer(database_app, name="database")
 
 @app.command(name="api")
 def handle_api() -> None:
-    settings = api.Config()
+    settings = api.Config()  # pyright: ignore[reportCallIssue]
 
     uvicorn.run(
         "yama.api:app", host=settings.host, port=settings.port, reload=settings.reload
@@ -68,15 +67,7 @@ def handle_database_down() -> None:
 
 
 @app.command(name="function")
-def handle_function(*, command: list[str]) -> None:
-    async def f() -> None:
-        function_in = function.FunctionIn.model_validate_json(sys.stdin.read())
-
-        function_out = await function.execute(command, function_in=function_in)
-
-        sys.stdout.write(function_out.model_dump_json())
-
-    asyncio.run(f())
+def handle_function(*, command: list[str]) -> None: ...
 
 
 if __name__ == "__main__":
