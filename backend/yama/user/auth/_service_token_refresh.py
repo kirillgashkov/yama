@@ -1,8 +1,10 @@
 import dataclasses
 from datetime import UTC, datetime, timedelta
+from typing import Literal
 from uuid import UUID, uuid4
 
 from jose import JWTError, jwt
+from pydantic import BaseModel
 from sqlalchemy import DateTime, exists, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection
@@ -11,9 +13,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 from yama import database
 
 from ._config import Config
-from ._router import _RefreshTokenGrantIn, _TokenOut
-from ._service_token import _InvalidTokenError
+from ._service_token import _InvalidTokenError, _TokenOut
 from ._service_token_access import _make_access_token_and_expires_in
+
+
+class _RefreshTokenGrantIn(BaseModel):
+    """https://datatracker.ietf.org/doc/html/rfc6749#section-6."""
+
+    grant_type: Literal["refresh_token"]
+    refresh_token: str
+    scope: Literal[None] = None
 
 
 class _RevokedRefreshTokenDb(database.BaseTable):

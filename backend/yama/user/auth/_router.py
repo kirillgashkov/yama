@@ -1,7 +1,7 @@
 from typing import Annotated, Literal, TypeAlias, assert_never
 
 from fastapi import APIRouter, Depends, Form, HTTPException
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import TypeAdapter, ValidationError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database
@@ -12,46 +12,20 @@ from ._service_password import (
     _INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
     _InvalidUsernameOrPasswordError,
     _password_grant_in_to_token_out,
+    _PasswordGrantIn,
 )
-from ._service_token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError
+from ._service_token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError, _TokenOut
 from ._service_token_refresh import (
     _make_token_out_from_refresh_token_grant_in,
     _parse_refresh_token,
+    _RefreshTokenGrantIn,
     _revoke_refresh_token,
 )
 
 router = APIRouter()
 
-
-class _PasswordGrantIn(BaseModel):
-    """https://datatracker.ietf.org/doc/html/rfc6749#section-4.3."""
-
-    grant_type: Literal["password"]
-    username: str
-    password: str
-    scope: Literal[None] = None
-
-
-class _RefreshTokenGrantIn(BaseModel):
-    """https://datatracker.ietf.org/doc/html/rfc6749#section-6."""
-
-    grant_type: Literal["refresh_token"]
-    refresh_token: str
-    scope: Literal[None] = None
-
-
 _GrantIn: TypeAlias = _PasswordGrantIn | _RefreshTokenGrantIn
 _GrantInAdapter: TypeAdapter[_GrantIn] = TypeAdapter(_GrantIn)
-
-
-class _TokenOut(BaseModel):
-    """https://datatracker.ietf.org/doc/html/rfc6749#section-5.1."""
-
-    access_token: str
-    token_type: Literal["bearer"]
-    expires_in: int
-    refresh_token: str | None = None
-    scope: Literal[None] = None
 
 
 def _get_grant_in(

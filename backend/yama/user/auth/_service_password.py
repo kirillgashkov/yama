@@ -1,4 +1,7 @@
+from typing import Literal
+
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection
 from starlette.status import HTTP_401_UNAUTHORIZED
@@ -11,7 +14,7 @@ from yama.user._service_password import (
 )
 
 from ._config import Config
-from ._router import _PasswordGrantIn, _TokenOut
+from ._service_token import _TokenOut
 from ._service_token_access import _make_access_token_and_expires_in
 from ._service_token_refresh import _make_refresh_token
 
@@ -21,6 +24,15 @@ _INVALID_USERNAME_OR_PASSWORD_EXCEPTION = HTTPException(
 
 
 class _InvalidUsernameOrPasswordError(Exception): ...
+
+
+class _PasswordGrantIn(BaseModel):
+    """https://datatracker.ietf.org/doc/html/rfc6749#section-4.3."""
+
+    grant_type: Literal["password"]
+    username: str
+    password: str
+    scope: Literal[None] = None
 
 
 async def _password_grant_in_to_token_out(
