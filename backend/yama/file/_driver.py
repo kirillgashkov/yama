@@ -1,17 +1,54 @@
+from abc import ABC, abstractmethod
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
+from typing import Annotated, AsyncIterator, Protocol, assert_never
 from uuid import UUID
 
 import aiofiles.os
+from fastapi import Depends
 from typing_extensions import override
 
-from ._base import (
-    AsyncReadable,
-    Driver,
-    DriverFileNotFoundError,
-    DriverFileTooLargeError,
-)
+from ._config import Config, get_config
+
+
+class DriverFileError(Exception): ...
+
+
+class DriverFileTooLargeError(DriverFileError): ...
+
+
+class DriverFileNotFoundError(DriverFileError):
+    def __init__(self, id_: UUID, /) -> None:
+        super().__init__()
+        self.id_ = id_
+
+    @override
+    def __str__(self) -> str:
+        return f"{self.id_}"
+
+
+class AsyncReadable(Protocol):
+    async def read(self, size: int = ..., /) -> bytes: ...
+
+
+class Driver(ABC):
+    @abstractmethod
+    @asynccontextmanager
+    def read_regular_content(self, id_: UUID, /) -> AsyncIterator[AsyncReadable]: ...
+
+    @abstractmethod
+    async def write_regular_content(
+        self,
+        content_stream: AsyncReadable,
+        id_: UUID,
+        /,
+        *,
+        chunk_size: int,
+        max_file_size: int,
+    ) -> int: ...
+
+    @abstractmethod
+    async def remove_regular_content(self, id_: UUID, /) -> None: ...
 
 
 class FileSystemDriver(Driver):
@@ -80,3 +117,12 @@ def _id_to_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
 
 def _id_to_incomplete_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
     return file_system_dir / (id_.hex + ".incomplete")
+
+
+def get_driver(*, settings: Annotated[Config, Depends(get_config)]) -> Driver:
+    """A dependency."""
+    match settings.driver.type:
+        case "file-system":
+            return FileSystemDriver(file_system_dir=settings.driver.file_system_dir)
+        case _:
+            assert_never(settings.driver)

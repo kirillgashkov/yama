@@ -20,10 +20,10 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database, user
 from yama.auth import get_current_user_id, get_current_user_id_or_none
-from yama.file.driver import Driver, get_driver
 from yama.user import get_config as get_user_settings
 
 from ._config import Config, get_config
+from ._driver import Driver, get_driver
 from ._models import (
     Directory,
     DirectoryContentFileOut,

@@ -5,7 +5,6 @@ from typing import Any
 from fastapi import FastAPI
 
 from yama import auth, database, file, user
-from yama.file import driver as file_driver
 
 from ._router import router
 
@@ -14,7 +13,6 @@ from ._router import router
 async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
     database_settings = database.Config()  # pyright: ignore[reportCallIssue]
     file_settings = file.Config()  # pyright: ignore[reportCallIssue]
-    file_driver_settings = file_driver.Config()  # pyright: ignore[reportCallIssue]
     user_settings = user.Config()  # pyright: ignore[reportCallIssue]
     user_auth_settings = auth.Config()  # pyright: ignore[reportCallIssue]
 
@@ -26,11 +24,10 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
         database=database_settings.database,
     ) as engine:
         # These must not be accessed directly, they must
-        # be accessed through lifetime dependencies
+        # be accessed through lifetime dependencies.
         yield {
             "engine": engine,
             "file_settings": file_settings,
-            "file_driver_settings": file_driver_settings,
             "user_settings": user_settings,
             "user_auth_settings": user_auth_settings,
         }

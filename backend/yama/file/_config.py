@@ -1,7 +1,14 @@
+from pathlib import Path
+from typing import Literal
 from uuid import UUID
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from starlette.requests import Request
+
+
+class DriverConfig(BaseSettings):
+    type: Literal["file-system"]
+    file_system_dir: Path
 
 
 class Config(BaseSettings):
@@ -13,6 +20,8 @@ class Config(BaseSettings):
     max_file_size: int = 1024 * 1024 * 512  # 512 MiB
     files_base_url: str
     root_file_id: UUID
+
+    driver: DriverConfig
 
 
 def get_config(*, request: Request) -> Config:

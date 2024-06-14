@@ -9,10 +9,10 @@ from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 
-from yama.file.driver import Driver
 from yama.user.database import UserAncestorUserDescendantDb
 
 from ._config import Config
+from ._driver import Driver
 from ._errors import (
     FileFileExistsError,
     FileFileNotFoundError,
