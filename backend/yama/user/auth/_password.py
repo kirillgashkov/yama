@@ -6,17 +6,17 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from yama.user._service import _UserDb
-from yama.user._service_password import (
+from yama.user import (
+    UserDb,
     hash_password,
     is_password_valid,
     should_rehash_password_with_hash,
 )
 
+from ._accesstoken import _make_access_token_and_expires_in
 from ._config import Config
-from ._service_token import _TokenOut
-from ._service_token_access import _make_access_token_and_expires_in
-from ._service_token_refresh import _make_refresh_token
+from ._refreshtoken import _make_refresh_token
+from ._token import _TokenOut
 
 _INVALID_USERNAME_OR_PASSWORD_EXCEPTION = HTTPException(
     status_code=HTTP_401_UNAUTHORIZED, detail="Invalid username or password."
@@ -42,11 +42,11 @@ async def _password_grant_in_to_token_out(
     settings: Config,
     connection: AsyncConnection,
 ) -> _TokenOut:
-    query = select(_UserDb).where(
-        func.lower(_UserDb.handle) == func.lower(password_grant_in.username)
+    query = select(UserDb).where(
+        func.lower(UserDb.handle) == func.lower(password_grant_in.username)
     )
     row = (await connection.execute(query)).mappings().one_or_none()
-    user_db = _UserDb(**row) if row is not None else None
+    user_db = UserDb(**row) if row is not None else None
 
     if (
         user_db is None
@@ -58,12 +58,12 @@ async def _password_grant_in_to_token_out(
     if should_rehash_password_with_hash(user_db.password_hash):
         update_password_hash = hash_password(password_grant_in.password)
         update_query = (
-            update(_UserDb)
+            update(UserDb)
             .values(
                 password_hash=update_password_hash,
             )
-            .where(_UserDb.id == user_db.id)
-            .returning(_UserDb)
+            .where(UserDb.id == user_db.id)
+            .returning(UserDb)
         )
         update_row = (await connection.execute(update_query)).mappings().one_or_none()
         if update_row is None:

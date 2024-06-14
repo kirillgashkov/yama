@@ -6,21 +6,20 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database
 
-from ._config import Config
-from ._service import get_config
-from ._service_password import (
+from ._config import Config, get_config
+from ._password import (
     _INVALID_USERNAME_OR_PASSWORD_EXCEPTION,
     _InvalidUsernameOrPasswordError,
     _password_grant_in_to_token_out,
     _PasswordGrantIn,
 )
-from ._service_token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError, _TokenOut
-from ._service_token_refresh import (
+from ._refreshtoken import (
     _make_token_out_from_refresh_token_grant_in,
     _parse_refresh_token,
     _RefreshTokenGrantIn,
     _revoke_refresh_token,
 )
+from ._token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError, _TokenOut
 
 router = APIRouter()
 

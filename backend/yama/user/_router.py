@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from yama import database
 from yama.user.auth import get_current_user_id
 
-from ._service import _Handle, _UserDb, _UserType, user_exists
-from ._service_password import hash_password
+from ._password import hash_password
+from ._user import UserDb, _Handle, _UserType, user_exists
 
 router = APIRouter()
 
@@ -39,16 +39,16 @@ async def _create_user(
     password_hash = hash_password(user_create_in.password)
 
     query = (
-        insert(_UserDb)
+        insert(UserDb)
         .values(
             type=user_create_in.type.value,
             handle=user_create_in.handle,
             password_hash=password_hash,
         )
-        .returning(_UserDb)
+        .returning(UserDb)
     )
     row = (await connection.execute(query)).mappings().one()
-    user_db = _UserDb(**row)
+    user_db = UserDb(**row)
     await connection.commit()
 
     return _user_db_to_user_out(user_db)
@@ -60,11 +60,11 @@ async def _read_current_user(
     current_user_id: Annotated[UUID, Depends(get_current_user_id)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> _UserOut:
-    query = select(_UserDb).where(_UserDb.id == current_user_id)
+    query = select(UserDb).where(UserDb.id == current_user_id)
     row = (await connection.execute(query)).mappings().one_or_none()
     if row is None:
         raise HTTPException(400, "User not found.")
-    user_db = _UserDb(**row)
+    user_db = UserDb(**row)
 
     return _user_db_to_user_out(user_db)
 
@@ -75,11 +75,11 @@ async def _read_user(
     handle: _Handle,
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> _UserOut:
-    query = select(_UserDb).where(func.lower(_UserDb.handle) == func.lower(handle))
+    query = select(UserDb).where(func.lower(UserDb.handle) == func.lower(handle))
     row = (await connection.execute(query)).mappings().one_or_none()
     if row is None:
         raise HTTPException(400, "User not found.")
-    user_db = _UserDb(**row)
+    user_db = UserDb(**row)
 
     return _user_db_to_user_out(user_db)
 
@@ -88,12 +88,12 @@ async def _read_user(
 async def _read_users(
     *, connection: Annotated[AsyncConnection, Depends(database.get_connection)]
 ) -> list[_UserOut]:
-    query = select(_UserDb)
+    query = select(UserDb)
     rows = (await connection.execute(query)).mappings()
-    users_db = [_UserDb(**row) for row in rows]
+    users_db = [UserDb(**row) for row in rows]
 
     return [_user_db_to_user_out(u) for u in users_db]
 
 
-def _user_db_to_user_out(u: _UserDb, /) -> _UserOut:
+def _user_db_to_user_out(u: UserDb, /) -> _UserOut:
     return _UserOut(id=u.id, type=_UserType(u.type), handle=u.handle)

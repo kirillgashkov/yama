@@ -6,23 +6,15 @@ from pydantic import AfterValidator
 from sqlalchemy import ForeignKey, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import Mapped, mapped_column
-from starlette.requests import Request
 
 from yama import database
-
-from ._config import Config
 
 _MIN_HANDLE_LENGTH = 1
 _MAX_HANDLE_LENGTH = 255
 
 
-def get_config(*, request: Request) -> Config:
-    """A lifetime dependency."""
-    return request.state.user_settings  # type: ignore[no-any-return]
-
-
 async def user_exists(*, handle: str, connection: AsyncConnection) -> bool:
-    query = select(exists().where(func.lower(_UserDb.handle) == func.lower(handle)))
+    query = select(exists().where(func.lower(UserDb.handle) == func.lower(handle)))
     return (await connection.execute(query)).scalar_one()
 
 
@@ -49,7 +41,7 @@ class _UserTypeDb(database.BaseTable):
     type: Mapped[str] = mapped_column(primary_key=True)
 
 
-class _UserDb(database.BaseTable):
+class UserDb(database.BaseTable):
     __tablename__ = "users"
 
     id: Mapped[UUID] = mapped_column(

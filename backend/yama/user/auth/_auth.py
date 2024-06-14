@@ -3,19 +3,13 @@ from uuid import UUID
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from starlette.requests import Request
 
-from yama.user.auth import Config
-from yama.user.auth._service_token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError
-from yama.user.auth._service_token_access import _get_user_id_from_access_token
+from ._accesstoken import _get_user_id_from_access_token
+from ._config import Config, get_config
+from ._token import _INVALID_TOKEN_EXCEPTION, _InvalidTokenError
 
 _get_oauth2_token = OAuth2PasswordBearer(tokenUrl="/auth")
 _get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=False)
-
-
-def get_config(*, request: Request) -> Config:
-    """A lifetime dependency."""
-    return request.state.user_auth_settings  # type: ignore[no-any-return]
 
 
 def get_current_user_id(

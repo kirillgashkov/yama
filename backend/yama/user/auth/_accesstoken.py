@@ -3,8 +3,8 @@ from uuid import UUID
 
 from jose import JWTError, jwt
 
-from yama.user.auth import Config
-from yama.user.auth._service_token import _InvalidTokenError
+from ._config import Config
+from ._token import _InvalidTokenError
 
 
 def _make_access_token_and_expires_in(

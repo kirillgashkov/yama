@@ -12,9 +12,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from yama import database
 
+from ._accesstoken import _make_access_token_and_expires_in
 from ._config import Config
-from ._service_token import _InvalidTokenError, _TokenOut
-from ._service_token_access import _make_access_token_and_expires_in
+from ._token import _InvalidTokenError, _TokenOut
 
 
 class _RefreshTokenGrantIn(BaseModel):

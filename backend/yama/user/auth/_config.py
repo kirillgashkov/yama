@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from starlette.requests import Request
 
 
 class TokenConfig(BaseSettings):
@@ -14,3 +15,8 @@ class Config(BaseSettings):
 
     access_token: TokenConfig
     refresh_token: TokenConfig
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.user_auth_settings  # type: ignore[no-any-return]
