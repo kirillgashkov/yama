@@ -1,19 +1,17 @@
 from enum import Enum
 from typing import Annotated, TypeAlias
-from uuid import UUID
 
 from pydantic import AfterValidator
-from sqlalchemy import ForeignKey, exists, func, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncConnection
-from sqlalchemy.orm import Mapped, mapped_column
 
-from yama import database
+from yama.user.database import UserDb
 
 _MIN_HANDLE_LENGTH = 1
 _MAX_HANDLE_LENGTH = 255
 
 
-async def user_exists(*, handle: str, connection: AsyncConnection) -> bool:
+async def _user_exists(*, handle: str, connection: AsyncConnection) -> bool:
     query = select(exists().where(func.lower(UserDb.handle) == func.lower(handle)))
     return (await connection.execute(query)).scalar_one()
 
@@ -27,37 +25,9 @@ def _check_handle(handle: str, /) -> str:
     return handle
 
 
-_Handle: TypeAlias = Annotated[str, AfterValidator(_check_handle)]
+Handle: TypeAlias = Annotated[str, AfterValidator(_check_handle)]
 
 
-class _UserType(str, Enum):
+class UserType(str, Enum):
     REGULAR = "regular"
     GROUP = "group"
-
-
-class _UserTypeDb(database.BaseTable):
-    __tablename__ = "user_types"
-
-    type: Mapped[str] = mapped_column(primary_key=True)
-
-
-class UserDb(database.BaseTable):
-    __tablename__ = "users"
-
-    id: Mapped[UUID] = mapped_column(
-        server_default=func.uuid_generate_v4(), primary_key=True
-    )
-    type: Mapped[str] = mapped_column(ForeignKey("user_types.type"))
-    handle: Mapped[str]
-    password_hash: Mapped[str | None]
-
-
-class UserAncestorUserDescendantDb(database.BaseTable):
-    __tablename__ = "user_ancestors_user_descendants"
-
-    id: Mapped[UUID] = mapped_column(
-        server_default=func.uuid_generate_v4(), primary_key=True
-    )
-    ancestor_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    descendant_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"))
-    descendant_depth: Mapped[int]

@@ -8,23 +8,24 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database
 from yama.user.auth import get_current_user_id
+from yama.user.database import UserDb
+from yama.user.password import hash_password
 
-from ._password import hash_password
-from ._user import UserDb, _Handle, _UserType, user_exists
+from ._user import Handle, UserType, _user_exists
 
 router = APIRouter()
 
 
 class _UserCreateIn(BaseModel):
-    type: Literal[_UserType.REGULAR]
-    handle: _Handle
+    type: Literal[UserType.REGULAR]
+    handle: Handle
     password: str
 
 
 class _UserOut(BaseModel):
     id: UUID
-    type: _UserType
-    handle: _Handle
+    type: UserType
+    handle: Handle
 
 
 @router.post("/users")
@@ -33,7 +34,7 @@ async def _create_user(
     user_create_in: _UserCreateIn,
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> _UserOut:
-    if await user_exists(handle=user_create_in.handle, connection=connection):
+    if await _user_exists(handle=user_create_in.handle, connection=connection):
         raise HTTPException(status_code=400, detail="User already exists.")
 
     password_hash = hash_password(user_create_in.password)
@@ -72,7 +73,7 @@ async def _read_current_user(
 @router.get("/users/{handle}")
 async def _read_user(
     *,
-    handle: _Handle,
+    handle: Handle,
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> _UserOut:
     query = select(UserDb).where(func.lower(UserDb.handle) == func.lower(handle))
@@ -96,4 +97,4 @@ async def _read_users(
 
 
 def _user_db_to_user_out(u: UserDb, /) -> _UserOut:
-    return _UserOut(id=u.id, type=_UserType(u.type), handle=u.handle)
+    return _UserOut(id=u.id, type=UserType(u.type), handle=u.handle)

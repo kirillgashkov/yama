@@ -6,8 +6,8 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncConnection
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from yama.user import (
-    UserDb,
+from yama.user.database import UserDb
+from yama.user.password import (
     hash_password,
     is_password_valid,
     should_rehash_password_with_hash,

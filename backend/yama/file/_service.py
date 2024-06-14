@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
 
 from yama.file.driver import Driver
-from yama.user import UserAncestorUserDescendantDb
+from yama.user.database import UserAncestorUserDescendantDb
 
 from ._config import Config
 from ._errors import (
