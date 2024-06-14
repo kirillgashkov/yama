@@ -6,7 +6,7 @@ from uuid import UUID
 import aiofiles.os
 from typing_extensions import override
 
-from ._driver import (
+from ._base import (
     AsyncReadable,
     Driver,
     DriverFileNotFoundError,

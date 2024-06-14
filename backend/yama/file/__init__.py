@@ -1,4 +1,5 @@
 from ._config import Config as Config
+from ._config import get_config as get_config
 from ._errors import FileFileError as FileFileError
 from ._errors import FileFileExistsError as FileFileExistsError
 from ._errors import FileFileNotFoundError as FileFileNotFoundError
@@ -21,7 +22,6 @@ from ._models import Regular as Regular
 from ._models import RegularContentWrite as RegularContentWrite
 from ._models import RegularWrite as RegularWrite
 from ._router import router as router
-from ._service import get_config as get_config
 from ._service import move_file as move_file
 from ._service import read_file as read_file
 from ._service import remove_file as remove_file

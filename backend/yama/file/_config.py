@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from starlette.requests import Request
 
 
 class Config(BaseSettings):
@@ -12,3 +13,8 @@ class Config(BaseSettings):
     max_file_size: int = 1024 * 1024 * 512  # 512 MiB
     files_base_url: str
     root_file_id: UUID
+
+
+def get_config(*, request: Request) -> Config:
+    """A lifetime dependency."""
+    return request.state.file_settings  # type: ignore[no-any-return]

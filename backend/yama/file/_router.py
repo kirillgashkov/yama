@@ -23,7 +23,7 @@ from yama.file.driver import Driver, get_driver
 from yama.user import get_config as get_user_settings
 from yama.user.auth import get_current_user_id, get_current_user_id_or_none
 
-from ._config import Config
+from ._config import Config, get_config
 from ._models import (
     Directory,
     DirectoryContentFileOut,
@@ -41,7 +41,7 @@ from ._models import (
     RegularOut,
     RegularWrite,
 )
-from ._service import get_config, read_file, remove_file, write_file
+from ._service import read_file, remove_file, write_file
 
 router = APIRouter()
 

@@ -8,7 +8,6 @@ from uuid import UUID
 from sqlalchemy import and_, case, delete, insert, literal, select, union
 from sqlalchemy.ext.asyncio import AsyncConnection
 from sqlalchemy.orm import aliased
-from starlette.requests import Request
 
 from yama.file.driver import Driver
 from yama.user import UserAncestorUserDescendantDb
@@ -38,11 +37,6 @@ from ._models import (
     _FileDb,
     _FileShareDb,
 )
-
-
-def get_config(*, request: Request) -> Config:
-    """A lifetime dependency."""
-    return request.state.file_settings  # type: ignore[no-any-return]
 
 
 async def read_file(
