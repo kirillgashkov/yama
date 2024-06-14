@@ -6,6 +6,7 @@ import { createApp } from "vue";
 
 const pinia = createPinia();
 
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const app = createApp(App);
 app.use(pinia);
 app.use(router);
