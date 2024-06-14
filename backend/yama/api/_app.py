@@ -4,9 +4,8 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from yama import database, file, user
+from yama import auth, database, file, user
 from yama.file import driver as file_driver
-from yama.user import auth
 
 from ._router import router
 

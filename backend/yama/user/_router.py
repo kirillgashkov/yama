@@ -7,7 +7,7 @@ from sqlalchemy import func, insert, select
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database
-from yama.user.auth import get_current_user_id
+from yama.auth import get_current_user_id
 from yama.user.database import UserDb
 from yama.user.password import hash_password
 

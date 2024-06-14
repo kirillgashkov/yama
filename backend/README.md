@@ -38,7 +38,7 @@ Noteworthy modules:
 
 - [`user`](yama/user) manages users.
 
-- [`user/auth`](yama/user/auth) provides user authorization based on OAuth2.
+- [`user/auth`](yama/auth) provides user authorization based on OAuth2.
 
   It supports password and refresh token grants and has an ability to revoke an
   issued refresh token.
