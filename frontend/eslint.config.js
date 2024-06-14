@@ -12,6 +12,9 @@ const eslintrc = new FlatCompat({
 });
 
 export default ts.config(
+  {
+    ignores: ["dist/"],
+  },
   js.configs.recommended,
   ...ts.configs.recommendedTypeChecked,
   ...eslintrc.extends("plugin:vue/vue3-recommended"), // Depends on `eslint-plugin-vue`
