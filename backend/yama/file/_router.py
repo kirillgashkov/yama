@@ -24,8 +24,7 @@ from yama.user import get_config as get_user_settings
 from yama.user.auth import get_current_user_id, get_current_user_id_or_none
 
 from ._config import Config
-from ._service import get_config, read_file, remove_file, write_file
-from ._service_models import (
+from ._models import (
     Directory,
     DirectoryContentFileOut,
     DirectoryContentOut,
@@ -42,6 +41,7 @@ from ._service_models import (
     RegularOut,
     RegularWrite,
 )
+from ._service import get_config, read_file, remove_file, write_file
 
 router = APIRouter()
 

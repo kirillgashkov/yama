@@ -4,8 +4,8 @@ from fastapi import Depends
 from starlette.requests import Request
 
 from ._config import Config
-from ._service_driver import Driver
-from ._service_driver_file_system import FileSystemDriver
+from ._driver import Driver
+from ._filesystem import FileSystemDriver
 
 
 def get_config(*, request: Request) -> Config:

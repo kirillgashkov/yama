@@ -14,14 +14,14 @@ from yama.file.driver import Driver
 from yama.user import UserAncestorUserDescendantDb
 
 from ._config import Config
-from ._service_exceptions import (
+from ._errors import (
     FileFileExistsError,
     FileFileNotFoundError,
     FileIsADirectoryError,
     FileNotADirectoryError,
     FilePermissionError,
 )
-from ._service_models import (
+from ._models import (
     Directory,
     DirectoryContent,
     DirectoryContentFile,

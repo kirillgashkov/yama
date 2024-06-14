@@ -1,9 +1,9 @@
 from ._config import Config as Config
+from ._driver import AsyncReadable as AsyncReadable
+from ._driver import Driver as Driver
+from ._driver import DriverFileError as DriverFileError
+from ._driver import DriverFileNotFoundError as DriverFileNotFoundError
+from ._driver import DriverFileTooLargeError as DriverFileTooLargeError
+from ._filesystem import FileSystemDriver as FileSystemDriver
 from ._service import get_config as get_config
 from ._service import get_driver as get_driver
-from ._service_driver import AsyncReadable as AsyncReadable
-from ._service_driver import Driver as Driver
-from ._service_driver import DriverFileError as DriverFileError
-from ._service_driver import DriverFileNotFoundError as DriverFileNotFoundError
-from ._service_driver import DriverFileTooLargeError as DriverFileTooLargeError
-from ._service_driver_file_system import FileSystemDriver as FileSystemDriver

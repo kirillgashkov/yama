@@ -4,8 +4,8 @@ from uuid import UUID
 import aiofiles
 import pytest
 
-from ._service_driver import DriverFileNotFoundError, DriverFileTooLargeError
-from ._service_driver_file_system import FileSystemDriver
+from ._driver import DriverFileNotFoundError, DriverFileTooLargeError
+from ._filesystem import FileSystemDriver
 
 
 async def test_file_system_driver_read_regular_content(*, tmp_path: Path) -> None:
