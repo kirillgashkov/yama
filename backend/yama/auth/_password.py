@@ -39,7 +39,7 @@ async def _password_grant_in_to_token_out(
     password_grant_in: _PasswordGrantIn,
     /,
     *,
-    settings: Config,
+    config: Config,
     connection: AsyncConnection,
 ) -> _TokenOut:
     query = select(UserDb).where(
@@ -71,9 +71,9 @@ async def _password_grant_in_to_token_out(
         await connection.commit()
 
     access_token, expires_in = _make_access_token_and_expires_in(
-        user_db.id, settings=settings
+        user_db.id, config=config
     )
-    refresh_token = _make_refresh_token(user_db.id, settings=settings)
+    refresh_token = _make_refresh_token(user_db.id, config=config)
     return _TokenOut(
         access_token=access_token,
         token_type="bearer",

@@ -11,25 +11,25 @@ from ._router import router
 
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
-    database_settings = database.Config()  # pyright: ignore[reportCallIssue]
-    file_settings = file.Config()  # pyright: ignore[reportCallIssue]
-    user_settings = user.Config()  # pyright: ignore[reportCallIssue]
-    auth_settings = auth.Config()  # pyright: ignore[reportCallIssue]
+    database_config = database.Config()  # pyright: ignore[reportCallIssue]
+    file_config = file.Config()  # pyright: ignore[reportCallIssue]
+    user_config = user.Config()  # pyright: ignore[reportCallIssue]
+    auth_config = auth.Config()  # pyright: ignore[reportCallIssue]
 
     async with database.make_engine(
-        host=database_settings.host,
-        port=database_settings.port,
-        username=database_settings.username,
-        password=database_settings.password,
-        database=database_settings.database,
+        host=database_config.host,
+        port=database_config.port,
+        username=database_config.username,
+        password=database_config.password,
+        database=database_config.database,
     ) as engine:
         # These must not be accessed directly, they must
         # be accessed through lifetime dependencies.
         yield {
             "engine": engine,
-            "file_settings": file_settings,
-            "user_settings": user_settings,
-            "auth_settings": auth_settings,
+            "file_settings": file_config,
+            "user_settings": user_config,
+            "auth_settings": auth_config,
         }
 
 

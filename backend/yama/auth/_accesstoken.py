@@ -11,10 +11,10 @@ def _make_access_token_and_expires_in(
     user_id: UUID,
     /,
     *,
-    settings: Config,
+    config: Config,
 ) -> tuple[str, int]:
     now = datetime.now(UTC)
-    expire_seconds = settings.access_token.expire_seconds
+    expire_seconds = config.access_token.expire_seconds
 
     claims = {
         "sub": str(user_id),
@@ -24,18 +24,18 @@ def _make_access_token_and_expires_in(
 
     token = jwt.encode(
         claims,
-        key=settings.access_token.key,
-        algorithm=settings.access_token.algorithm,
+        key=config.access_token.key,
+        algorithm=config.access_token.algorithm,
     )
     return token, expire_seconds
 
 
-def _get_user_id_from_access_token(token: str, /, *, settings: Config) -> UUID:
+def _get_user_id_from_access_token(token: str, /, *, config: Config) -> UUID:
     try:
         claims = jwt.decode(
             token,
-            key=settings.access_token.key,
-            algorithms=[settings.access_token.algorithm],
+            key=config.access_token.key,
+            algorithms=[config.access_token.algorithm],
         )
     except JWTError:
         raise _InvalidTokenError()

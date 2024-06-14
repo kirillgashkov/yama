@@ -36,19 +36,17 @@ async def _make_token_out_from_refresh_token_grant_in(
     refresh_token_grant_in: _RefreshTokenGrantIn,
     /,
     *,
-    settings: Config,
+    config: Config,
     connection: AsyncConnection,
 ) -> _TokenOut:
     old_refresh_token = await _parse_refresh_token(
-        refresh_token_grant_in.refresh_token, settings=settings, connection=connection
+        refresh_token_grant_in.refresh_token, config=config, connection=connection
     )
 
     access_token, expires_in = _make_access_token_and_expires_in(
-        old_refresh_token.user_id, settings=settings
+        old_refresh_token.user_id, config=config
     )
-    new_refresh_token = _make_refresh_token(
-        old_refresh_token.user_id, settings=settings
-    )
+    new_refresh_token = _make_refresh_token(old_refresh_token.user_id, config=config)
     token_out = _TokenOut(
         access_token=access_token,
         token_type="bearer",
@@ -64,10 +62,10 @@ def _make_refresh_token(
     user_id: UUID,
     /,
     *,
-    settings: Config,
+    config: Config,
 ) -> str:
     now = datetime.now(UTC)
-    expire_seconds = settings.refresh_token.expire_seconds
+    expire_seconds = config.refresh_token.expire_seconds
 
     claims = {
         "sub": str(user_id),
@@ -78,8 +76,8 @@ def _make_refresh_token(
 
     return jwt.encode(
         claims,
-        key=settings.refresh_token.key,
-        algorithm=settings.refresh_token.algorithm,
+        key=config.refresh_token.key,
+        algorithm=config.refresh_token.algorithm,
     )
 
 
@@ -91,13 +89,13 @@ class _RefreshToken:
 
 
 async def _parse_refresh_token(
-    token: str, /, *, settings: Config, connection: AsyncConnection
+    token: str, /, *, config: Config, connection: AsyncConnection
 ) -> _RefreshToken:
     try:
         claims = jwt.decode(
             token,
-            key=settings.refresh_token.key,
-            algorithms=[settings.refresh_token.algorithm],
+            key=config.refresh_token.key,
+            algorithms=[config.refresh_token.algorithm],
         )
     except JWTError:
         raise _InvalidTokenError()

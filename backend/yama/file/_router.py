@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from yama import database, user
 from yama.auth import get_current_user_id, get_current_user_id_or_none
-from yama.user import get_config as get_user_settings
+from yama.user import get_config as get_user_config
 
 from ._config import Config, get_config
 from ._driver import Driver, get_driver
@@ -58,8 +58,8 @@ async def _read_file(
     content: Annotated[bool, Query()] = False,
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
-    settings: Annotated[Config, Depends(get_config)],
-    user_settings: Annotated[user.Config, Depends(get_user_settings)],
+    config: Annotated[Config, Depends(get_config)],
+    user_config: Annotated[user.Config, Depends(get_user_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut | StreamingResponse:
@@ -67,9 +67,9 @@ async def _read_file(
         file = await read_file(
             path,
             max_depth=0,
-            user_id=user_id or user_settings.public_user_id,
-            working_file_id=working_file_id or settings.root_file_id,
-            settings=settings,
+            user_id=user_id or user_config.public_user_id,
+            working_file_id=working_file_id or config.root_file_id,
+            config=config,
             connection=connection,
         )
         match file:
@@ -79,11 +79,11 @@ async def _read_file(
                     async with driver.read_regular_content(id_) as f:
                         file_size = 0
                         while chunk := await f.read(
-                            min(settings.chunk_size, settings.max_file_size - file_size)
+                            min(config.chunk_size, config.max_file_size - file_size)
                         ):
                             yield chunk
                             file_size += len(chunk)
-                            if file_size >= settings.max_file_size:
+                            if file_size >= config.max_file_size:
                                 break
 
                 return StreamingResponse(content_stream())
@@ -98,13 +98,13 @@ async def _read_file(
     file = await read_file(
         path,
         max_depth=1,
-        user_id=user_id or user_settings.public_user_id,
-        working_file_id=working_file_id or settings.root_file_id,
-        settings=settings,
+        user_id=user_id or user_config.public_user_id,
+        working_file_id=working_file_id or config.root_file_id,
+        config=config,
         connection=connection,
     )
     file_out = _file_to_file_out(
-        file, max_depth=1, files_base_url=settings.files_base_url
+        file, max_depth=1, files_base_url=config.files_base_url
     )
     return file_out
 
@@ -118,8 +118,8 @@ async def _create_or_update_file(
     type: Annotated[FileType, Form()],
     content: Annotated[UploadFile | None, FastAPIFile()] = None,
     user_id: Annotated[UUID | None, Depends(get_current_user_id_or_none)],
-    settings: Annotated[Config, Depends(get_config)],
-    user_settings: Annotated[user.Config, Depends(get_user_settings)],
+    config: Annotated[Config, Depends(get_config)],
+    user_config: Annotated[user.Config, Depends(get_user_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
@@ -146,14 +146,14 @@ async def _create_or_update_file(
         file_write,
         path,
         exist_ok=exist_ok,
-        user_id=user_id or user_settings.public_user_id,
-        working_file_id=working_file_id or settings.root_file_id,
-        settings=settings,
+        user_id=user_id or user_config.public_user_id,
+        working_file_id=working_file_id or config.root_file_id,
+        config=config,
         connection=connection,
         driver=driver,
     )
     file_out = _file_to_file_out(
-        file, max_depth=0, files_base_url=settings.files_base_url
+        file, max_depth=0, files_base_url=config.files_base_url
     )
     return file_out
 
@@ -164,21 +164,21 @@ async def _delete_file(
     path: FilePath,
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID, Depends(get_current_user_id)],
-    settings: Annotated[Config, Depends(get_config)],
-    user_settings: Annotated[user.Config, Depends(get_user_settings)],
+    config: Annotated[Config, Depends(get_config)],
+    user_config: Annotated[user.Config, Depends(get_user_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
     file = await remove_file(
         path,
-        user_id=user_id or user_settings.public_user_id,
-        working_file_id=working_file_id or settings.root_file_id,
-        settings=settings,
+        user_id=user_id or user_config.public_user_id,
+        working_file_id=working_file_id or config.root_file_id,
+        config=config,
         connection=connection,
         driver=driver,
     )
     file_out = _file_to_file_out(
-        file, max_depth=0, files_base_url=settings.files_base_url
+        file, max_depth=0, files_base_url=config.files_base_url
     )
     return file_out
 

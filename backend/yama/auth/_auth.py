@@ -15,11 +15,11 @@ _get_oauth2_token_or_none = OAuth2PasswordBearer(tokenUrl="/auth", auto_error=Fa
 def get_current_user_id(
     *,
     token: Annotated[str, Depends(_get_oauth2_token)],
-    settings: Annotated[Config, Depends(get_config)],
+    config: Annotated[Config, Depends(get_config)],
 ) -> UUID:
     """A dependency."""
     try:
-        return _get_user_id_from_access_token(token, settings=settings)
+        return _get_user_id_from_access_token(token, config=config)
     except _InvalidTokenError:
         raise _INVALID_TOKEN_EXCEPTION
 
@@ -27,12 +27,12 @@ def get_current_user_id(
 def get_current_user_id_or_none(
     *,
     token: Annotated[str | None, Depends(_get_oauth2_token_or_none)],
-    settings: Annotated[Config, Depends(get_config)],
+    config: Annotated[Config, Depends(get_config)],
 ) -> UUID | None:
     """A dependency."""
     if token is None:
         return None
     try:
-        return _get_user_id_from_access_token(token, settings=settings)
+        return _get_user_id_from_access_token(token, config=config)
     except _InvalidTokenError:
         return None

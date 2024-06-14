@@ -54,21 +54,21 @@ def _get_grant_in(
 async def _authorize(
     *,
     grant_in: Annotated[_GrantIn, Depends(_get_grant_in)],
-    settings: Annotated[Config, Depends(get_config)],
+    config: Annotated[Config, Depends(get_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> _TokenOut:
     match grant_in:
         case _PasswordGrantIn():
             try:
                 return await _password_grant_in_to_token_out(
-                    grant_in, settings=settings, connection=connection
+                    grant_in, config=config, connection=connection
                 )
             except _InvalidUsernameOrPasswordError:
                 raise _INVALID_USERNAME_OR_PASSWORD_EXCEPTION
         case _RefreshTokenGrantIn():
             try:
                 return await _make_token_out_from_refresh_token_grant_in(
-                    grant_in, settings=settings, connection=connection
+                    grant_in, config=config, connection=connection
                 )
             except _InvalidTokenError:
                 raise _INVALID_TOKEN_EXCEPTION
@@ -80,12 +80,12 @@ async def _authorize(
 async def _unauthorize(
     *,
     refresh_token: Annotated[str, Form()],
-    settings: Annotated[Config, Depends(get_config)],
+    config: Annotated[Config, Depends(get_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
 ) -> None:
     try:
         t = await _parse_refresh_token(
-            refresh_token, settings=settings, connection=connection
+            refresh_token, config=config, connection=connection
         )
     except _InvalidTokenError:
         raise _INVALID_TOKEN_EXCEPTION

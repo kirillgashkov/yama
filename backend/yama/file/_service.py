@@ -46,12 +46,12 @@ async def read_file(
     max_depth: int | None,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Config,
+    config: Config,
     connection: AsyncConnection,
 ) -> File:
     id_ = await _path_to_id(
         path,
-        root_file_id=settings.root_file_id,
+        root_file_id=config.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
     )
@@ -80,13 +80,13 @@ async def write_file(
     exist_ok: bool = True,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Config,
+    config: Config,
     connection: AsyncConnection,
     driver: Driver,
 ) -> File:
     parent_id, id_ = await _path_to_parent_id_and_id_or_none(
         path,
-        root_file_id=settings.root_file_id,
+        root_file_id=config.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
     )
@@ -132,8 +132,8 @@ async def write_file(
             _ = await driver.write_regular_content(
                 content.stream,
                 file.id,
-                chunk_size=settings.chunk_size,
-                max_file_size=settings.max_file_size,
+                chunk_size=config.chunk_size,
+                max_file_size=config.max_file_size,
             )
         case DirectoryWrite():
             ...
@@ -152,13 +152,13 @@ async def remove_file(
     *,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Config,
+    config: Config,
     connection: AsyncConnection,
     driver: Driver,
 ) -> File:
     id_ = await _path_to_id(
         path,
-        root_file_id=settings.root_file_id,
+        root_file_id=config.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
     )
@@ -198,18 +198,18 @@ async def move_file(
     *,
     user_id: UUID,
     working_file_id: UUID,
-    settings: Config,
+    config: Config,
     connection: AsyncConnection,
 ) -> File:
     src_parent_id, src_id = await _path_to_parent_id_and_id(
         src_path,
-        root_file_id=settings.root_file_id,
+        root_file_id=config.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
     )
     dst_parent_id = await _path_to_parent_id(
         dst_path,
-        root_file_id=settings.root_file_id,
+        root_file_id=config.root_file_id,
         working_file_id=working_file_id,
         connection=connection,
     )

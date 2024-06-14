@@ -119,10 +119,10 @@ def _id_to_incomplete_path(id_: UUID, /, *, file_system_dir: Path) -> Path:
     return file_system_dir / (id_.hex + ".incomplete")
 
 
-def get_driver(*, settings: Annotated[Config, Depends(get_config)]) -> Driver:
+def get_driver(*, config: Annotated[Config, Depends(get_config)]) -> Driver:
     """A dependency."""
-    match settings.driver.type:
+    match config.driver.type:
         case "file-system":
-            return FileSystemDriver(file_system_dir=settings.driver.file_system_dir)
+            return FileSystemDriver(file_system_dir=config.driver.file_system_dir)
         case _:
-            assert_never(settings.driver)
+            assert_never(config.driver)
