@@ -26,4 +26,4 @@ class Config(BaseSettings):
 
 def get_config(*, request: Request) -> Config:
     """A lifetime dependency."""
-    return request.state.file_settings  # type: ignore[no-any-return]
+    return request.state.file_config  # type: ignore[no-any-return]

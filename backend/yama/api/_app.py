@@ -27,9 +27,9 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
         # be accessed through lifetime dependencies.
         yield {
             "engine": engine,
-            "file_settings": file_config,
-            "user_settings": user_config,
-            "auth_settings": auth_config,
+            "file_config": file_config,
+            "user_config": user_config,
+            "auth_config": auth_config,
         }
 
 

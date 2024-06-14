@@ -19,4 +19,4 @@ class Config(BaseSettings):
 
 def get_config(*, request: Request) -> Config:
     """A lifetime dependency."""
-    return request.state.auth_settings  # type: ignore[no-any-return]
+    return request.state.auth_config  # type: ignore[no-any-return]
