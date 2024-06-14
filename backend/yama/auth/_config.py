@@ -10,7 +10,7 @@ class TokenConfig(BaseSettings):
 
 class Config(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="yama__user__auth__", env_nested_delimiter="__"
+        env_prefix="yama__auth__", env_nested_delimiter="__"
     )
 
     access_token: TokenConfig
@@ -19,4 +19,4 @@ class Config(BaseSettings):
 
 def get_config(*, request: Request) -> Config:
     """A lifetime dependency."""
-    return request.state.user_auth_settings  # type: ignore[no-any-return]
+    return request.state.auth_settings  # type: ignore[no-any-return]

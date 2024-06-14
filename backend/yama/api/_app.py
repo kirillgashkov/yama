@@ -14,7 +14,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
     database_settings = database.Config()  # pyright: ignore[reportCallIssue]
     file_settings = file.Config()  # pyright: ignore[reportCallIssue]
     user_settings = user.Config()  # pyright: ignore[reportCallIssue]
-    user_auth_settings = auth.Config()  # pyright: ignore[reportCallIssue]
+    auth_settings = auth.Config()  # pyright: ignore[reportCallIssue]
 
     async with database.make_engine(
         host=database_settings.host,
@@ -29,7 +29,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
             "engine": engine,
             "file_settings": file_settings,
             "user_settings": user_settings,
-            "user_auth_settings": user_auth_settings,
+            "auth_settings": auth_settings,
         }
 
 
