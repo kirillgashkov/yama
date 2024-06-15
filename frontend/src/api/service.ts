@@ -1,11 +1,11 @@
-import {useApiStore} from "@/api/store";
+import { useApiStore } from "@/api/store";
 
 if (typeof import.meta.env.VITE_API_BASE_URL !== "string") {
   throw new Error("VITE_API_BASE_URL is not a string.");
 }
-const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL: string = import.meta.env.VITE_API_BASE_URL;
 if (import.meta.env.DEV) {
-    console.log("API base URL:", API_BASE_URL);
+  console.log("API base URL:", API_BASE_URL);
 }
 
 async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
@@ -62,7 +62,7 @@ export function useApiService() {
 
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
-      return await response.json() as unknown;
+      return (await response.json()) as unknown;
     } else {
       return await response.blob();
     }
@@ -81,10 +81,12 @@ export function useApiService() {
     });
     if (!response.ok) {
       store.clearTokens();
-      throw new Error(`Failed to refresh token with status ${response.status}.`);
+      throw new Error(
+        `Failed to refresh token with status ${response.status}.`,
+      );
     }
 
-    const token = await response.json() as TokenOut;
+    const token = (await response.json()) as TokenOut;
     store.setTokens(token.access_token, token.refresh_token);
   }
 
@@ -115,7 +117,7 @@ export function useApiService() {
         throw new Error(`Authentication failed with status ${response.status}`);
       }
 
-      const token = await response.json() as TokenOut;
+      const token = (await response.json()) as TokenOut;
       store.setTokens(token.access_token, token.refresh_token);
     },
     async unauth(): Promise<void> {
@@ -129,7 +131,9 @@ export function useApiService() {
         body: formData,
       });
       if (!response.ok) {
-        throw new Error(`Failed to unauthenticate with status ${response.status}`);
+        throw new Error(
+          `Failed to unauthenticate with status ${response.status}`,
+        );
       }
 
       store.clearTokens();
