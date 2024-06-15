@@ -1,6 +1,6 @@
 # Yama
 
-The backend server is a FastAPI application with a modular architecture inspired
+The backend server is a FastAPI application with modular architecture inspired
 by Go.
 
 Noteworthy modules:
@@ -8,7 +8,7 @@ Noteworthy modules:
 - [`api`](yama/api) is responsible for the FastAPI application itself.
 
   It collects routes from other modules and manages application's lifetime
-  dependencies, such as the database engine and module settings. 
+  dependencies, such as the database engine and module configuration.
 
 - [`database`](yama/database) provides other modules with database connections.
 
@@ -41,8 +41,8 @@ Noteworthy modules:
   Markdown files. To get out of this pickle the functions are executed in a
   safe environment using Docker to keep them isolated from the application.
 
-  For now this module can execute the import and export functions. These
-  functions are implemented as separate modules and described below.
+  The module provides 2 functions: import and export. These functions are
+  implemented as separate modules and made available via the API.
 
 - [`import_`](yama/import_) takes a Microsoft Word document and converts it to
   Markdown using [Pandoc](https://pandoc.org/).
