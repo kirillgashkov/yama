@@ -16,8 +16,8 @@ export default ts.config(
     ignores: ["dist/"],
   },
   js.configs.recommended,
-  ...ts.configs.recommendedTypeChecked,
-  ...eslintrc.extends("plugin:vue/vue3-recommended"), // Depends on `eslint-plugin-vue`
+  ...ts.configs.recommended, // recommendedTypeChecked doesn't do as well as tsc
+  ...eslintrc.extends("plugin:vue/vue3-recommended"), // Depends on eslint-plugin-vue
   prettierConfig,
   {
     languageOptions: {
