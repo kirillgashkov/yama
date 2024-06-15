@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "noEmit": true,
+    "paths": { "@/*": ["./src/*"] }
+  },
+  "extends": "./tsconfig.base.json",
+  "include": ["env.dom.d.ts", "src/**/*.ts", "src/**/*.vue"]
+}
