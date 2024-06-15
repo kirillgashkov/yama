@@ -1,0 +1,19 @@
+[[parameters]]
+name = "title_page"
+type = ["bool", "string"]
+default = false
+
+[reader]
+name = "commonmark"
+
+[[filters]]
+name = "convert_svg_to_pdf.lua"
+type = "lua"
+[[filters]]
+name = "fix_ordered_list.lua"
+type = "lua"
+
+[writer]
+name = "latex"
+template = "template.tex"
+variables = {logo_path = "path/to/logo.png"}
