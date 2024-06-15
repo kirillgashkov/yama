@@ -8,6 +8,27 @@ if (import.meta.env.DEV) {
   console.log("API base URL:", API_BASE_URL);
 }
 
+interface ErrorOut {
+  detail: string;
+}
+
+export class ApiError extends Error {
+  public detail: string;
+  public status: number;
+
+  constructor(detail: string, status: number) {
+    super();
+    this.detail = detail;
+    this.status = status;
+    this.message = `${status} ${detail}`;
+  }
+}
+
+async function createApiError(response: Response): Promise<ApiError> {
+  const e = (await response.json()) as ErrorOut;
+  return new ApiError(e.detail, response.status);
+}
+
 async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
   return await fetch(API_BASE_URL + path, init);
 }
@@ -57,7 +78,7 @@ export function useApiService() {
 
     if (!response.ok) {
       // TODO: Improve handling of error responses.
-      throw new Error(`Request failed with status ${response.status}.`);
+      throw await createApiError(response);
     }
 
     const contentType = response.headers.get("content-type");
@@ -81,9 +102,7 @@ export function useApiService() {
     });
     if (!response.ok) {
       store.clearTokens();
-      throw new Error(
-        `Failed to refresh token with status ${response.status}.`,
-      );
+      throw await createApiError(response);
     }
 
     const token = (await response.json()) as TokenOut;
@@ -114,7 +133,7 @@ export function useApiService() {
         body: formData,
       });
       if (!response.ok) {
-        throw new Error(`Authentication failed with status ${response.status}`);
+        throw await createApiError(response);
       }
 
       const token = (await response.json()) as TokenOut;
@@ -131,9 +150,7 @@ export function useApiService() {
         body: formData,
       });
       if (!response.ok) {
-        throw new Error(
-          `Failed to unauthenticate with status ${response.status}`,
-        );
+        throw await createApiError(response);
       }
 
       store.clearTokens();
