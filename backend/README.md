@@ -1,27 +1,7 @@
 # Yama
 
 The backend server is a FastAPI application with a modular architecture inspired
-by Netflix's [dispatch](https://github.com/Netflix/dispatch). Each module has a
-consistent and straightforward structure:
-
-- `routes.py` for FastAPI routes.
-- `dependencies.py` for FastAPI dependencies.
-- `utils.py` for *utility* functions (also collectively known as a service,
-  these shouldn't be confused with helper functions, these are functions with
-  exposed module-specific business logic that can be used by other modules).
-- `models.py` for SQLAlchemy and Pydantic models.
-- `settings.py` for settings.
-
-<blockquote>
-<details>
-  <summary>Why <code>utils.py</code> and not <code>service.py</code>?</summary>
-
-  Taste. And a bit of inspiration by
-  <a href="https://tailwindcss.com/">Tailwind's</a> usage of the word "utility".
-  Besides, generally it's not a good idea to have random <code>utils.py</code>
-  with generic helper functions all over your project anyways.
-</details>
-</blockquote>
+by Go.
 
 Noteworthy modules:
 
@@ -32,16 +12,18 @@ Noteworthy modules:
 
 - [`database`](yama/database) provides other modules with database connections.
 
-- [`database/provision`](yama/database/provision) provisions the Postgres database.
+- [`database/provision`](yama/database/provision) provisions the Postgres
+  database.
 
-  It uses [golang-migrate](https://github.com/golang-migrate/migrate) for database migrations.
+  It uses [golang-migrate](https://github.com/golang-migrate/migrate) for
+  database migrations.
 
-- [`user`](yama/user) manages users.
-
-- [`user/auth`](yama/auth) provides user authorization based on OAuth2.
+- [`auth`](yama/auth) provides user authorization based on OAuth2.
 
   It supports password and refresh token grants and has an ability to revoke an
   issued refresh token.
+
+- [`user`](yama/user) manages users.
 
 - [`file`](yama/file) manages a virtual file system for notes.
 
@@ -56,15 +38,16 @@ Noteworthy modules:
 
   A function is a (potentially) external program that operates on Markdown
   files. The external program could be vulnerable and untrusted, and so are the
-  Markdown files. To get out of this pickle the functions are executed in a safe
-  environment using Docker to keep them isolated from the application.
+  Markdown files. To get out of this pickle the functions are executed in a
+  safe environment using Docker to keep them isolated from the application.
 
-- [`function/import_`](yama/function/import_) implements the import function
-  that accepts a Microsoft Word document and converts it to Markdown using
-  [Pandoc](https://pandoc.org/).
+  For now this module can execute the import and export functions. These
+  functions are implemented as separate modules and described below.
 
-- [`function/export`](yama/function/export) implements the export function that
-  accepts a Markdown document and converts it to PDF using
+- [`import_`](yama/import_) takes a Microsoft Word document and converts it to
+  Markdown using [Pandoc](https://pandoc.org/).
+
+- [`export`](yama/export) takes a Markdown document and converts it to PDF using
   [Pandoc](https://pandoc.org/) and [LaTeX](https://www.latex-project.org/).
 
 ## Installation and Running
