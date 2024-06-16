@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { type Ref, ref } from "vue";
 import { useApiService } from "@/api/service";
 
 const api = useApiService();
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const file: any = ref(null);
+const file: Ref<unknown> = ref(null);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const content: any = ref(null);
+const content: Ref<unknown> = ref(null);
 
 async function getFile() {
   try {
@@ -20,7 +18,8 @@ async function getFile() {
 
 async function getContent() {
   try {
-    content.value = await api.get(file.value.content.url);
+    const r = await api.getAsResponse((file.value as any).content.url);
+    content.value = await r.text();
   } catch (error) {
     content.value = null;
   }
