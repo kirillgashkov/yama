@@ -16,6 +16,7 @@
     "@types/eslint__eslintrc": "^2.1.1",
     "@types/eslint__js": "^8.42.3",
     "@types/eslint-config-prettier": "^6.11.3",
+    "@types/mime-types": "^2.1.4",
     "@types/node": "^20.11.20",
     "@vitejs/plugin-vue": "^5.0.4",
     "autoprefixer": "^10.4.17",
@@ -34,7 +35,10 @@
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.2.5",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.28.1",
     "codemirror": "^6.0.1",
+    "mime-types": "^2.1.35",
     "pinia": "^2.1.7",
     "vue": "^3.4.19",
     "vue-codemirror": "^6.1.1",
