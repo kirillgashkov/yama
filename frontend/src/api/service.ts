@@ -50,7 +50,7 @@ export function useApiService() {
     method: string,
     pathOrUrl: string | URL,
     body: unknown = null,
-  ): Promise<unknown> {
+  ): Promise<Response> {
     const config: RequestInit = {};
     config.method = method;
     config.headers = {};
@@ -85,12 +85,7 @@ export function useApiService() {
       throw await createApiError(response);
     }
 
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-      return (await response.json()) as unknown;
-    } else {
-      return await response.blob();
-    }
+    return await response;
   }
 
   async function refreshToken() {
@@ -115,16 +110,19 @@ export function useApiService() {
 
   return {
     async get(pathOrUrl: string | URL): Promise<unknown> {
+      return (await request("GET", pathOrUrl)).json();
+    },
+    async getAsResponse(pathOrUrl: string | URL): Promise<Response> {
       return await request("GET", pathOrUrl);
     },
     async post(pathOrUrl: string | URL, body: unknown): Promise<unknown> {
-      return await request("POST", pathOrUrl, body);
+      return (await request("POST", pathOrUrl, body)).json();
     },
     async put(pathOrUrl: string | URL, body: unknown): Promise<unknown> {
-      return await request("PUT", pathOrUrl, body);
+      return (await request("PUT", pathOrUrl, body)).json();
     },
     async delete(pathOrUrl: string | URL): Promise<unknown> {
-      return await request("DELETE", pathOrUrl);
+      return (await request("DELETE", pathOrUrl)).json();
     },
     async auth(username: string, password: string): Promise<void> {
       const formData = new FormData();
