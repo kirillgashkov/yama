@@ -28,6 +28,32 @@ async function getContent() {
   }
 }
 
+const savedAt: Ref<Date | null> = ref(null);
+const saveError: Ref<string | null> = ref(null);
+
+async function save() {
+  try {
+    saveError.value = null;
+
+    const formData = new FormData();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    formData.append("type", (file.value as any).type);
+    formData.append(
+      "content",
+      new Blob([content.value], { type: "text/plain" }),
+    );
+    await api.put("/files/etc/passwd", formData);
+
+    savedAt.value = new Date();
+  } catch (error) {
+    if (error instanceof Error) {
+      saveError.value = error.message;
+    } else {
+      saveError.value = "Unknown error";
+    }
+  }
+}
+
 const extensions = [markdown({ base: markdownLanguage })];
 const view = shallowRef();
 
@@ -71,5 +97,10 @@ function getCodemirrorStates() {
       @focus="console.log('focus', $event)"
       @blur="console.log('blur', $event)"
     />
+  </div>
+  <div>
+    <p><button @click="save">Save</button></p>
+    <p>Saved at: {{ (savedAt && savedAt.toISOString()) || "null" }}</p>
+    <p>Save error: {{ saveError || "null" }}</p>
   </div>
 </template>
