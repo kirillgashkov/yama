@@ -29,8 +29,12 @@ async function createApiError(response: Response): Promise<ApiError> {
   return new ApiError(e.detail, response.status);
 }
 
-async function fetchApi(path: string, init?: RequestInit): Promise<Response> {
-  return await fetch(API_BASE_URL + path, init);
+async function fetchApi(
+  pathOrUrl: string | URL,
+  init?: RequestInit,
+): Promise<Response> {
+  const url = new URL(pathOrUrl, API_BASE_URL);
+  return await fetch(url, init);
 }
 
 interface TokenOut {
@@ -44,7 +48,7 @@ export function useApiService() {
 
   async function request(
     method: string,
-    path: string,
+    pathOrUrl: string | URL,
     body: unknown = null,
   ): Promise<unknown> {
     const config: RequestInit = {};
@@ -66,14 +70,14 @@ export function useApiService() {
       }
     }
 
-    let response = await fetchApi(path, config);
+    let response = await fetchApi(pathOrUrl, config);
 
     if (response.status === 401 && store.refreshToken) {
       await refreshToken();
       if (store.accessToken) {
         config.headers["Authorization"] = `Bearer ${store.accessToken}`;
       }
-      response = await fetchApi(path, config);
+      response = await fetchApi(pathOrUrl, config);
     }
 
     if (!response.ok) {
@@ -110,17 +114,17 @@ export function useApiService() {
   }
 
   return {
-    async get(path: string): Promise<unknown> {
-      return await request("GET", path);
+    async get(pathOrUrl: string | URL): Promise<unknown> {
+      return await request("GET", pathOrUrl);
     },
-    async post(path: string, body: unknown): Promise<unknown> {
-      return await request("POST", path, body);
+    async post(pathOrUrl: string | URL, body: unknown): Promise<unknown> {
+      return await request("POST", pathOrUrl, body);
     },
-    async put(path: string, body: unknown): Promise<unknown> {
-      return await request("PUT", path, body);
+    async put(pathOrUrl: string | URL, body: unknown): Promise<unknown> {
+      return await request("PUT", pathOrUrl, body);
     },
-    async delete(path: string): Promise<unknown> {
-      return await request("DELETE", path);
+    async delete(pathOrUrl: string | URL): Promise<unknown> {
+      return await request("DELETE", pathOrUrl);
     },
     async auth(username: string, password: string): Promise<void> {
       const formData = new FormData();
