@@ -49,7 +49,7 @@ export function useApiService() {
   async function request(
     method: string,
     pathOrUrl: string | URL,
-    body: unknown = null,
+    body: unknown | FormData = null,
   ): Promise<Response> {
     const config: RequestInit = {};
     config.method = method;
@@ -85,7 +85,7 @@ export function useApiService() {
       throw await createApiError(response);
     }
 
-    return await response;
+    return response;
   }
 
   async function refreshToken() {
@@ -115,10 +115,16 @@ export function useApiService() {
     async getAsResponse(pathOrUrl: string | URL): Promise<Response> {
       return await request("GET", pathOrUrl);
     },
-    async post(pathOrUrl: string | URL, body: unknown): Promise<unknown> {
+    async post(
+      pathOrUrl: string | URL,
+      body: unknown | FormData,
+    ): Promise<unknown> {
       return (await request("POST", pathOrUrl, body)).json();
     },
-    async put(pathOrUrl: string | URL, body: unknown): Promise<unknown> {
+    async put(
+      pathOrUrl: string | URL,
+      body: unknown | FormData,
+    ): Promise<unknown> {
       return (await request("PUT", pathOrUrl, body)).json();
     },
     async delete(pathOrUrl: string | URL): Promise<unknown> {
