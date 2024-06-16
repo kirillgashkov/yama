@@ -11,6 +11,10 @@ async function signIn() {
   await api.auth("alice", "alice");
 }
 
+async function signInAsRoot() {
+  await api.auth("root", "root");
+}
+
 async function signOut() {
   await api.unauth();
 }
@@ -26,6 +30,7 @@ async function getCurrentUser() {
 
 <template>
   <p><button @click="signIn">Sign in</button></p>
+  <p><button @click="signInAsRoot">Sign in as root</button></p>
   <p><button @click="signOut">Sign out</button></p>
   <p><button @click="getCurrentUser">Get current user</button></p>
   <p>user: {{ user || "null" }}</p>
