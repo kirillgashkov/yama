@@ -12,6 +12,11 @@ class Config(BaseSettings):
     # The file ID of a directory used to save the output files to.
     output_file_id: UUID
 
+    # FIXME: Remove.
+    # The base of the command to export the document that will be extended with ["-o",
+    # output_path, input_path].
+    export_command_base: list[str]
+
 
 def get_config(*, request: Request) -> Config:
     """A lifetime dependency."""
