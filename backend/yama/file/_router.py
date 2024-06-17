@@ -1,9 +1,11 @@
+import logging
 from collections.abc import AsyncIterator
 from pathlib import PurePosixPath
 from typing import Annotated, assert_never
 from urllib.parse import urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
+import magic
 from fastapi import (
     APIRouter,
     Depends,
@@ -44,6 +46,7 @@ from ._models import (
 from ._service import read_file, remove_file, write_file
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -74,6 +77,17 @@ async def _read_file(
         )
         match file:
             case Regular(id=id_):
+                # TODO: Optimization opportunity: use the first chunk
+                async with driver.read_regular_content(id_) as f:
+                    sample = await f.read(2048)
+
+                try:
+                    mime_type = magic.from_buffer(sample, mime=True)
+                except Exception as e:
+                    logger.warning(
+                        "Failed to determine MIME type for file %s: %s", id_, e
+                    )
+                    mime_type = "application/octet-stream"
 
                 async def content_stream() -> AsyncIterator[bytes]:
                     async with driver.read_regular_content(id_) as f:
@@ -86,7 +100,7 @@ async def _read_file(
                             if file_size >= config.max_file_size:
                                 break
 
-                return StreamingResponse(content_stream())
+                return StreamingResponse(content_stream(), media_type=mime_type)
             case Directory():
                 raise HTTPException(
                     400,

@@ -3,8 +3,16 @@ import { createWebHistory, createRouter } from "vue-router";
 const routes = [
   { path: "/auth", component: () => import("./components/AuthPage.vue") },
   {
+    path: "/files",
+    redirect: "/files/",
+  },
+  {
+    path: "/files/:path(.*)",
+    component: () => import("./components/EditorPageTemplate.vue"),
+  },
+  {
     path: "/:pathMatch(.*)",
-    component: () => import("./components/NotFoundPage.vue"),
+    component: () => import("./components/NotFoundPageTemplate.vue"),
   },
 ];
 
