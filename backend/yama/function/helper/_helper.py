@@ -1,3 +1,4 @@
+import base64
 import logging
 import pathlib
 import subprocess
@@ -14,18 +15,18 @@ cli = typer.Typer()
 
 class FileInout(pydantic.BaseModel):
     path: pathlib.Path
-    content: bytes
+    content: pydantic.Base64Bytes
 
 
 class HelperIn(pydantic.BaseModel):
     files: list[FileInout] = pydantic.Field(default_factory=list)
-    stdin: bytes = b""
+    stdin: pydantic.Base64Bytes = b""
 
 
 class HelperOut(pydantic.BaseModel):
     files: list[FileInout]
-    stdout: bytes
-    stderr: bytes
+    stdout: pydantic.Base64Bytes
+    stderr: pydantic.Base64Bytes
     exit_code: int
 
 
@@ -56,7 +57,10 @@ def handle(
 
     files = _read_output_files(output_file_paths)
     helper_out = HelperOut(
-        files=files, stdout=stdout, stderr=stderr, exit_code=exit_code
+        files=files,
+        stdout=base64.encodebytes(stdout),
+        stderr=base64.encodebytes(stderr),
+        exit_code=exit_code,
     )
     sys.stdout.write(helper_out.model_dump_json())
 
@@ -82,6 +86,6 @@ def _read_output_files(output_file_paths: list[pathlib.Path], /) -> list[FileIno
             with open(fp, "rb") as r:
                 c = r.read()
 
-        files.append(FileInout(path=fp, content=c))
+        files.append(FileInout(path=fp, content=base64.encodebytes(c)))
 
     return files

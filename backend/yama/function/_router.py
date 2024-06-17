@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 from io import BytesIO
 from pathlib import Path, PurePosixPath
@@ -162,7 +163,9 @@ async def _read_input_files(
                 except file.DriverFileError:
                     logger.error("Failed to read regular content '%s'", id_)
                     content = b""
-                input_files.append(FileInout(path=Path(p), content=content))
+                input_files.append(
+                    FileInout(path=Path(p), content=base64.encodebytes(content))
+                )
             case file.Directory():
                 ...
             case _:
