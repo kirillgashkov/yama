@@ -6,13 +6,15 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 
 const api = useApiService();
 
+const filePath: Ref<string> = ref("/@alice/example.md");
 const file: Ref<unknown> = ref(null);
 const fileError: Ref<string | null> = ref(null);
 
 async function getFile() {
   try {
     fileError.value = null;
-    file.value = await api.get("/files/etc/passwd");
+    // FIXME: Build URL properly.
+    file.value = await api.get("/files/" + filePath.value);
   } catch (error) {
     file.value = null;
     if (error instanceof ApiError && error.name_) {
@@ -49,7 +51,8 @@ async function save() {
       "content",
       new Blob([content.value], { type: "text/plain" }),
     );
-    await api.put("/files/etc/passwd", formData);
+    // FIXME: Build URL properly.
+    await api.put("/files/" + filePath.value, formData);
 
     savedAt.value = new Date();
   } catch (error) {
@@ -85,22 +88,31 @@ function getCodemirrorStates() {
 }
 
 const exportResult: Ref<unknown> = ref(null);
+const exportStatus: Ref<string | null> = ref(null);
 
 async function exportFile() {
   try {
-    exportResult.value = await api.post("/functions/export?file=/etc/passwd");
+    // FIXME: Build URL properly.
+    exportStatus.value = "Running.";
+    exportResult.value = await api.post(
+      "/functions/export?file=" + filePath.value,
+    );
+    exportStatus.value = "Ok or error.";
   } catch (error) {
     exportResult.value = null;
+    exportStatus.value = "Error.";
   }
 }
 </script>
 
 <template>
+  <div>
+    <p>File path: <input v-model="filePath" /></p>
+  </div>
   <p><button @click="getFile">Get file</button></p>
   <p>file: {{ file || "null" }}</p>
   <p>file error: {{ fileError || "null" }}</p>
   <p><button @click="getContent">Get content</button></p>
-  <p>content: {{ content || "null" }}</p>
   <div>
     <codemirror
       v-model="content"
@@ -123,6 +135,7 @@ async function exportFile() {
   </div>
   <div>
     <p><button @click="exportFile">Export file</button></p>
+    <p>Export status: {{ exportStatus || "null" }}</p>
     <p>Export result: {{ exportResult || "null" }}</p>
   </div>
 </template>
