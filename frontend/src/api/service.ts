@@ -9,15 +9,18 @@ if (import.meta.env.DEV) {
 }
 
 interface ErrorOut {
+  name?: string;
   detail: string;
 }
 
 export class ApiError extends Error {
+  public name_: string | null;
   public detail: string;
   public status: number;
 
-  constructor(detail: string, status: number) {
+  constructor(name: string | null, detail: string, status: number) {
     super();
+    this.name_ = name;
     this.detail = detail;
     this.status = status;
     this.message = `${status} ${detail}`;
@@ -26,7 +29,7 @@ export class ApiError extends Error {
 
 async function createApiError(response: Response): Promise<ApiError> {
   const e = (await response.json()) as ErrorOut;
-  return new ApiError(e.detail, response.status);
+  return new ApiError(e.name || null, e.detail, response.status);
 }
 
 async function fetchApi(
@@ -117,13 +120,13 @@ export function useApiService() {
     },
     async post(
       pathOrUrl: string | URL,
-      body: unknown | FormData,
+      body: unknown | FormData | null = null,
     ): Promise<unknown> {
       return (await request("POST", pathOrUrl, body)).json();
     },
     async put(
       pathOrUrl: string | URL,
-      body: unknown | FormData,
+      body: unknown | FormData | null = null,
     ): Promise<unknown> {
       return (await request("PUT", pathOrUrl, body)).json();
     },

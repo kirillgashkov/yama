@@ -1,18 +1,25 @@
 <script setup lang="ts">
 import { type Ref, ref, shallowRef } from "vue";
-import { useApiService } from "@/api/service";
+import { ApiError, useApiService } from "@/api/service";
 import { Codemirror } from "vue-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 
 const api = useApiService();
 
 const file: Ref<unknown> = ref(null);
+const fileError: Ref<string | null> = ref(null);
 
 async function getFile() {
   try {
+    fileError.value = null;
     file.value = await api.get("/files/etc/passwd");
   } catch (error) {
     file.value = null;
+    if (error instanceof ApiError && error.name_) {
+      fileError.value = error.name_;
+    } else {
+      fileError.value = "unknown";
+    }
   }
 }
 
@@ -76,11 +83,22 @@ function getCodemirrorStates() {
 
   return { cursor, length, lines };
 }
+
+const exportResult: Ref<unknown> = ref(null);
+
+async function exportFile() {
+  try {
+    exportResult.value = await api.post("/functions/export?file=/etc/passwd");
+  } catch (error) {
+    exportResult.value = null;
+  }
+}
 </script>
 
 <template>
   <p><button @click="getFile">Get file</button></p>
   <p>file: {{ file || "null" }}</p>
+  <p>file error: {{ fileError || "null" }}</p>
   <p><button @click="getContent">Get content</button></p>
   <p>content: {{ content || "null" }}</p>
   <div>
@@ -102,5 +120,9 @@ function getCodemirrorStates() {
     <p><button @click="save">Save</button></p>
     <p>Saved at: {{ (savedAt && savedAt.toISOString()) || "null" }}</p>
     <p>Save error: {{ saveError || "null" }}</p>
+  </div>
+  <div>
+    <p><button @click="exportFile">Export file</button></p>
+    <p>Export result: {{ exportResult || "null" }}</p>
   </div>
 </template>
