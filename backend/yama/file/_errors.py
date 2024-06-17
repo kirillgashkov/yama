@@ -23,11 +23,20 @@ class FileFileError(Exception):
         return f"'{self.descendant_path}' relative to {self.ancestor_id}"
 
     @property
+    def name(self) -> str:
+        return "fileError"
+
+    @property
     def detail(self) -> str:
         return f'Error with file at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
 class FileFileExistsError(FileFileError):
+    @property
+    @override
+    def name(self) -> str:
+        return "fileError.fileExists"
+
     @property
     @override
     def detail(self) -> str:
@@ -37,11 +46,21 @@ class FileFileExistsError(FileFileError):
 class FileFileNotFoundError(FileFileError):
     @property
     @override
+    def name(self) -> str:
+        return "fileError.fileNotFound"
+
+    @property
+    @override
     def detail(self) -> str:
         return f'File not found at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
 class FileIsADirectoryError(FileFileError):
+    @property
+    @override
+    def name(self) -> str:
+        return "fileError.isADirectory"
+
     @property
     @override
     def detail(self) -> str:
@@ -51,6 +70,11 @@ class FileIsADirectoryError(FileFileError):
 class FileNotADirectoryError(FileFileError):
     @property
     @override
+    def name(self) -> str:
+        return "fileError.notADirectory"
+
+    @property
+    @override
     def detail(self) -> str:
         return f'File is not a directory at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
@@ -58,12 +82,19 @@ class FileNotADirectoryError(FileFileError):
 class FilePermissionError(FileFileError):
     @property
     @override
+    def name(self) -> str:
+        return "fileError.permission"
+
+    @property
+    @override
     def detail(self) -> str:
         return f'Permission denied for file at path "{self.descendant_path}" relative to {self.ancestor_id}.'
 
 
 def _handle_file_file_error(_: Request, exc: FileFileError, /) -> JSONResponse:
-    return JSONResponse(status_code=400, content={"detail": exc.detail})
+    return JSONResponse(
+        status_code=400, content={"name": exc.name, "detail": exc.detail}
+    )
 
 
 exception_handlers = [(FileFileError, _handle_file_file_error)]
