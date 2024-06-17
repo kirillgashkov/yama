@@ -22,7 +22,7 @@ router = fastapi.APIRouter()
 
 class OkExportFunctionOut(pydantic.BaseModel):
     status: Literal["ok"] = "ok"
-    output_file: file.Regular
+    output_file: file.RegularOut
     stdout: bytes
     stderr: bytes
 
@@ -97,13 +97,14 @@ async def handle_export(
     output_files = helper_out.files
 
     if helper_out.exit_code != 0:
-        return ErrorFunctionOut(message="Export failed", stdout=stdout, stderr=stderr)
+        return ErrorFunctionOut(
+            message="Export failed", stdout=helper_out.stdout, stderr=helper_out.stderr
+        )
 
     # Write the output files.
     output_dir = await _write_output_files(
         output_files,
         user_id=user_id,
-        working_file_id=working_file_id or file_config.root_file_id,
         config=config,
         file_config=file_config,
         connection=connection,
@@ -113,14 +114,18 @@ async def handle_export(
     # Read the exported file.
     output_file = await file.read_file(
         PurePosixPath(output_path),
-        max_depth=0,
+        max_depth=1,
         user_id=user_id,
         working_file_id=output_dir.id,
         config=file_config,
         connection=connection,
     )
+    output_file_out = file.file_to_file_out(output_file, config=file_config)
+    assert isinstance(output_file_out, file.RegularOut)
 
-    return OkExportFunctionOut(output_file=output_file, stdout=stdout, stderr=stderr)
+    return OkExportFunctionOut(
+        output_file=output_file_out, stdout=helper_out.stdout, stderr=helper_out.stderr
+    )
 
 
 async def _read_input_files(
@@ -171,7 +176,6 @@ async def _write_output_files(
     /,
     *,
     user_id: UUID,
-    working_file_id: UUID,
     config: Config,
     file_config: file.Config,
     connection: AsyncConnection,
@@ -194,14 +198,26 @@ async def _write_output_files(
         driver=driver,
     )
 
+    # TODO: Defer this to the end.
+    # Share the output directory with the user.
+    await file.share_file(
+        PurePosixPath("."),
+        share_type=file.FileShareType.READ,
+        to_user_id=user_id,
+        from_user_id=config.output_user_id,
+        working_file_id=output_dir.id,
+        config=file_config,
+        connection=connection,
+    )
+
     if not output_files:
         return output_dir
 
     assert len(output_files) == 1
     output_file = output_files[0]
 
+    # Create the output file.
     try:
-        # Create the output file.
         content_stream = fastapi.UploadFile(BytesIO(output_file.content))
         file_write = file.RegularWrite(
             type=file.FileType.REGULAR,
@@ -216,17 +232,6 @@ async def _write_output_files(
             config=file_config,
             connection=connection,
             driver=driver,
-        )
-
-        # Share the output file with the user.
-        await file.share_file(
-            PurePosixPath("."),
-            share_type=file.FileShareType.READ,
-            to_user_id=user_id,
-            from_user_id=config.output_user_id,
-            working_file_id=working_file_id or file_config.root_file_id,
-            config=file_config,
-            connection=connection,
         )
     except Exception as e:
         logger.error("Failed to write output file '%s': %s", output_file.path, e)
