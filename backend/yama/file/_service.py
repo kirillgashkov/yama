@@ -3,6 +3,7 @@ from collections.abc import Iterable
 from dataclasses import astuple, dataclass
 from pathlib import PurePosixPath
 from typing import AsyncIterable, assert_never
+from urllib.parse import urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
@@ -11,6 +12,14 @@ from sqlalchemy.orm import aliased
 
 from yama.user.database import UserAncestorUserDescendantDb
 
+from . import (
+    DirectoryContentFileOut,
+    DirectoryContentOut,
+    DirectoryOut,
+    FileOut,
+    RegularContentOut,
+    RegularOut,
+)
 from ._config import Config
 from ._driver import Driver
 from ._errors import (
@@ -1058,3 +1067,57 @@ async def _ancestor_id_and_descendant_paths_to_ids(
     }  # HACK: Implicit type cast
 
     return descendant_path_to_id
+
+
+def file_to_file_out(
+    file: File, /, *, max_depth: int | None = None, config: Config
+) -> FileOut:
+    match file:
+        case Regular(id=id_, type=type_):
+            return RegularOut(
+                id=id_,
+                type=type_,
+                content=RegularContentOut(
+                    url=_make_regular_content_url(
+                        id_, files_base_url=config.files_base_url
+                    )
+                ),
+            )
+        case Directory(id=id_, type=type_, content=content):
+            return DirectoryOut(
+                id=id_,
+                type=type_,
+                content=(
+                    DirectoryContentOut(
+                        files=[
+                            DirectoryContentFileOut(
+                                name=content_file.name,
+                                file=file_to_file_out(
+                                    content_file.file,
+                                    max_depth=(
+                                        max_depth - 1 if max_depth is not None else None
+                                    ),
+                                    config=config,
+                                ),
+                            )
+                            for content_file in content.files
+                        ]
+                    )
+                    if max_depth is None or max_depth > 0
+                    else None
+                ),
+            )
+        case _:
+            assert_never(file)
+
+
+def _make_regular_content_url(
+    id_: UUID,
+    /,
+    *,
+    files_base_url: str,
+) -> str:
+    scheme, netloc, files_base_path, _, _ = urlsplit(files_base_url)
+    path = str(PurePosixPath(files_base_path)) + "/."
+    query = urlencode({"content": True, "working_file_id": str(id_)})
+    return urlunsplit((scheme, netloc, path, query, ""))

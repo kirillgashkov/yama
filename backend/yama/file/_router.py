@@ -1,8 +1,6 @@
 import logging
 from collections.abc import AsyncIterator
-from pathlib import PurePosixPath
 from typing import Annotated, Literal, assert_never
-from urllib.parse import urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
 import magic
@@ -29,23 +27,17 @@ from ._config import Config, get_config
 from ._driver import Driver, get_driver
 from ._models import (
     Directory,
-    DirectoryContentFileOut,
-    DirectoryContentOut,
-    DirectoryOut,
     DirectoryWrite,
-    File,
     FileOut,
     FilePath,
     FileShareType,
     FileType,
     FileWrite,
     Regular,
-    RegularContentOut,
     RegularContentWrite,
-    RegularOut,
     RegularWrite,
 )
-from ._service import read_file, remove_file, share_file, write_file
+from ._service import file_to_file_out, read_file, remove_file, share_file, write_file
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -119,9 +111,7 @@ async def _read_file(
         config=config,
         connection=connection,
     )
-    file_out = _file_to_file_out(
-        file, max_depth=1, files_base_url=config.files_base_url
-    )
+    file_out = file_to_file_out(file, max_depth=1, config=config)
     return file_out
 
 
@@ -168,9 +158,7 @@ async def _create_or_update_file(
         connection=connection,
         driver=driver,
     )
-    file_out = _file_to_file_out(
-        file, max_depth=0, files_base_url=config.files_base_url
-    )
+    file_out = file_to_file_out(file, max_depth=0, config=config)
     return file_out
 
 
@@ -192,9 +180,7 @@ async def _delete_file(
         connection=connection,
         driver=driver,
     )
-    file_out = _file_to_file_out(
-        file, max_depth=0, files_base_url=config.files_base_url
-    )
+    file_out = file_to_file_out(file, max_depth=0, config=config)
     return file_out
 
 
@@ -224,59 +210,5 @@ async def _action_file(
         config=config,
         connection=connection,
     )
-    file_out = _file_to_file_out(
-        file, max_depth=0, files_base_url=config.files_base_url
-    )
+    file_out = file_to_file_out(file, max_depth=0, config=config)
     return file_out
-
-
-def _file_to_file_out(
-    file: File, /, *, max_depth: int | None, files_base_url: str
-) -> FileOut:
-    match file:
-        case Regular(id=id_, type=type_):
-            return RegularOut(
-                id=id_,
-                type=type_,
-                content=RegularContentOut(
-                    url=_make_regular_content_url(id_, files_base_url=files_base_url)
-                ),
-            )
-        case Directory(id=id_, type=type_, content=content):
-            return DirectoryOut(
-                id=id_,
-                type=type_,
-                content=(
-                    DirectoryContentOut(
-                        files=[
-                            DirectoryContentFileOut(
-                                name=content_file.name,
-                                file=_file_to_file_out(
-                                    content_file.file,
-                                    max_depth=(
-                                        max_depth - 1 if max_depth is not None else None
-                                    ),
-                                    files_base_url=files_base_url,
-                                ),
-                            )
-                            for content_file in content.files
-                        ]
-                    )
-                    if max_depth is None or max_depth > 0
-                    else None
-                ),
-            )
-        case _:
-            assert_never(file)
-
-
-def _make_regular_content_url(
-    id_: UUID,
-    /,
-    *,
-    files_base_url: str,
-) -> str:
-    scheme, netloc, files_base_path, _, _ = urlsplit(files_base_url)
-    path = str(PurePosixPath(files_base_path)) + "/."
-    query = urlencode({"content": True, "working_file_id": str(id_)})
-    return urlunsplit((scheme, netloc, path, query, ""))
