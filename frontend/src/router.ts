@@ -12,7 +12,7 @@ const routes = [
   },
   {
     path: "/:pathMatch(.*)",
-    component: () => import("./components/NotFoundPage.vue"),
+    component: () => import("./components/NotFoundPageTemplate.vue"),
   },
 ];
 
