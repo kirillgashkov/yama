@@ -113,6 +113,58 @@ async def walk_parent(
         yield p, f
 
 
+async def share_file(
+    path: FilePath,
+    *,
+    share_type: FileShareType,
+    to_user_id: UUID,
+    from_user_id: UUID,
+    working_file_id: UUID,
+    config: Config,
+    connection: AsyncConnection,
+) -> File:
+    id_ = await _path_to_id(
+        path,
+        root_file_id=config.root_file_id,
+        working_file_id=working_file_id,
+        connection=connection,
+    )
+
+    await _check_share_for_file_and_user(
+        allowed_types=[FileShareType.SHARE],
+        file_id=id_,
+        user_id=from_user_id,
+        connection=connection,
+    )
+
+    share_db_cte = (
+        insert(_FileShareDb)
+        .values(
+            type=share_type.value,
+            file_id=id_,
+            user_id=to_user_id,
+            created_by=from_user_id,
+        )
+        .returning(_FileShareDb)
+        .cte()
+    )
+    select_file_db_query = (
+        select(_FileDb).where(_FileDb.id == id_).add_cte(share_db_cte)
+    )
+
+    file_db_row = (
+        (await connection.execute(select_file_db_query)).mappings().one_or_none()
+    )
+    if file_db_row is None:
+        raise FileFileNotFoundError(id_)
+    file_db = _FileDb(**file_db_row)
+    (file,) = _make_files([(file_db, None)])
+
+    await connection.commit()
+
+    return file
+
+
 async def write_file(
     file_write: FileWrite,
     path: FilePath,

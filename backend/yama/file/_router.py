@@ -1,11 +1,12 @@
 import logging
 from collections.abc import AsyncIterator
 from pathlib import PurePosixPath
-from typing import Annotated, assert_never
+from typing import Annotated, Literal, assert_never
 from urllib.parse import urlencode, urlsplit, urlunsplit
 from uuid import UUID
 
 import magic
+import pydantic
 from fastapi import (
     APIRouter,
     Depends,
@@ -35,6 +36,7 @@ from ._models import (
     File,
     FileOut,
     FilePath,
+    FileShareType,
     FileType,
     FileWrite,
     Regular,
@@ -43,7 +45,7 @@ from ._models import (
     RegularOut,
     RegularWrite,
 )
-from ._service import read_file, remove_file, write_file
+from ._service import read_file, remove_file, share_file, write_file
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -179,17 +181,48 @@ async def _delete_file(
     working_file_id: Annotated[UUID | None, Query()] = None,
     user_id: Annotated[UUID, Depends(get_current_user_id)],
     config: Annotated[Config, Depends(get_config)],
-    user_config: Annotated[user.Config, Depends(get_user_config)],
     connection: Annotated[AsyncConnection, Depends(database.get_connection)],
     driver: Annotated[Driver, Depends(get_driver)],
 ) -> FileOut:
     file = await remove_file(
         path,
-        user_id=user_id or user_config.public_user_id,
+        user_id=user_id,
         working_file_id=working_file_id or config.root_file_id,
         config=config,
         connection=connection,
         driver=driver,
+    )
+    file_out = _file_to_file_out(
+        file, max_depth=0, files_base_url=config.files_base_url
+    )
+    return file_out
+
+
+class ShareActionIn(pydantic.BaseModel):
+    type: Literal["share"]
+    share_type: FileShareType
+    user_id: UUID
+
+
+@router.post("/files/{path:path}", description="Action file.")
+async def _action_file(
+    *,
+    path: FilePath,
+    action: ShareActionIn,
+    working_file_id: Annotated[UUID | None, Query()] = None,
+    user_id: Annotated[UUID, Depends(get_current_user_id)],
+    config: Annotated[Config, Depends(get_config)],
+    connection: Annotated[AsyncConnection, Depends(database.get_connection)],
+) -> FileOut:
+    assert action.type == "share"
+    file = await share_file(
+        path,
+        share_type=action.share_type,
+        to_user_id=action.user_id,
+        from_user_id=user_id,
+        working_file_id=working_file_id or config.root_file_id,
+        config=config,
+        connection=connection,
     )
     file_out = _file_to_file_out(
         file, max_depth=0, files_base_url=config.files_base_url

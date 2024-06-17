@@ -30,5 +30,6 @@ from ._router import router as router
 from ._service import move_file as move_file
 from ._service import read_file as read_file
 from ._service import remove_file as remove_file
+from ._service import share_file as share_file
 from ._service import walk_parent as walk_parent
 from ._service import write_file as write_file
