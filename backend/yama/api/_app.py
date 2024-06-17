@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
-from yama import auth, database, file, user
+from yama import auth, database, file, function, user
 
 from ._router import router
 
@@ -39,6 +39,7 @@ app.include_router(router)
 app.include_router(auth.router)
 app.include_router(file.router)
 app.include_router(user.router)
+app.include_router(function.router)
 
 for exception, handler in file.exception_handlers:
     app.add_exception_handler(exception, handler)  # type: ignore[arg-type]  # https://github.com/encode/starlette/discussions/2391, https://github.com/encode/starlette/pull/2403
