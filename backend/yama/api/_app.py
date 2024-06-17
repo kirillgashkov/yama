@@ -13,6 +13,7 @@ from ._router import router
 async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
     database_config = database.Config()  # pyright: ignore[reportCallIssue]
     file_config = file.Config()  # pyright: ignore[reportCallIssue]
+    function_config = function.Config()  # pyright: ignore[reportCallIssue]
     user_config = user.Config()  # pyright: ignore[reportCallIssue]
     auth_config = auth.Config()  # pyright: ignore[reportCallIssue]
 
@@ -28,6 +29,7 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[dict[str, Any]]:
         yield {
             "engine": engine,
             "file_config": file_config,
+            "function_config": function_config,
             "user_config": user_config,
             "auth_config": auth_config,
         }
