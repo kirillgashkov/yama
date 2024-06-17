@@ -2,7 +2,7 @@ from collections import OrderedDict, defaultdict, deque
 from collections.abc import Iterable
 from dataclasses import astuple, dataclass
 from pathlib import PurePosixPath
-from typing import assert_never
+from typing import AsyncIterable, assert_never
 from uuid import UUID
 
 from sqlalchemy import and_, case, delete, insert, literal, select, union
@@ -70,6 +70,47 @@ async def read_file(
     file = await _get_file(id_, max_depth=max_depth, connection=connection)
 
     return file
+
+
+async def walk_parent(
+    path: FilePath,
+    /,
+    *,
+    user_id: UUID,
+    working_file_id: UUID,
+    config: Config,
+    connection: AsyncConnection,
+) -> AsyncIterable[tuple[FilePath, File]]:
+    """
+    Generates tuples with file paths and files in the file's parent by walking the tree
+    from the top to the bottom.
+
+    The parent's tuple is also generated.
+
+    Tuple files are shallow, meaning children are excluded from directory-like files.
+    """
+    parent_id = await _path_to_parent_id(
+        path,
+        root_file_id=config.root_file_id,
+        working_file_id=working_file_id,
+        connection=connection,
+    )
+
+    await _check_share_for_file_and_user(
+        allowed_types=[
+            FileShareType.READ,
+            FileShareType.WRITE,
+            FileShareType.SHARE,
+        ],
+        file_id=parent_id,
+        user_id=user_id,
+        connection=connection,
+    )
+
+    parent = await _get_file(parent_id, max_depth=None, connection=connection)
+
+    for p, f in _file_to_descendant_paths_and_files_with_depth_0(parent):
+        yield p, f
 
 
 async def write_file(
@@ -696,6 +737,29 @@ def _file_to_descendant_files(file: File, /) -> Iterable[File]:
             case Directory():
                 for content_file in file.content.files:
                     queue.append(content_file.file)
+            case _:
+                assert_never(file)
+
+
+def _file_to_descendant_paths_and_files_with_depth_0(
+    file: File, /
+) -> Iterable[tuple[FilePath, File]]:
+    queue: deque[tuple[FilePath, File]] = deque([(PurePosixPath("."), file)])
+
+    while queue and (path_and_file := queue.pop()):
+        yield path_and_file
+
+        path, file = path_and_file
+        match file:
+            case Regular():
+                ...
+            case Directory():
+                for content_file in file.content.files:
+                    child_path_and_file = (
+                        path / content_file.name,
+                        _file_to_file_with_depth_0(content_file.file),
+                    )
+                    queue.append(child_path_and_file)
             case _:
                 assert_never(file)
 

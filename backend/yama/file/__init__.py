@@ -1,5 +1,10 @@
 from ._config import Config as Config
 from ._config import get_config as get_config
+from ._driver import Driver as Driver
+from ._driver import DriverFileError as DriverFileError
+from ._driver import DriverFileTooLargeError as DriverFileTooLargeError
+from ._driver import FileSystemDriver as FileSystemDriver
+from ._driver import get_driver as get_driver
 from ._errors import FileFileError as FileFileError
 from ._errors import FileFileExistsError as FileFileExistsError
 from ._errors import FileFileNotFoundError as FileFileNotFoundError
@@ -25,4 +30,5 @@ from ._router import router as router
 from ._service import move_file as move_file
 from ._service import read_file as read_file
 from ._service import remove_file as remove_file
+from ._service import walk_parent as walk_parent
 from ._service import write_file as write_file
