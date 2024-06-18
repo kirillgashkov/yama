@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { useApiService } from "@/api/service";
+import { useApiService } from "@/api";
 
 const api = useApiService();
 

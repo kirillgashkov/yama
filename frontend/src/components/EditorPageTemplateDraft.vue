@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type Ref, ref, shallowRef } from "vue";
-import { ApiError, useApiService } from "@/api/service";
+import { ApiError, useApiService } from "@/api";
 import { Codemirror } from "vue-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 
