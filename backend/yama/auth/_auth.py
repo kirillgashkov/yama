@@ -35,4 +35,4 @@ def get_current_user_id_or_none(
     try:
         return _get_user_id_from_access_token(token, config=config)
     except _InvalidTokenError:
-        return None
+        raise _INVALID_TOKEN_EXCEPTION
