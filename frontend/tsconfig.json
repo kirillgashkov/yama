@@ -3,5 +3,17 @@
   "references": [
     { "path": "tsconfig.dom.json" },
     { "path": "tsconfig.node.json" }
-  ]
+  ],
+  "compilerOptions": {
+    // HACK: WebStorm didn't pick up on some of these option when they were only
+    // set in tsconfig.base.json.
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "esnext",
+    "verbatimModuleSyntax": true
+  }
 }
