@@ -8,6 +8,8 @@ if (import.meta.env.DEV) {
   console.log("API base URL:", API_BASE_URL);
 }
 
+type Resource = string | URL | ((url: URL) => URL);
+
 interface ErrorOut {
   name?: string;
   detail: string;
@@ -33,10 +35,21 @@ async function createApiError(response: Response): Promise<ApiError> {
 }
 
 async function fetchApi(
-  pathOrUrl: string | URL,
+  resource: Resource,
   init?: RequestInit,
 ): Promise<Response> {
-  const url = new URL(pathOrUrl, API_BASE_URL);
+  let url: URL;
+
+  if (typeof resource === "function") {
+    url = resource(new URL(API_BASE_URL));
+  } else if (typeof resource === "string") {
+    url = new URL(resource, API_BASE_URL);
+  } else if (resource instanceof URL) {
+    url = resource;
+  } else {
+    throw new Error("Invalid resource.");
+  }
+
   return await fetch(url, init);
 }
 
@@ -51,7 +64,7 @@ export function useApiService() {
 
   async function request(
     method: string,
-    pathOrUrl: string | URL,
+    resource: Resource,
     body: unknown | FormData = null,
   ): Promise<Response> {
     const config: RequestInit = {};
@@ -73,14 +86,14 @@ export function useApiService() {
       }
     }
 
-    let response = await fetchApi(pathOrUrl, config);
+    let response = await fetchApi(resource, config);
 
     if (response.status === 401 && store.refreshToken) {
       await refreshToken();
       if (store.accessToken) {
         config.headers["Authorization"] = `Bearer ${store.accessToken}`;
       }
-      response = await fetchApi(pathOrUrl, config);
+      response = await fetchApi(resource, config);
     }
 
     if (!response.ok) {
@@ -112,26 +125,26 @@ export function useApiService() {
   }
 
   return {
-    async get(pathOrUrl: string | URL): Promise<unknown> {
-      return (await request("GET", pathOrUrl)).json();
+    async get(resource: Resource): Promise<unknown> {
+      return (await request("GET", resource)).json();
     },
-    async getAsResponse(pathOrUrl: string | URL): Promise<Response> {
-      return await request("GET", pathOrUrl);
+    async getAsResponse(resource: Resource): Promise<Response> {
+      return await request("GET", resource);
     },
     async post(
-      pathOrUrl: string | URL,
+      resource: Resource,
       body: unknown | FormData | null = null,
     ): Promise<unknown> {
-      return (await request("POST", pathOrUrl, body)).json();
+      return (await request("POST", resource, body)).json();
     },
     async put(
-      pathOrUrl: string | URL,
+      resource: Resource,
       body: unknown | FormData | null = null,
     ): Promise<unknown> {
-      return (await request("PUT", pathOrUrl, body)).json();
+      return (await request("PUT", resource, body)).json();
     },
-    async delete(pathOrUrl: string | URL): Promise<unknown> {
-      return (await request("DELETE", pathOrUrl)).json();
+    async delete(resource: Resource): Promise<unknown> {
+      return (await request("DELETE", resource)).json();
     },
     async auth(username: string, password: string): Promise<void> {
       const formData = new FormData();
