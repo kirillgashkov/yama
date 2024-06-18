@@ -24,7 +24,9 @@ export default ts.config(
       parser: vueParser,
       parserOptions: {
         parser: ts.parser,
-        EXPERIMENTAL_useProjectService: true,
+        EXPERIMENTAL_useProjectService: {
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: Infinity,
+        },
       },
     },
     linterOptions: {
