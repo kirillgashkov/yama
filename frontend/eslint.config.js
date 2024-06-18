@@ -11,6 +11,12 @@ const eslintrc = new FlatCompat({
   baseDirectory: path.dirname(fileURLToPath(import.meta.url)),
 });
 
+// HACK: EXPERIMENTAL_useProjectService has typing issues.
+/** @type {any} */
+const EXPERIMENTAL_useProjectService = {
+  maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: Infinity,
+};
+
 export default ts.config(
   {
     ignores: ["dist/"],
@@ -24,9 +30,7 @@ export default ts.config(
       parser: vueParser,
       parserOptions: {
         parser: ts.parser,
-        EXPERIMENTAL_useProjectService: {
-          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: Infinity,
-        },
+        EXPERIMENTAL_useProjectService: EXPERIMENTAL_useProjectService,
       },
     },
     linterOptions: {
