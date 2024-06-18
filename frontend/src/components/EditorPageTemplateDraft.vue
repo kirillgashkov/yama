@@ -3,6 +3,7 @@ import { type Ref, ref, shallowRef } from "vue";
 import { ApiError, useApiService } from "@/api";
 import { Codemirror } from "vue-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
+import MarkdownDiv from "@/components/MarkdownDiv.vue";
 
 const api = useApiService();
 
@@ -138,4 +139,6 @@ async function exportFile() {
     <p>Export status: {{ exportStatus || "null" }}</p>
     <p>Export result: {{ exportResult || "null" }}</p>
   </div>
+  <hr />
+  <MarkdownDiv class="prose" :content="content" />
 </template>
