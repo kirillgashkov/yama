@@ -11,7 +11,7 @@ const routes = [
     component: () => import("./components/EditorPageTemplate.vue"),
   },
   {
-    path: "/:pathMatch(.*)",
+    path: "/:path(.*)",
     component: () => import("./components/NotFoundPageTemplate.vue"),
   },
 ];
