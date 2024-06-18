@@ -10,7 +10,14 @@ import EditorMenu from "@/components/EditorMenu.vue";
 import { shallowRef } from "vue";
 import { Codemirror } from "vue-codemirror";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { MenuButton } from "@headlessui/vue";
+import {
+  Dialog,
+  DialogDescription,
+  DialogOverlay,
+  DialogPanel,
+  DialogTitle,
+} from "@headlessui/vue";
+import EditorExportDialog from "@/components/EditorExportDialog.vue";
 
 const route = useRoute();
 const fileService = useFileService();
@@ -70,15 +77,26 @@ function toggleViewMode() {
 }
 
 async function exportFile() {
-  console.log("exportFile");
+  openPopup();
 }
 
 async function importFile() {
   console.log("exportFile");
 }
+
+const isOpen = ref(false);
+
+function openPopup() {
+  isOpen.value = true;
+}
+
+function closePopup() {
+  isOpen.value = false;
+}
 </script>
 
 <template>
+  <EditorExportDialog :is-open="isOpen" @close="closePopup" />
   <div class="border-t-4 border-[#F74C00]"></div>
   <article
     class="container prose prose-zinc mx-auto p-4 lg:prose-xl dark:prose-invert lg:p-8"
@@ -106,8 +124,8 @@ async function importFile() {
           menuItemsWidthClass="w-24 lg:w-28"
           :menuButtonSvg="ellipsisSvg"
           :menuItems="[
-            { clickPrevent: exportFile, title: 'Импорт...' },
-            { clickPrevent: importFile, title: 'Экспорт...' },
+            { clickPrevent: importFile, title: 'Импорт...' },
+            { clickPrevent: exportFile, title: 'Экспорт...' },
           ]"
         />
       </div>

@@ -6,7 +6,7 @@ let markdownIt: MarkdownIt | null = null;
 
 export function useMarkdownIt(): MarkdownIt {
   if (markdownIt === null) {
-    markdownIt = new MarkdownIt("commonmark");
+    markdownIt = new MarkdownIt();
   }
   return markdownIt;
 }
