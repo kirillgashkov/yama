@@ -8,7 +8,7 @@ const routes = [
   },
   {
     path: "/files/:path(.*)",
-    component: () => import("./components/EditorPageTemplateDraft.vue"),
+    component: () => import("./components/EditorPageTemplate.vue"),
   },
   {
     path: "/:pathMatch(.*)",
