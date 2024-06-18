@@ -11,6 +11,10 @@ const routes = [
     component: () => import("./components/EditorPageTemplate.vue"),
   },
   {
+    path: "/files-draft",
+    component: () => import("./components/EditorPageTemplateDraft.vue"),
+  },
+  {
     path: "/:path(.*)",
     component: () => import("./components/NotFoundPageTemplate.vue"),
   },
