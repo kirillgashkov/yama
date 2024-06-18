@@ -3,7 +3,12 @@ import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/vue";
 
 const props = defineProps<{
   menuButtonSvg: string;
-  menuItems: { a?: string; routerLink?: string; title: string }[];
+  menuItems: {
+    a?: string;
+    routerLink?: string;
+    clickPrevent?: () => void;
+    title: string;
+  }[];
   menuItemsWidthClass: string;
 }>();
 </script>
@@ -51,6 +56,19 @@ const props = defineProps<{
             >
               {{ item.title }}
             </RouterLink>
+            <a
+              v-else-if="item.clickPrevent"
+              href="#"
+              @click.prevent="item.clickPrevent"
+              :class="[
+                active
+                  ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-white'
+                  : 'text-zinc-700 dark:text-zinc-300',
+                'block p-2.5 text-sm lg:p-3 lg:text-base',
+              ]"
+            >
+              {{ item.title }}
+            </a>
             <a
               v-else
               :href="item.a"
