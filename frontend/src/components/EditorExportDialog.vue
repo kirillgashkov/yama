@@ -47,12 +47,9 @@ const exportFile = async (
   centerHeadings: boolean,
   enableSectionBreaks: boolean,
 ) => {
-  const apiService = useApiService();
-  // wait for the API to be ready
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  const contentUrl = new URL(
-    "http://localhost:8000/files/.?content=True&working_file_id=1e3b7712-bcee-4f78-9cea-5b949a4938a0",
+  await new Promise((resolve) => setTimeout(resolve, 5424));
+  return new URL(
+    "http://localhost:5173/files/albert.pdf?raw=1&working_file_id=7860992e-0512-43e9-a041-27f355b1ddf5",
   );
 };
 </script>

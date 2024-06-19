@@ -68,5 +68,21 @@ export function useFileService() {
 
       return r.text();
     },
+    async readContentBlob(
+      path: string,
+      options: { workingFileId?: string } = {},
+    ): Promise<Blob> {
+      const r = await api.getAsResponse((url) => {
+        const u = new URL(url);
+        u.pathname = "/files/" + path;
+        u.searchParams.append("content", "1");
+        if (options.workingFileId) {
+          u.searchParams.append("working_file_id", options.workingFileId);
+        }
+        return u;
+      });
+
+      return r.blob();
+    },
   };
 }

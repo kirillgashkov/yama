@@ -24,7 +24,7 @@ const fileService = useFileService();
 
 const path: Ref<string> = ref(<string>route.params.path);
 const name: ComputedRef<string> = computed(() => {
-  return path.value.split("/").pop() ?? "";
+  return path.value.split("/").pop() ?? ".";
 });
 const workingFileId: ComputedRef<string> = computed(() => {
   const idOrIds = route.query.working_file_id;
@@ -35,9 +35,16 @@ const workingFileId: ComputedRef<string> = computed(() => {
 
   return idOrIds ?? "";
 });
+const isRaw: ComputedRef<string> = computed(() => {
+  return route.query.raw !== undefined;
+});
 
 const file: Ref<FileOut | null> = ref(null);
 const content: Ref<string> = ref("");
+const rawContent: Ref<Blob> = ref(new Blob());
+const objectUrl: ComputedRef<string> = computed(() => {
+  return URL.createObjectURL(rawContent.value);
+});
 
 async function readFile() {
   file.value = null;
@@ -47,6 +54,9 @@ async function readFile() {
   });
   if (file.value.type === FileType.REGULAR) {
     content.value = await fileService.readContent(".", {
+      workingFileId: file.value.id,
+    });
+    rawContent.value = await fileService.readContentBlob(".", {
       workingFileId: file.value.id,
     });
   }
@@ -81,7 +91,11 @@ async function exportFile() {
 }
 
 async function importFile() {
-  console.log("exportFile");
+  console.log("importFile");
+}
+
+async function uploadFile() {
+  console.log("uploadFile");
 }
 
 const isOpen = ref(false);
@@ -111,6 +125,7 @@ function closePopup() {
         class="not-prose flex touch-manipulation space-x-2 pt-2 lg:space-x-3"
       >
         <a
+          v-if="!isRaw"
           href="#"
           @click.prevent="toggleViewMode"
           class="text-zinc-900 hover:text-zinc-700 dark:text-white dark:hover:text-zinc-300"
@@ -121,17 +136,24 @@ function closePopup() {
           <div v-else class="w-8 lg:w-12" v-html="eyeSvg" />
         </a>
         <EditorMenu
-          menuItemsWidthClass="w-24 lg:w-28"
+          menuItemsWidthClass="w-36 lg:w-28"
           :menuButtonSvg="ellipsisSvg"
           :menuItems="[
-            { clickPrevent: importFile, title: 'Импорт...' },
-            { clickPrevent: exportFile, title: 'Экспорт...' },
+            { clickPrevent: importFile, title: 'Назад' },
+            { clickPrevent: importFile, title: 'Импортировать из DOCX...' },
+            { clickPrevent: exportFile, title: 'Экспортировать в PDF...' },
+            { clickPrevent: uploadFile, title: 'Загрузить файл...' },
+            {
+              downloadUrl: objectUrl,
+              downloadName: name,
+              title: 'Скачать файл',
+            },
           ]"
         />
       </div>
     </div>
     <MarkdownDiv v-if="isViewMode" :content="content" />
-    <div v-else class="border border-zinc-300">
+    <div v-else-if="!isRaw" class="border border-zinc-300">
       <codemirror
         v-model="content"
         class="no-prose"
@@ -146,5 +168,6 @@ function closePopup() {
         @blur="console.log('blur', $event)"
       />
     </div>
+    <iframe v-else :src="objectUrl" class="h-[500px] w-full" />
   </article>
 </template>

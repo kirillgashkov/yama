@@ -7,6 +7,8 @@ const props = defineProps<{
     a?: string;
     routerLink?: string;
     clickPrevent?: () => void;
+    downloadUrl?: URL;
+    downloadName?: string;
     title: string;
   }[];
   menuItemsWidthClass: string;
@@ -60,6 +62,19 @@ const props = defineProps<{
               v-else-if="item.clickPrevent"
               href="#"
               @click.prevent="item.clickPrevent"
+              :class="[
+                active
+                  ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-white'
+                  : 'text-zinc-700 dark:text-zinc-300',
+                'block p-2.5 text-sm lg:p-3 lg:text-base',
+              ]"
+            >
+              {{ item.title }}
+            </a>
+            <a
+              v-else-if="item.downloadUrl"
+              :href="item.downloadUrl"
+              :download="item.downloadName"
               :class="[
                 active
                   ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-700 dark:text-white'

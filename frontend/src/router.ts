@@ -25,4 +25,14 @@ const router = createRouter({
   routes,
 });
 
+function pathToName(path: string): string {
+  return path.split("/").pop() ?? "";
+}
+
+router.beforeEach((to) => {
+  if (to.params.path) {
+    document.title = pathToName(to.params.path) + " | Yama" || "Yama";
+  }
+});
+
 export default router;
