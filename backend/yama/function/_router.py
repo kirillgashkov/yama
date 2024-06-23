@@ -50,9 +50,8 @@ async def handle_export(
     driver: Annotated[file.Driver, fastapi.Depends(file.get_driver)],
 ) -> ExportFunctionOut:
     # Read the input files.
-    input_path = file_path
-    input_files = await _read_input_files(
-        file_path=input_path,
+    input_path, input_files = await _read_input_files(
+        file_path=file_path,
         user_id=user_id,
         working_file_id=working_file_id or file_config.root_file_id,
         file_config=file_config,
@@ -105,9 +104,10 @@ async def _read_input_files(
     file_config: file.Config,
     connection: AsyncConnection,
     driver: file.Driver,
-) -> list[FileInout]:
+) -> tuple[PurePosixPath, list[FileInout]]:
     """
-    Gets all dependency files for a file with path as input files.
+    Gets all dependency files for a file with path as input files. The first element
+    of the returned tuple is the path of the main input file.
 
     Current implementation assumes the file doesn't depend on files outside its
     directory and simply returns everything in this directory.
@@ -139,7 +139,7 @@ async def _read_input_files(
             case _:
                 assert_never(f)
 
-    return input_files
+    return PurePosixPath(file_path.name), input_files
 
 
 async def _execute_export_on_host(
