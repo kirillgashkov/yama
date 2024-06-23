@@ -50,8 +50,9 @@ async def handle_export(
     driver: Annotated[file.Driver, fastapi.Depends(file.get_driver)],
 ) -> ExportFunctionOut:
     # Read the input files.
+    input_path = file_path
     input_files = await _read_input_files(
-        file_path=file_path,
+        file_path=input_path,
         user_id=user_id,
         working_file_id=working_file_id or file_config.root_file_id,
         file_config=file_config,
@@ -60,43 +61,10 @@ async def handle_export(
     )
     helper_in = HelperIn(files=input_files)
 
-    # Run the export command via the helper.
-    async with aiofiles.tempfile.TemporaryDirectory() as tempdir:
-        # HACK: At most one output file from the helper is supported.
-        # HACK: Assumes input_files presents file_path relative to the temporary
-        # directory and as its direct child.
-        input_path = file_path.name
-        output_path = file_path.with_suffix(".pdf").name
-        p = await asyncio.create_subprocess_exec(
-            *[
-                "python",
-                "-m",
-                "yama.function.helper",
-                "-o",
-                output_path,
-                "--",
-                *config.export_command_base,
-                "-o",
-                output_path,
-                input_path,
-            ],
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=tempdir,
-        )
-        stdout, stderr = await p.communicate(input=helper_in.model_dump_json().encode())
-        exit_code = await p.wait()
-        assert isinstance(exit_code, int)
-
-        if stderr:
-            logger.warning("Helper stderr: %s", stderr)
-        assert exit_code == 0
-
-    # Get the output files from the helper.
-    helper_out = HelperOut.model_validate_json(stdout)
-    output_files = helper_out.files
-
+    # Execute the export command via the helper.
+    output_path, helper_out = await _execute_export_on_host(
+        input_path, helper_in=helper_in, config=config
+    )
     if helper_out.exit_code != 0:
         return ErrorFunctionOut(
             message="Export failed", stdout=helper_out.stdout, stderr=helper_out.stderr
@@ -104,7 +72,7 @@ async def handle_export(
 
     # Write the output files.
     output_dir = await _write_output_files(
-        output_files,
+        helper_out.files,
         user_id=user_id,
         config=config,
         file_config=file_config,
@@ -174,6 +142,47 @@ async def _read_input_files(
     return input_files
 
 
+async def _execute_export_on_host(
+    input_file: PurePosixPath, /, *, helper_in: HelperIn, config: Config
+) -> tuple[PurePosixPath, HelperOut]:
+    async with aiofiles.tempfile.TemporaryDirectory() as tempdir:
+        output_file = input_file.with_suffix(".pdf")
+        p = await asyncio.create_subprocess_exec(
+            *[
+                "python",
+                "-m",
+                "yama.function.helper",
+                "-o",
+                str(output_file),
+                "--",
+                *config.export_command_base,
+                "-o",
+                str(output_file),
+                str(input_file),
+            ],
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=tempdir,
+        )
+        stdout, stderr = await p.communicate(input=helper_in.model_dump_json().encode())
+        exit_code = await p.wait()
+        assert isinstance(exit_code, int)
+
+        if stderr:
+            logger.warning("Helper stderr: %s", stderr)
+        assert exit_code == 0
+
+        helper_out = HelperOut.model_validate_json(stdout)
+
+    return output_file, helper_out
+
+
+async def _execute_export_on_docker(
+    input_file: PurePosixPath, /, *, helper_in: HelperIn, config: Config
+) -> tuple[PurePosixPath, HelperOut]: ...
+
+
 async def _write_output_files(
     output_files: list[FileInout],
     /,
@@ -201,7 +210,6 @@ async def _write_output_files(
         driver=driver,
     )
 
-    # TODO: Defer this to the end.
     # Share the output directory with the user.
     await file.share_file(
         PurePosixPath("."),
@@ -216,6 +224,8 @@ async def _write_output_files(
     if not output_files:
         return output_dir
 
+    # HACK: Current implementation supports only one output file which is enough for
+    # the current case of exporting to PDF.
     assert len(output_files) == 1
     output_file = output_files[0]
 
